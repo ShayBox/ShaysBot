@@ -18,7 +18,8 @@ impl Message for Command {
         state: State,
         _args: VecDeque<&str>,
     ) -> Result<()> {
-        let message = "Please use https://github.com/HKS-HNS/No-Chat-Reports with the 'AAA===' passphrase and 'AES/CFB8+MC256' algorithm for optimal space savings";
+        let message =
+            "Please use passphrase 'AAA===' with 'https://github.com/EnderKill98/No-Chat-Reports'";
         state.mc_queue.lock().unwrap().push(message.into());
 
         Ok(())

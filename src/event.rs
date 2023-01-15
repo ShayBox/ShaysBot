@@ -1,4 +1,8 @@
-use std::sync::{atomic::Ordering, Arc};
+use std::{
+    sync::{atomic::Ordering, Arc},
+    thread::sleep,
+    time::Duration,
+};
 
 use anyhow::Result;
 use azalea::{Client, Event};
@@ -29,9 +33,12 @@ async fn handle_death(
     _death: Option<Arc<ClientboundPlayerCombatKillPacket>>,
     _state: State,
 ) -> Result<()> {
+    sleep(Duration::from_secs(1));
+
     let respawn_command_packet = ServerboundClientCommandPacket {
         action: PerformRespawn,
     };
+
     client.write_packet(respawn_command_packet.get()).await?;
 
     Ok(())
