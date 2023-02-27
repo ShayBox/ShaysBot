@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use azalea::{BlockPos, ChatPacket, Client, Vec3};
+use azalea::{chat::ChatPacket, BlockPos, Client, Vec3};
 use azalea_protocol::packets::game::{
     serverbound_interact_packet::InteractionHand,
     serverbound_use_item_on_packet::{BlockHitResult, ServerboundUseItemOnPacket},
@@ -55,7 +55,7 @@ impl Message for Command {
                 sequence: 0,
             };
 
-            client.write_packet(sleep_packet.get()).await?;
+            client.write_packet(sleep_packet.get());
         } else {
             let message = "You do not have permission to use this command.";
             state.mc_queue.lock().unwrap().push(message.into());

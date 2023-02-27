@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use azalea::{ChatPacket, Client};
+use azalea::{chat::ChatPacket, Client};
 
 use crate::{Message, State};
 

@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use anyhow::Result;
-use azalea::{ChatPacket, Client};
+use azalea::{chat::ChatPacket, Client};
 use base64::{
     alphabet::Alphabet,
     engine::{GeneralPurpose, GeneralPurposeConfig},

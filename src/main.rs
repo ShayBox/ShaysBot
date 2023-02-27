@@ -8,7 +8,7 @@ use std::{
 };
 
 use anyhow::Result;
-use azalea::{prelude::*, ChatPacket};
+use azalea::{chat::ChatPacket, prelude::*};
 use crossbeam::queue::SegQueue;
 use serenity::prelude::{GatewayIntents, TypeMapKey};
 
@@ -21,7 +21,7 @@ mod discord;
 mod event;
 mod packet;
 
-#[derive(Clone)]
+#[derive(Default, Clone, Component)]
 pub struct State {
     pub commands: HashMap<Vec<&'static str>, Box<dyn Message + Send + Sync>>,
     pub config: Arc<Mutex<Config>>,
@@ -86,19 +86,18 @@ async fn main() -> Result<()> {
 
     loop {
         let config = state.config.lock().unwrap().clone();
-        let options = azalea::Options {
-            account: if config.online {
-                Account::microsoft(&config.account).await?
-            } else {
-                Account::offline("Dev")
-            },
-            address: config.address.as_str(),
-            state: state.clone(),
-            plugins: plugins![],
-            handle,
+        let account = if config.online {
+            Account::microsoft(&config.account).await?
+        } else {
+            Account::offline("Dev")
         };
 
-        if let Err(error) = azalea::start(options).await {
+        if let Err(error) = ClientBuilder::new()
+            .set_handler(handle)
+            .set_state(state.clone())
+            .start(account, config.address.as_str())
+            .await
+        {
             eprintln!("{error}");
         };
 

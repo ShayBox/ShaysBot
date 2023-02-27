@@ -39,7 +39,7 @@ async fn handle_death(
         action: PerformRespawn,
     };
 
-    client.write_packet(respawn_command_packet.get()).await?;
+    client.write_packet(respawn_command_packet.get());
 
     Ok(())
 }
@@ -79,7 +79,7 @@ pub async fn handle_tick(client: Client, state: State) -> Result<()> {
 
             futures.push(async {
                 let message = message;
-                client.chat(&message).await
+                client.chat(&message)
             })
         }
 

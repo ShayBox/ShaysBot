@@ -1,8 +1,8 @@
-use std::{collections::VecDeque, ops::Deref};
+use std::collections::VecDeque;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use azalea::{ping::ping_server, ChatPacket, Client};
+use azalea::{chat::ChatPacket, ping::ping_server, Client};
 use dotenvy_macro::dotenv;
 
 use crate::{Message, State};
@@ -14,7 +14,7 @@ pub struct Command;
 impl Message for Command {
     async fn message(
         &self,
-        client: Client,
+        mut client: Client,
         _chat: ChatPacket,
         state: State,
         _args: VecDeque<&str>,
@@ -26,11 +26,9 @@ impl Message for Command {
         let players = {
             let config = state.config.lock().unwrap();
             client
-                .players
-                .read()
-                .deref()
-                .iter()
-                .map(|(_uuid, info)| info.profile.name.to_owned())
+                .players()
+                .values()
+                .map(|info| info.profile.name.to_owned())
                 .filter(|name| !config.bots.contains(name))
                 .collect::<Vec<_>>()
         };

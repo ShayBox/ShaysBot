@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use azalea::{ChatPacket, Client};
+use azalea::{chat::ChatPacket, Client};
 
 use crate::{Message, State};
 
@@ -13,7 +13,7 @@ pub struct Command;
 impl Message for Command {
     async fn message(
         &self,
-        client: Client,
+        mut client: Client,
         chat: ChatPacket,
         state: State,
         mut args: VecDeque<&str>,
@@ -30,9 +30,7 @@ impl Message for Command {
 
         let arg = args.pop_front().unwrap_or(&username);
         let Some((_name, info)) = client
-            .players
-            .read()
-            .clone()
+            .players()
             .into_values()
             .map(|info| (info.profile.name.to_owned(), info))
             .find(|(name, _info)| name == arg)
