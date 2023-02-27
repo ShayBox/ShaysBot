@@ -12,7 +12,11 @@ use azalea_protocol::packets::game::{
 };
 use serenity::futures::future;
 
-use crate::{chat::handle_chat, packet::handle_packet, State};
+use crate::{
+    chat::{handle_chat, is_allowed_chat_character},
+    packet::handle_packet,
+    State,
+};
 
 pub async fn handle(client: Client, event: Event, state: State) -> Result<()> {
     match event {
@@ -73,6 +77,11 @@ pub async fn handle_tick(client: Client, state: State) -> Result<()> {
             .fetch_add(messages.len() * 20, Ordering::SeqCst);
 
         for message in messages {
+            let message = message
+                .chars()
+                .filter(|&c| is_allowed_chat_character(c))
+                .collect::<String>();
+
             if message.len() > 256 {
                 continue;
             }

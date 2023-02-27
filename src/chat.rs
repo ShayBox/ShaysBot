@@ -100,6 +100,10 @@ pub async fn handle_chat(client: Client, chat: ChatPacket, state: State) -> Resu
     Ok(())
 }
 
+pub fn is_allowed_chat_character(chr: char) -> bool {
+    chr != '\u{00A7}' && chr >= ' ' && chr != '\u{007F}'
+}
+
 pub fn try_decode_ncr(content: String) -> String {
     // TODO: Add Base64R, Sus, and MC256
     if let Ok(decoded) = try_decode_base64(&content) {

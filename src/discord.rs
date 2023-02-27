@@ -28,12 +28,22 @@ impl EventHandler for Handler {
             return;
         }
 
-        let message = format!(
-            "{}#{:0>4}: {}",
-            msg.author.name, msg.author.discriminator, msg.content
-        );
+        for content in msg.content.splitn(5, '\n') {
+            let message = format!(
+                "{}#{:0>4}: {}",
+                msg.author.name,
+                msg.author.discriminator,
+                content,
+            );
 
-        state.mc_queue.lock().unwrap().push(message);
+            message
+                .chars()
+                .collect::<Vec<char>>()
+                .chunks(256)
+                .map(|chunk| chunk.iter().collect())
+                .for_each(|message| state.mc_queue.lock().unwrap().push(message));
+        }
+
         let _ = msg.delete(&ctx.http()).await;
     }
 
