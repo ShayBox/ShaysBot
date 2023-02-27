@@ -54,12 +54,8 @@ impl EventHandler for Handler {
 pub async fn start_discord_bridge(state: State) -> Result<()> {
     let n00b_usr = Regex::new(r"(?m)^([BN])00bBot[0-9]+$")?;
     let n00b_msg = Regex::new(r"(?m)^([BN])00bBot[0-9]+ (joined|left) the game$")?;
+    let sleeping = Regex::new(r"(?m)^[0-9]/[0-9] players sleeping$")?;
     let blocked_messages = [
-        "1/5 players sleeping",
-        "2/5 players sleeping",
-        "3/5 players sleeping",
-        "4/5 players sleeping",
-        "5/5 players sleeping",
         "Are you a real hacker? Try to solve: [Club Mate Chest], [Club Mate Fountain], [Sheep Ritual]",
         "Herobrine: Try to find me near spawn.",
         "Hit another player with a snowball first.",
@@ -85,6 +81,7 @@ pub async fn start_discord_bridge(state: State) -> Result<()> {
             if blocked_messages.contains(&content.as_str())
                 || n00b_usr.is_match(username.as_str())
                 || n00b_msg.is_match(content.as_str())
+                || sleeping.is_match(content.as_str())
             {
                 continue;
             }
