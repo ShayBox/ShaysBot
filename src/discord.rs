@@ -31,9 +31,7 @@ impl EventHandler for Handler {
         for content in msg.content.splitn(5, '\n') {
             let message = format!(
                 "{}#{:0>4}: {}",
-                msg.author.name,
-                msg.author.discriminator,
-                content,
+                msg.author.name, msg.author.discriminator, content,
             );
 
             message
@@ -65,6 +63,7 @@ pub async fn start_discord_bridge(state: State) -> Result<()> {
     let n00b_usr = Regex::new(r"(?m)^([BN])00bBot[0-9]+$")?;
     let n00b_msg = Regex::new(r"(?m)^([BN])00bBot[0-9]+ (joined|left) the game$")?;
     let sleeping = Regex::new(r"(?m)^[0-9]/[0-9] players sleeping$")?;
+    let acquired = Regex::new(r"^[a-zA-Z0-9_]{3,16} acquired a Club Mate$")?;
     let blocked_messages = [
         "Are you a real hacker? Try to solve: [Club Mate Chest], [Club Mate Fountain], [Sheep Ritual]",
         "Herobrine: Try to find me near spawn.",
@@ -92,6 +91,7 @@ pub async fn start_discord_bridge(state: State) -> Result<()> {
                 || n00b_usr.is_match(username.as_str())
                 || n00b_msg.is_match(content.as_str())
                 || sleeping.is_match(content.as_str())
+                || acquired.is_match(content.as_str())
             {
                 continue;
             }
