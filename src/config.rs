@@ -22,6 +22,7 @@ pub struct Config {
     pub bed: Coordinates,
     pub pearl: Coordinates,
     pub bots: Vec<String>,
+    pub passphrases: Vec<String>,
 }
 
 impl Default for Config {
@@ -36,6 +37,7 @@ impl Default for Config {
             bed: Default::default(),
             pearl: Default::default(),
             bots: Default::default(),
+            passphrases: vec!["AAA===".into()],
         }
     }
 }

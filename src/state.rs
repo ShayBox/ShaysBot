@@ -10,6 +10,7 @@ use serenity::prelude::TypeMapKey;
 use crate::{
     command::{lib::Message, prelude::*},
     config::Config,
+    ncr::NCReply,
 };
 
 // https://stackoverflow.com/a/72239266
@@ -24,12 +25,12 @@ pub struct State {
     pub commands: HashMap<Vec<&'static str>, Box<dyn Message + Send + Sync>>,
     pub config: Arc<Mutex<Config>>,
     pub dc_queue: Arc<SegQueue<ChatPacket>>,
-    pub mc_queue: Arc<Mutex<Vec<String>>>,
+    pub mc_queue: Arc<Mutex<Vec<(String, Option<NCReply>)>>>,
     pub spam_tick: Arc<AtomicUsize>,
 }
 
-impl TypeMapKey for crate::State {
-    type Value = crate::State;
+impl TypeMapKey for State {
+    type Value = State;
 }
 
 impl Default for State {

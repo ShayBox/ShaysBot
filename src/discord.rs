@@ -8,7 +8,7 @@ use serenity::{
     prelude::*,
 };
 
-use crate::{chat::try_decode_ncr, State};
+use crate::{ncr::decrypt_ncr, State};
 
 pub struct Handler;
 
@@ -39,7 +39,7 @@ impl EventHandler for Handler {
                 .collect::<Vec<char>>()
                 .chunks(256)
                 .map(|chunk| chunk.iter().collect())
-                .for_each(|message| state.mc_queue.lock().unwrap().push(message));
+                .for_each(|message| state.mc_queue.lock().unwrap().push((message, None)));
         }
 
         let _ = msg.delete(&ctx.http()).await;
@@ -85,7 +85,8 @@ pub async fn start_discord_bridge(state: State) -> Result<()> {
                 username = last.to_string();
             }
 
-            let content = try_decode_ncr(chat.content());
+            let passphrases = state.config.lock().unwrap().passphrases.clone();
+            let (content, _encrypt) = decrypt_ncr(chat.content(), passphrases);
 
             if blocked_messages.contains(&content.as_str())
                 || n00b_usr.is_match(username.as_str())

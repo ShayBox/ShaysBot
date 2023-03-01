@@ -8,7 +8,7 @@ use azalea_protocol::packets::game::{
     serverbound_use_item_on_packet::{BlockHitResult, ServerboundUseItemOnPacket},
 };
 
-use crate::{Message, State};
+use crate::{ncr::NCReply, Message, State};
 
 #[derive(Clone)]
 pub struct Command;
@@ -21,6 +21,7 @@ impl Message for Command {
         chat: ChatPacket,
         state: State,
         _args: VecDeque<&str>,
+        ncr: Option<NCReply>,
     ) -> Result<()> {
         let Some(mut username) = chat.username() else {
             return Ok(());
@@ -33,7 +34,11 @@ impl Message for Command {
         }
 
         if username == "ShayBox" {
-            state.mc_queue.lock().unwrap().push("Teleporting...".into());
+            state
+                .mc_queue
+                .lock()
+                .unwrap()
+                .push(("Teleporting...".into(), ncr));
 
             let pearl_pos = state.config.lock().unwrap().pearl;
             let sleep_packet = ServerboundUseItemOnPacket {
@@ -58,7 +63,7 @@ impl Message for Command {
             client.write_packet(sleep_packet.get());
         } else {
             let message = "You do not have permission to use this command.";
-            state.mc_queue.lock().unwrap().push(message.into());
+            state.mc_queue.lock().unwrap().push((message.into(), ncr));
         }
 
         Ok(())

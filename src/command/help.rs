@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use azalea::{chat::ChatPacket, Client};
 
-use crate::{Message, State};
+use crate::{ncr::NCReply, Message, State};
 
 #[derive(Clone)]
 pub struct Command;
@@ -17,6 +17,7 @@ impl Message for Command {
         _chat: ChatPacket,
         state: State,
         _args: VecDeque<&str>,
+        ncr: Option<NCReply>,
     ) -> Result<()> {
         let commands = state
             .commands
@@ -25,7 +26,7 @@ impl Message for Command {
             .collect::<Vec<_>>()
             .join(", ");
         let message = format!("Commands: {commands}");
-        state.mc_queue.lock().unwrap().push(message);
+        state.mc_queue.lock().unwrap().push((message, ncr));
 
         Ok(())
     }

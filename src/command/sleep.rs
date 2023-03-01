@@ -9,7 +9,7 @@ use azalea_protocol::packets::game::{
 };
 use rand::prelude::*;
 
-use crate::{Message, State};
+use crate::{ncr::NCReply, Message, State};
 
 #[derive(Clone)]
 pub struct Command;
@@ -22,6 +22,7 @@ impl Message for Command {
         _chat: ChatPacket,
         state: State,
         _args: VecDeque<&str>,
+        ncr: Option<NCReply>,
     ) -> Result<()> {
         let messages = vec![
             "I could use some sleep, I'll turn in for the night. Zzz",
@@ -74,7 +75,11 @@ impl Message for Command {
             return Ok(())
         };
 
-        state.mc_queue.lock().unwrap().push(message.to_string());
+        state
+            .mc_queue
+            .lock()
+            .unwrap()
+            .push((message.to_string(), ncr));
 
         let bed_pos = state.config.lock().unwrap().bed;
         let sleep_packet = ServerboundUseItemOnPacket {

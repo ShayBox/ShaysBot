@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use azalea::{chat::ChatPacket, ping::ping_server, Client};
 use dotenvy_macro::dotenv;
 
-use crate::{Message, State};
+use crate::{ncr::NCReply, Message, State};
 
 #[derive(Clone)]
 pub struct Command;
@@ -18,6 +18,7 @@ impl Message for Command {
         _chat: ChatPacket,
         state: State,
         _args: VecDeque<&str>,
+        ncr: Option<NCReply>,
     ) -> Result<()> {
         let response = ping_server(dotenv!("ADDRESS")).await?;
         let online = response.players.online;
@@ -36,7 +37,7 @@ impl Message for Command {
         let player_list = players.join(", ");
 
         let message = format!("[{filtered}/{online}/{max}]: {player_list}");
-        state.mc_queue.lock().unwrap().push(message);
+        state.mc_queue.lock().unwrap().push((message, ncr));
 
         Ok(())
     }

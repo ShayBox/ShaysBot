@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use azalea::{chat::ChatPacket, Client};
 
-use crate::{Message, State};
+use crate::{ncr::NCReply, Message, State};
 
 #[derive(Clone)]
 pub struct Command;
@@ -17,6 +17,7 @@ impl Message for Command {
         chat: ChatPacket,
         state: State,
         mut args: VecDeque<&str>,
+        ncr: Option<NCReply>,
     ) -> Result<()> {
         let Some(mut username) = chat.username() else {
             return Ok(())
@@ -35,7 +36,8 @@ impl Message for Command {
             .map(|info| (info.profile.name.to_owned(), info))
             .find(|(name, _info)| name == arg)
         else {
-            state.mc_queue.lock().unwrap().push(format!("No username '{arg}' found"));
+            let message = format!("No username '{arg}' found");
+            state.mc_queue.lock().unwrap().push((message, ncr));
             return Ok(());
         };
 
@@ -56,7 +58,7 @@ impl Message for Command {
         };
 
         let message = format!("{arg}'s ping latency is {latency}ms, {quote}");
-        state.mc_queue.lock().unwrap().push(message);
+        state.mc_queue.lock().unwrap().push((message, ncr));
 
         Ok(())
     }

@@ -12,11 +12,7 @@ use azalea_protocol::packets::game::{
 };
 use serenity::futures::future;
 
-use crate::{
-    chat::{handle_chat, is_allowed_chat_character},
-    packet::handle_packet,
-    State,
-};
+use crate::{chat::handle_chat, ncr::NCReply, packet::handle_packet, State};
 
 pub async fn handle(client: Client, event: Event, state: State) -> Result<()> {
     match event {
@@ -66,7 +62,7 @@ pub async fn handle_tick(client: Client, state: State) -> Result<()> {
         let len = messages.len();
         messages
             .drain(..max_drain.min(len))
-            .collect::<Vec<String>>()
+            .collect::<Vec<(String, Option<NCReply>)>>()
     };
 
     if !messages.is_empty() {
@@ -76,18 +72,14 @@ pub async fn handle_tick(client: Client, state: State) -> Result<()> {
             .spam_tick
             .fetch_add(messages.len() * 20, Ordering::SeqCst);
 
-        for message in messages {
-            let message = message
-                .chars()
-                .filter(|&c| is_allowed_chat_character(c))
-                .collect::<String>();
-
-            if message.len() > 256 {
-                continue;
-            }
-
+        for (message, ncr) in messages {
             futures.push(async {
-                let message = message;
+                let message = if let Some(ncr) = ncr {
+                    let encrypt_fn = ncr.encrypt_fn;
+                    encrypt_fn(&message, ncr.passphrase.as_slice())
+                } else {
+                    message
+                };
                 client.chat(&message)
             })
         }

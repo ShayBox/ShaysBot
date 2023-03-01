@@ -14,6 +14,7 @@ mod command;
 mod config;
 mod discord;
 mod event;
+mod ncr;
 mod packet;
 mod state;
 
@@ -45,7 +46,7 @@ async fn main() -> Result<()> {
         let account = if config.online {
             Account::microsoft(&config.account).await?
         } else {
-            Account::offline("Dev")
+            Account::offline("ShaysBot")
         };
 
         if let Err(error) = ClientBuilder::new()

@@ -2,15 +2,9 @@ use std::collections::VecDeque;
 
 use anyhow::Result;
 use azalea::{chat::ChatPacket, Client};
-use base64::{
-    alphabet::Alphabet,
-    engine::{GeneralPurpose, GeneralPurposeConfig},
-    Engine,
-};
-use ncr_crypto::{decode_and_verify, decrypt_with_passphrase};
 use regex::Regex;
 
-use crate::State;
+use crate::{ncr::decrypt_ncr, State};
 
 pub async fn handle_chat(client: Client, chat: ChatPacket, state: State) -> Result<()> {
     // Queue message for Discord bridge
@@ -26,7 +20,8 @@ pub async fn handle_chat(client: Client, chat: ChatPacket, state: State) -> Resu
         username = last.to_string();
     }
 
-    let content = try_decode_ncr(chat.content());
+    let passphrases = state.config.lock().unwrap().passphrases.clone();
+    let (content, ncr) = decrypt_ncr(chat.content(), passphrases);
 
     // Split content into arguments
     let mut args = content.split(' ').collect::<VecDeque<_>>();
@@ -92,34 +87,10 @@ pub async fn handle_chat(client: Client, chat: ChatPacket, state: State) -> Resu
     // Prevent other bots from using commands
     if state.config.lock().unwrap().bots.contains(&username) {
         let message = format!("/w {username} *checks list* Sorry, says here you're a bot...");
-        state.mc_queue.lock().unwrap().push(message);
+        state.mc_queue.lock().unwrap().push((message, ncr));
     } else {
-        command.message(client, chat, state, args).await?;
+        command.message(client, chat, state, args, ncr).await?;
     }
 
     Ok(())
-}
-
-pub fn is_allowed_chat_character(chr: char) -> bool {
-    chr != '\u{00A7}' && chr >= ' ' && chr != '\u{007F}'
-}
-
-pub fn try_decode_ncr(content: String) -> String {
-    // TODO: Add Base64R, Sus, and MC256
-    if let Ok(decoded) = try_decode_base64(&content) {
-        return decoded;
-    }
-
-    content
-}
-
-pub fn try_decode_base64(content: &String) -> Result<String> {
-    const BASE64: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+\\";
-    let alphabet = Alphabet::new(BASE64)?;
-    let b64 = GeneralPurpose::new(&alphabet, GeneralPurposeConfig::new());
-    let ciphertext = b64.decode(content)?;
-    let decrypted = decrypt_with_passphrase(&ciphertext, b"AAA===");
-    let decoded = decode_and_verify(&decrypted).map_err(anyhow::Error::msg)?;
-
-    Ok(decoded.replace("#%", ""))
 }
