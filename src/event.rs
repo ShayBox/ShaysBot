@@ -12,7 +12,7 @@ use azalea_protocol::packets::game::{
 };
 use serenity::futures::future;
 
-use crate::{chat::handle_chat, ncr::NCReply, packet::handle_packet, State};
+use crate::{chat::handle_chat, ncr::NCREncryption, packet::handle_packet, State};
 
 pub async fn handle(client: Client, event: Event, state: State) -> Result<()> {
     match event {
@@ -62,7 +62,7 @@ pub async fn handle_tick(client: Client, state: State) -> Result<()> {
         let len = messages.len();
         messages
             .drain(..max_drain.min(len))
-            .collect::<Vec<(String, Option<NCReply>)>>()
+            .collect::<Vec<(String, Option<NCREncryption>)>>()
     };
 
     if !messages.is_empty() {
@@ -76,7 +76,7 @@ pub async fn handle_tick(client: Client, state: State) -> Result<()> {
             futures.push(async {
                 let message = if let Some(ncr) = ncr {
                     let encrypt_fn = ncr.encrypt_fn;
-                    encrypt_fn(&message, ncr.passphrase.as_slice())
+                    encrypt_fn(&message, &ncr.passphrase)
                 } else {
                     message
                 };

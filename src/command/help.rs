@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use azalea::{chat::ChatPacket, Client};
 
-use crate::{ncr::NCReply, Message, State};
+use crate::{ncr::NCREncryption, Message, State};
 
 #[derive(Clone)]
 pub struct Command;
@@ -17,7 +17,7 @@ impl Message for Command {
         _chat: ChatPacket,
         state: State,
         _args: VecDeque<&str>,
-        ncr: Option<NCReply>,
+        ncr: Option<NCREncryption>,
     ) -> Result<()> {
         let commands = state
             .commands

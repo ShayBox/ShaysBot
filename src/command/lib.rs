@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use azalea::{chat::ChatPacket, Client};
 use dyn_clonable::*;
 
-use crate::{ncr::NCReply, State};
+use crate::{ncr::NCREncryption, State};
 
 #[clonable]
 #[async_trait]
@@ -16,6 +16,6 @@ pub trait Message: Clone {
         chat: ChatPacket,
         state: State,
         args: VecDeque<&str>,
-        ncr: Option<NCReply>,
+        ncr: Option<NCREncryption>,
     ) -> Result<()>;
 }

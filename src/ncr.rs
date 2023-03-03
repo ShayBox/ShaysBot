@@ -77,111 +77,113 @@ const BASE64R_CHARSET: [(char, char); 65] = [
     ('=', '¿'),
 ];
 
-pub struct NCReply {
-    pub encrypt_fn: fn(input: &str, passphrase: &[u8]) -> String,
-    pub passphrase: Vec<u8>,
+pub struct NCREncryption {
+    pub encrypt_fn: fn(input: &str, passphrase: &str) -> String,
+    pub passphrase: String,
 }
 
-pub fn decrypt_ncr(message: String, passphrases: Vec<String>) -> (String, Option<NCReply>) {
-    for try_decode in [try_decrypt_aes_cfb8_base64, try_decrypt_aes_cfb8_base64r] {
+pub fn decrypt_ncr(message: String, passphrases: Vec<String>) -> (String, Option<NCREncryption>) {
+    for try_decrypt_fn in [try_decrypt_aes_cfb8_base64, try_decrypt_aes_cfb8_base64r] {
         for passphrase in &passphrases {
-            if let Ok(tuple) = try_decode(&message, passphrase.as_bytes()) {
-                return tuple;
+            let result = try_decrypt_fn(&message, passphrase);
+            if let Ok((message, ncr)) = result {
+                return (message, ncr);
             }
         }
     }
 
+    // Message wasn't encrypted or wasn't able to be decrypted
     (message, None)
 }
 
+// Base64
+fn try_decode_base64(input: &str) -> Result<Vec<u8>> {
+    let base64_alphabet = Alphabet::new(BASE64_ALPHABET).expect("Failed to create Alphabet");
+    let base64 = GeneralPurpose::new(&base64_alphabet, GeneralPurposeConfig::new());
+    base64.decode(input).map_err(anyhow::Error::msg)
+}
+
+fn encode_base64(input: Vec<u8>) -> String {
+    let base64_alphabet = Alphabet::new(BASE64_ALPHABET).expect("Failed to create Alphabet");
+    let base64 = GeneralPurpose::new(&base64_alphabet, GeneralPurposeConfig::new());
+    base64.encode(input)
+}
+
 // AES/CFB8+Base64 (Not used in the mod, but why not)
-pub fn try_decode_base64(input: &str) -> Result<Vec<u8>> {
-    let alphabet = Alphabet::new(BASE64_ALPHABET).expect("Failed to create Alphabet");
-    let b64 = GeneralPurpose::new(&alphabet, GeneralPurposeConfig::new());
-    b64.decode(input).map_err(anyhow::Error::msg)
-}
-
-pub fn encode_base64(input: Vec<u8>) -> String {
-    let alphabet = Alphabet::new(BASE64_ALPHABET).expect("Failed to create Alphabet");
-    let b64 = GeneralPurpose::new(&alphabet, GeneralPurposeConfig::new());
-    b64.encode(input)
-}
-
-pub fn try_decrypt_aes_cfb8_base64(
+fn try_decrypt_aes_cfb8_base64(
     input: &str,
-    passphrase: &[u8],
-) -> Result<(String, Option<NCReply>)> {
+    passphrase: &str,
+) -> Result<(String, Option<NCREncryption>)> {
     let ciphertext = try_decode_base64(input)?;
-    let decrypted = decrypt_with_passphrase(&ciphertext, passphrase);
+    let decrypted = decrypt_with_passphrase(&ciphertext, passphrase.as_ref());
     let decoded = decode_and_verify(&decrypted).map_err(anyhow::Error::msg)?;
 
     Ok((
         decoded.replacen("#%", "", 1),
-        Some(NCReply {
+        Some(NCREncryption {
             encrypt_fn: encrypt_aes_cfb8_base64,
-            passphrase: passphrase.to_vec(),
+            passphrase: passphrase.into(),
         }),
     ))
 }
 
-pub fn encrypt_aes_cfb8_base64(input: &str, passphrase: &[u8]) -> String {
+fn encrypt_aes_cfb8_base64(input: &str, passphrase: &str) -> String {
     let plaintext = "#%".to_owned() + input;
-    let encrypted = encrypt_with_passphrase(plaintext.as_bytes(), passphrase);
+    let encrypted = encrypt_with_passphrase(plaintext.as_bytes(), passphrase.as_ref());
     encode_base64(encrypted)
 }
 
-// AES/CFB8+Base64R (Default algorithm)
-pub fn try_decode_base64r(input: &str) -> Result<Vec<u8>> {
-    let base64r = HashMap::from(BASE64R_CHARSET);
-    let base64r_reversed = base64r
+// Base64R
+fn try_decode_base64r(input: &str) -> Result<Vec<u8>> {
+    let base64r_charset_reversed = HashMap::from(BASE64R_CHARSET)
         .iter()
         .map(|(a, b)| (b.to_owned(), a.to_owned()))
         .collect::<HashMap<char, char>>();
+
     let input = input
         .chars()
-        .map(|char| match base64r_reversed.get(&char) {
+        .map(|char| match base64r_charset_reversed.get(&char) {
             Some(new_char) => *new_char,
             None => char,
         })
         .collect::<String>();
 
-    let alphabet = Alphabet::new(BASE64_ALPHABET).expect("Failed to create Alphabet");
-    let b64 = GeneralPurpose::new(&alphabet, GeneralPurposeConfig::new());
-    b64.decode(input).map_err(anyhow::Error::msg)
+    try_decode_base64(&input)
 }
 
-pub fn encode_base64r(input: Vec<u8>) -> String {
-    let base64r = HashMap::from(BASE64R_CHARSET);
+fn encode_base64r(input: Vec<u8>) -> String {
+    let base64r_charset = HashMap::from(BASE64R_CHARSET);
     let encoded = encode_base64(input);
 
     encoded
         .chars()
-        .map(|char| match base64r.get(&char) {
+        .map(|char| match base64r_charset.get(&char) {
             Some(new_char) => *new_char,
             None => char,
         })
         .collect::<String>()
 }
 
-pub fn try_decrypt_aes_cfb8_base64r(
+// AES/CFB8+Base64R (Default algorithm)
+fn try_decrypt_aes_cfb8_base64r(
     input: &str,
-    passphrase: &[u8],
-) -> Result<(String, Option<NCReply>)> {
+    passphrase: &str,
+) -> Result<(String, Option<NCREncryption>)> {
     let ciphertext = try_decode_base64r(input)?;
-    let decrypted = decrypt_with_passphrase(&ciphertext, passphrase);
+    let decrypted = decrypt_with_passphrase(&ciphertext, passphrase.as_ref());
     let decoded = decode_and_verify(&decrypted).map_err(anyhow::Error::msg)?;
 
     Ok((
         decoded.replacen("#%", "", 1),
-        Some(NCReply {
+        Some(NCREncryption {
             encrypt_fn: encrypt_aes_cfb8_base64r,
-            passphrase: passphrase.to_vec(),
+            passphrase: passphrase.into(),
         }),
     ))
 }
 
-pub fn encrypt_aes_cfb8_base64r(input: &str, passphrase: &[u8]) -> String {
+fn encrypt_aes_cfb8_base64r(input: &str, passphrase: &str) -> String {
     let plaintext = "#%".to_owned() + input;
-    let encrypted = encrypt_with_passphrase(plaintext.as_bytes(), passphrase);
+    let encrypted = encrypt_with_passphrase(plaintext.as_bytes(), passphrase.as_ref());
     encode_base64r(encrypted)
 }

@@ -8,7 +8,7 @@ use azalea_protocol::packets::game::{
     serverbound_use_item_on_packet::{BlockHitResult, ServerboundUseItemOnPacket},
 };
 
-use crate::{ncr::NCReply, Message, State};
+use crate::{ncr::NCREncryption, Message, State};
 
 #[derive(Clone)]
 pub struct Command;
@@ -21,7 +21,7 @@ impl Message for Command {
         chat: ChatPacket,
         state: State,
         _args: VecDeque<&str>,
-        ncr: Option<NCReply>,
+        ncr: Option<NCREncryption>,
     ) -> Result<()> {
         let Some(mut username) = chat.username() else {
             return Ok(());

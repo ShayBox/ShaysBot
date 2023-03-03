@@ -10,7 +10,7 @@ use serenity::prelude::TypeMapKey;
 use crate::{
     command::{lib::Message, prelude::*},
     config::Config,
-    ncr::NCReply,
+    ncr::NCREncryption,
 };
 
 // https://stackoverflow.com/a/72239266
@@ -25,7 +25,7 @@ pub struct State {
     pub commands: HashMap<Vec<&'static str>, Box<dyn Message + Send + Sync>>,
     pub config: Arc<Mutex<Config>>,
     pub dc_queue: Arc<SegQueue<ChatPacket>>,
-    pub mc_queue: Arc<Mutex<Vec<(String, Option<NCReply>)>>>,
+    pub mc_queue: Arc<Mutex<Vec<(String, Option<NCREncryption>)>>>,
     pub spam_tick: Arc<AtomicUsize>,
 }
 
