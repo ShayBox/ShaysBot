@@ -7,10 +7,11 @@ use azalea::{prelude::*, JoinError, StartError};
 use regex::Regex;
 use serenity::prelude::GatewayIntents;
 
-use crate::{command::prelude::*, discord::Handler, event::handle, state::State};
+use crate::{commands::prelude::*, discord::Handler, event::handle, state::State};
+
+mod commands;
 
 mod chat;
-mod command;
 mod config;
 mod discord;
 mod event;

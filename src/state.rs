@@ -8,7 +8,7 @@ use crossbeam::queue::SegQueue;
 use serenity::prelude::TypeMapKey;
 
 use crate::{
-    command::{lib::Message, prelude::*},
+    commands::{lib::Message, prelude::*},
     config::Config,
     ncr::NCREncryption,
 };
