@@ -19,7 +19,7 @@ base64 = "0.21.0"
 crossbeam = "0.8.2"
 dotenvy_macro = "0.15.1"
 dyn-clonable = "0.9.0"
-ncr-crypto = { git = "https://github.com/Shays-Forks/ncr-crypto.git", version = "0.2.0" }
+ncr-crypto = "0.2.0"
 rand = "0.8.5"
 regex = "1.7.1"
 reqwest = "0.11.14"
