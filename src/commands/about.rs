@@ -19,8 +19,16 @@ impl Message for Command {
         _args: VecDeque<&str>,
         ncr: Option<NCREncryption>,
     ) -> Result<()> {
-        let message = "I'm ShayBox's bot written in Rust using Azalea";
-        state.mc_queue.lock().unwrap().push((message.into(), ncr));
+        let messages = [
+            "I'm ShayBox's bot written in Rust using Azalea",
+            "<https://github.com/ShayBox/ShaysBot>",
+        ];
+
+        state
+            .mc_queue
+            .lock()
+            .unwrap()
+            .push((messages.join(", "), ncr));
 
         Ok(())
     }
