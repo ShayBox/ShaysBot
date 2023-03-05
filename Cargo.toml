@@ -12,7 +12,7 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1.0.69"
-async-trait = "0.1.61"
+async-trait = "0.1.65"
 azalea = { git = "https://github.com/mat-1/azalea.git", branch = "1.19.2" }
 azalea-protocol = { git = "https://github.com/mat-1/azalea.git", branch = "1.19.2" }
 base64 = "0.21.0"
@@ -36,7 +36,7 @@ serenity = { version = "0.11.5", default-features = false, features = [
     "rustls_backend",
     "utils",
 ] }
-tokio = "1.25.0"
+tokio = "1.26.0"
 tracing-subscriber = "0.3.16"
 
 [target.'cfg(unix)'.dependencies]

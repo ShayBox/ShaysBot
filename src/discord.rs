@@ -73,6 +73,7 @@ pub async fn start_discord_bridge(state: State) -> Result<()> {
         "You reach the end of Demo!",
         "[iambot]",
         "[iamnotbot]",
+        "death.fell.accident.water",
     ];
 
     let url = state.config.lock().unwrap().discord_webhook.clone();

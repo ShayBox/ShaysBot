@@ -56,22 +56,21 @@ async fn main() -> Result<()> {
             .start(account, config.address.as_str())
             .await
         {
-            eprintln!("{error}");
+            eprintln!("{error:?}");
+
+            // Parse N00bBot Proxy abuse timeout
+            let mut duration = Duration::from_secs(15);
             if let StartError::Join(JoinError::Disconnect { reason }) = error {
-                println!("{reason}");
-                let re = Regex::new(r"(\d+\.\d+)s").unwrap();
-                if let Some(captures) = re.captures(&reason.to_ansi()) {
+                let regex = Regex::new(r"(\d+\.\d+)s").unwrap();
+                if let Some(captures) = regex.captures(&reason.to_ansi()) {
                     if let Ok(seconds) = captures[1].parse::<f64>() {
-                        let duration = Duration::from_secs_f64(seconds);
-                        println!("Re-connecting in {duration:?} seconds");
-                        sleep(duration);
-                        continue;
+                        duration = Duration::from_secs_f64(seconds);
                     }
                 }
             }
 
-            println!("Re-connecting in 15 seconds");
-            sleep(Duration::from_secs(15));
+            println!("Re-connecting in {duration:?} seconds");
+            sleep(duration);
         };
     }
 }
