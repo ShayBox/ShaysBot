@@ -3,7 +3,7 @@ use std::{
     sync::{atomic::AtomicUsize, Arc, Mutex},
 };
 
-use azalea::{chat::ChatPacket, prelude::Component};
+use azalea::{chat::ChatPacket, prelude::*};
 use crossbeam::queue::SegQueue;
 use serenity::prelude::TypeMapKey;
 

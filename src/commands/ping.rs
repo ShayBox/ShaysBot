@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use azalea::{chat::ChatPacket, Client};
+use azalea::{chat::ChatPacket, Client, TabList};
 
 use crate::{ncr::NCREncryption, Message, State};
 
@@ -13,7 +13,7 @@ pub struct Command;
 impl Message for Command {
     async fn message(
         &self,
-        mut client: Client,
+        client: Client,
         chat: ChatPacket,
         state: State,
         mut args: VecDeque<&str>,
@@ -30,9 +30,9 @@ impl Message for Command {
         }
 
         let arg = args.pop_front().unwrap_or(&username);
-        let Some((_name, info)) = client
-            .players()
-            .into_values()
+        let tab_list = client.component::<TabList>();
+        let Some((_name, info)) = tab_list
+            .values()
             .map(|info| (info.profile.name.to_owned(), info))
             .find(|(name, _info)| name == arg)
         else {
@@ -41,7 +41,7 @@ impl Message for Command {
             return Ok(());
         };
 
-        let latency = info.latency;
+        let latency = info.latency.to_owned();
         let quote = match latency {
             i32::MIN..1 => "You just joined.",
             1..10 => "You're just showing off.",
@@ -53,7 +53,7 @@ impl Message for Command {
             100..200 => "That's pretty bad.",
             200..300 => "Are you okay?",
             300..500 => "Can you even read this?",
-            500..i32::MAX => "MOM TURN THE ROUTER BACK ON",
+            500..std::i32::MAX => "MOM TURN THE ROUTER BACK ON",
             _ => "ERROR 404 QUOTE NOT FOUND",
         };
 

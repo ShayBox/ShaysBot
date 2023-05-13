@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use azalea::{chat::ChatPacket, ping::ping_server, Client};
+use azalea::{chat::ChatPacket, ping::ping_server, Client, TabList};
 use dotenvy_macro::dotenv;
 
 use crate::{ncr::NCREncryption, Message, State};
@@ -14,7 +14,7 @@ pub struct Command;
 impl Message for Command {
     async fn message(
         &self,
-        mut client: Client,
+        client: Client,
         _chat: ChatPacket,
         state: State,
         _args: VecDeque<&str>,
@@ -26,8 +26,8 @@ impl Message for Command {
 
         let players = {
             let config = state.config.lock().unwrap();
-            client
-                .players()
+            let tab_list = client.component::<TabList>();
+            tab_list
                 .values()
                 .map(|info| info.profile.name.to_owned())
                 .filter(|name| !config.bots.contains(name))
