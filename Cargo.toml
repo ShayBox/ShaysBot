@@ -11,21 +11,21 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.71"
-async-trait = "0.1.68"
+anyhow = "1.0"
+async-trait = "0.1"
 azalea = { git = "https://github.com/mat-1/azalea.git", branch = "1.19.2" }
 azalea-protocol = { git = "https://github.com/mat-1/azalea.git", branch = "1.19.2" }
-base64 = "0.21.0"
-crossbeam = "0.8.2"
-dotenvy_macro = "0.15.7"
-dyn-clonable = "0.9.0"
-ncr-crypto = "0.2.0"
-rand = "0.8.5"
-regex = "1.7.2"
-reqwest = "0.11.17"
-serde = "1.0.163"
-serde_json = "1.0.96"
-serenity = { version = "0.11.5", default-features = false, features = [
+base64 = "0.21"
+crossbeam = "0.8"
+dotenvy_macro = "0.15"
+dyn-clonable = "0.9"
+ncr-crypto = "0.2"
+rand = "0.8"
+regex = "1.8"
+reqwest = "0.11"
+serde = "1.0"
+serde_json = "1.0"
+serenity = { version = "0.11", default-features = false, features = [
     "builder",
     "cache",
     "chrono",
@@ -36,11 +36,11 @@ serenity = { version = "0.11.5", default-features = false, features = [
     "rustls_backend",
     "utils",
 ] }
-tokio = "1.28.1"
-tracing-subscriber = "0.3.17"
+tokio = "1.28"
+tracing-subscriber = "0.3"
 
 [target.'cfg(unix)'.dependencies]
-openssl = { version = "0.10.52", features = ["vendored"] }
+openssl = { version = "0.10", features = ["vendored"] }
 
 [profile.dev]
 opt-level = 1

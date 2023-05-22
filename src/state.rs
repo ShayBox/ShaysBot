@@ -21,6 +21,7 @@ macro_rules! cmd {
 }
 
 #[derive(Clone, Component)]
+#[allow(clippy::type_complexity)]
 pub struct State {
     pub commands: HashMap<Vec<&'static str>, Box<dyn Message + Send + Sync>>,
     pub config: Arc<Mutex<Config>>,
