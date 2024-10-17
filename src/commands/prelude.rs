@@ -1,15 +1,1 @@
-pub use super::{
-    about::Command as About,
-    bot::Command as Bot,
-    discord::Command as Discord,
-    echo::Command as Echo,
-    hello::Command as Hello,
-    help::Command as Help,
-    lib::Message,
-    ncr::Command as NCR,
-    online::Command as Online,
-    pearl::Command as Pearl,
-    ping::Command as Ping,
-    seed::Command as Seed,
-    sleep::Command as Sleep,
-};
+pub use super::pearl::Pearl;

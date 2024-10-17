@@ -1,14 +1,12 @@
+<div align="center">
+  <a href="https://discord.shaybox.com">
+    <img alt="Discord" src="https://img.shields.io/discord/824865729445888041?color=404eed&label=Discord&logo=Discord&logoColor=FFFFFF">
+  </a>
+  <a href="https://github.com/shaybox/shaysbot/releases/latest">
+    <img alt="Downloads" src="https://img.shields.io/github/downloads/shaybox/shaysbot/total?color=3fb950&label=Downloads&logo=github&logoColor=FFFFFF">
+  </a>
+</div>
+
 # ShaysBot
 
-My personal Minecraft bot for the LiveOverflow server using the [Azalea] library  
-
-### TODO:
-- Move NCR into a plugin
-- Move Bridge into a plugin
-- Move AntiSpam into a plugin
-- Add TPS tracker and command
-- Add GCM, ECB, and Caesar to NCR
-
-Feel free to contribute, I appreciate any help.
-
-[Azalea]: https://github.com/mat-1/azalea
+Minecraft Pearl Stasis Bot
