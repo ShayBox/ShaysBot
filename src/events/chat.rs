@@ -41,13 +41,15 @@ impl EventHandler for Chat {
             return Ok(());
         };
 
-        let command = match command.execute(args, &client, state, &sender).await? {
-            CommandResponse::Whisper(message) => format!("w {sender} {message}"),
-            CommandResponse::Command(command) => command,
+        let command = match command.execute(args, &client, &state, &sender).await? {
+            CommandResponse::Whisper(message) => format!("w {sender} {}", message),
+            CommandResponse::Command(command) => command.to_string(),
             CommandResponse::None => return Ok(()),
         };
 
-        client.send_command_packet(&command);
+        if !state.settings.read().await.quiet {
+            client.send_command_packet(&command);
+        }
 
         Ok(())
     }

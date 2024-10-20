@@ -10,3 +10,9 @@
 # ShaysBot
 
 Minecraft Pearl Stasis Bot
+
+## TODO
+
+- AutoEatPlugin
+- AutoReconnectPlugin
+- AutoTotemPlugin

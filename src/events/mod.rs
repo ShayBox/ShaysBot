@@ -2,7 +2,7 @@ pub mod prelude;
 
 mod chat;
 mod disconnect;
-mod login;
+mod init;
 mod packet;
 
 use anyhow::Result;

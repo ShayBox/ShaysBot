@@ -14,8 +14,10 @@ impl EventHandler for Disconnect {
     /// # Errors
     /// Will not return `Err`.
     async fn execute(self, _client: Client, _state: State) -> Result<()> {
-        println!("{:?}", self.0);
+        if let Some(reason) = self.0 {
+            println!("{}", reason.to_ansi());
+        }
 
-        Ok(())
+        std::process::exit(0);
     }
 }

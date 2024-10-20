@@ -8,5 +8,5 @@ async fn main() -> Result<()> {
     let trapdoors = Trapdoors::load().unwrap_or_default();
     settings.save()?; /* Create & Save the settings on first run */
 
-    State::new(settings, trapdoors).start_minecraft().await
+    State::new(settings, trapdoors).start().await
 }

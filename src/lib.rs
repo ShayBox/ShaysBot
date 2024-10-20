@@ -12,24 +12,19 @@ extern crate tracing;
 mod commands;
 mod events;
 mod packets;
+mod plugins;
 mod settings;
 mod trapdoor;
 
 use std::sync::{Arc, LazyLock};
 
 use azalea::prelude::*;
-use tokio::sync::{
-    mpsc::{Receiver, Sender},
-    Mutex,
-    RwLock,
-};
+use tokio::sync::RwLock;
 
 use crate::{
     commands::{prelude::*, CommandHandler},
-    events::{
-        prelude::{Disconnect, *},
-        EventHandler,
-    },
+    events::{prelude::*, EventHandler},
+    plugins::prelude::*,
 };
 pub use crate::{
     settings::Settings,
@@ -48,19 +43,13 @@ static COMMANDS: LazyLock<[CMD; 1]> = LazyLock::new(|| [cmd!(Pearl)]);
 
 #[derive(Clone, Component, Resource)]
 pub struct State {
-    pearl_tx:  Sender<String>,
-    pearl_rx:  Arc<Mutex<Receiver<String>>>,
     settings:  Arc<RwLock<Settings>>,
     trapdoors: Arc<RwLock<Trapdoors>>,
 }
 
 impl Default for State {
     fn default() -> Self {
-        let (tx, rx) = tokio::sync::mpsc::channel(1);
-
         Self {
-            pearl_tx:  tx,
-            pearl_rx:  Arc::new(Mutex::new(rx)),
             settings:  Arc::new(RwLock::default()),
             trapdoors: Arc::new(RwLock::default()),
         }
@@ -70,11 +59,7 @@ impl Default for State {
 impl State {
     #[must_use]
     pub fn new(settings: Settings, trapdoors: Trapdoors) -> Self {
-        let (tx, rx) = tokio::sync::mpsc::channel(1);
-
         Self {
-            pearl_tx:  tx,
-            pearl_rx:  Arc::new(Mutex::new(rx)),
             settings:  Arc::new(RwLock::new(settings)),
             trapdoors: Arc::new(RwLock::new(trapdoors)),
         }
@@ -85,7 +70,7 @@ impl State {
     /// # Errors
     /// Will return `Err` if `ClientBuilder::start` fails.
     #[allow(clippy::future_not_send)]
-    pub async fn start_minecraft(self) -> anyhow::Result<()> {
+    pub async fn start(self) -> anyhow::Result<()> {
         let config = self.settings.read().await.clone();
         let account = if config.online {
             Account::microsoft(&config.username).await?
@@ -94,6 +79,8 @@ impl State {
         };
 
         let client = ClientBuilder::new()
+            .add_plugins(AntiAfkPlugin)
+            .add_plugins(AutoLookPlugin)
             .set_handler(Self::handler)
             .set_state(self);
 
@@ -111,8 +98,8 @@ impl State {
         match event {
             Event::Chat(packet) => Chat(packet).execute(client, state).await,
             Event::Disconnect(reason) => Disconnect(reason).execute(client, state).await,
+            Event::Init => Init.execute(client, state).await,
             Event::Packet(packet) => Packet(packet).execute(client, state).await,
-            Event::Login => Login.execute(client, state).await,
 
             _ => return Ok(()),
         }

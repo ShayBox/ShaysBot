@@ -24,7 +24,7 @@ pub trait CommandHandler: Clone {
         &self,
         args: VecDeque<&str>,
         client: &Client,
-        state: State,
+        state: &State,
         username: &str,
     ) -> Result<CommandResponse>;
 }
