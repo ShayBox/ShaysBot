@@ -16,30 +16,17 @@ mod plugins;
 mod settings;
 mod trapdoor;
 
-use std::sync::{Arc, LazyLock};
+use std::sync::Arc;
 
+use anyhow::Result;
 use azalea::prelude::*;
 use tokio::sync::RwLock;
 
-use crate::{
-    commands::{prelude::*, CommandHandler},
-    events::{prelude::*, EventHandler},
-    plugins::prelude::*,
-};
 pub use crate::{
+    plugins::ShaysPluginGroup,
     settings::Settings,
     trapdoor::{Trapdoor, Trapdoors},
 };
-
-type CMD = Box<dyn CommandHandler + Send + Sync>;
-
-macro_rules! cmd {
-    ($x:expr) => {
-        Box::new($x) as CMD
-    };
-}
-
-static COMMANDS: LazyLock<[CMD; 1]> = LazyLock::new(|| [cmd!(Pearl)]);
 
 #[derive(Clone, Component, Resource)]
 pub struct State {
@@ -66,45 +53,23 @@ impl State {
     }
 
     /// # Create and start the Minecraft bot client
-    ///             
+    ///
     /// # Errors
     /// Will return `Err` if `ClientBuilder::start` fails.
     #[allow(clippy::future_not_send)]
-    pub async fn start(self) -> anyhow::Result<()> {
-        let config = self.settings.read().await.clone();
-        let account = if config.online {
-            Account::microsoft(&config.username).await?
+    pub async fn start(self) -> Result<()> {
+        let settings = self.settings.read().await.clone();
+        let account = if settings.online {
+            Account::microsoft(&settings.username).await?
         } else {
-            Account::offline(&config.username)
+            Account::offline(&settings.username)
         };
 
         let client = ClientBuilder::new()
-            .add_plugins(AntiAfkPlugin)
-            .add_plugins(AutoLookPlugin)
+            .add_plugins(ShaysPluginGroup)
             .set_handler(Self::handler)
             .set_state(self);
 
-        client.start(account, config.server_address).await?
-    }
-
-    /// # Event Handler
-    ///
-    /// # Errors
-    /// Will not return `Err` because it is silently ignored by Azalea.
-    ///
-    /// # Panics
-    /// Will panic if an event handler fails, to prevent silent errors.
-    async fn handler(client: Client, event: Event, state: Self) -> anyhow::Result<()> {
-        match event {
-            Event::Chat(packet) => Chat(packet).execute(client, state).await,
-            Event::Disconnect(reason) => Disconnect(reason).execute(client, state).await,
-            Event::Init => Init.execute(client, state).await,
-            Event::Packet(packet) => Packet(packet).execute(client, state).await,
-
-            _ => return Ok(()),
-        }
-        .expect("Failed to handle event");
-
-        Ok(())
+        client.start(account, settings.server_address).await?
     }
 }

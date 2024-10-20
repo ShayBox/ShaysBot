@@ -4,7 +4,10 @@ use anyhow::Result;
 use azalea::{chat::ChatPacket, Client};
 
 use super::EventHandler;
-use crate::{commands::CommandResponse, State, COMMANDS};
+use crate::{
+    commands::{CommandResponse, COMMANDS},
+    State,
+};
 
 #[derive(Clone)]
 pub struct Chat(pub ChatPacket);

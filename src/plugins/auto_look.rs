@@ -3,6 +3,8 @@ use azalea::{
     ecs::prelude::*,
     entity::{metadata::Player, EyeHeight, LocalEntity, Position},
     nearest_entity::EntityFinder,
+    pathfinder::tick_execute_path,
+    physics::travel,
     prelude::*,
     LookAtEvent,
 };
@@ -11,7 +13,10 @@ pub struct AutoLookPlugin;
 
 impl Plugin for AutoLookPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(GameTick, handle_auto_look);
+        app.add_systems(
+            GameTick,
+            handle_auto_look.after(travel).after(tick_execute_path),
+        );
     }
 }
 

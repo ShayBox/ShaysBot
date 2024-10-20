@@ -2,12 +2,22 @@ pub mod prelude;
 
 mod pearl;
 
-use std::{collections::VecDeque, time::Duration};
+use std::{collections::VecDeque, sync::LazyLock, time::Duration};
 
 use anyhow::{bail, Result};
 use azalea::{blocks::Block, pathfinder::Pathfinder, BlockPos, Client, Vec3};
 
-use crate::State;
+use crate::{commands::prelude::*, State};
+
+macro_rules! cmd {
+    ($x:expr) => {
+        Box::new($x) as CMD
+    };
+}
+
+type CMD = Box<dyn CommandHandler + Send + Sync>;
+
+pub static COMMANDS: LazyLock<[CMD; 1]> = LazyLock::new(|| [cmd!(Pearl)]);
 
 pub enum CommandResponse {
     None,

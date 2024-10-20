@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2021"
 description = "Minecraft Pearl Stasis Bot"

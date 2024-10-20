@@ -14,7 +14,7 @@ impl EventHandler for Init {
     /// # Errors
     /// Will not return `Err`.
     async fn execute(self, client: Client, _state: State) -> Result<()> {
-        client.toggle_anti_afk();
+        client.init_anti_afk();
 
         Ok(())
     }
