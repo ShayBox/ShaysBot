@@ -15,7 +15,7 @@ impl Plugin for AutoLookPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             GameTick,
-            handle_auto_look.after(travel).after(tick_execute_path),
+            handle_auto_look.before(travel).before(tick_execute_path),
         );
     }
 }
