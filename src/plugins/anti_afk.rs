@@ -27,10 +27,12 @@ impl Iterator for Ticks {
     type Item = u8;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0 += 1;
-        self.0 %= u8::MAX;
+        let ticks = self.0;
 
-        Some(self.0)
+        self.0 %= u8::MAX;
+        self.0 += 1;
+
+        Some(ticks)
     }
 }
 
@@ -46,12 +48,10 @@ fn handle_anti_afk(
 ) {
     for (mut afk, entity) in &mut query.iter_mut() {
         let Some(ticks) = afk.ticks.next() else {
-            println!("1");
             return;
         };
 
         if ticks == u8::MAX {
-            println!("Reset");
             swing_arm_events.send(SwingArmEvent { entity });
         }
     }
