@@ -1,10 +1,11 @@
 [package]
 name = "shaysbot"
-version = "0.1.4"
+version = "0.2.0"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2021"
 description = "Minecraft Pearl Stasis Bot"
 readme = "README.md"
+homepage = "https://git.shaybox.com/shaysbot/releases/latest"
 repository = "https://github.com/ShayBox/ShaysBot"
 license = "MIT"
 
@@ -13,13 +14,16 @@ license = "MIT"
 [dependencies]
 anyhow = "1"
 async-trait = "0.1"
-azalea = { git = "https://github.com/Shays-Forks/azalea.git", branch = "serde" }
+azalea = { git = "https://github.com/Shays-Forks/azalea.git" }
 derive-config = { version = "2", features = ["toml", "yaml"] }
+derive_more = { version = "1", features = ["full"] }
 dyn-clonable = "0.9"
 lazy-regex = "3"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 serde = "1"
 serde_with = "3"
 serenity = "0.12"
+terminal-link = "0.1"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 uuid = "1"

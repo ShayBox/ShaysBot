@@ -3,8 +3,7 @@ use azalea::{
     ecs::prelude::*,
     entity::{metadata::Player, EyeHeight, LocalEntity, Position},
     nearest_entity::EntityFinder,
-    pathfinder::tick_execute_path,
-    physics::travel,
+    physics::PhysicsSet,
     prelude::*,
     LookAtEvent,
 };
@@ -13,21 +12,18 @@ pub struct AutoLookPlugin;
 
 impl Plugin for AutoLookPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            GameTick,
-            handle_auto_look.before(travel).before(tick_execute_path),
-        );
+        app.add_systems(GameTick, handle_auto_look.before(PhysicsSet));
     }
 }
 
 #[allow(clippy::needless_pass_by_value)]
 fn handle_auto_look(
-    query: Query<Entity, (With<LocalEntity>, With<Player>)>,
-    entities: EntityFinder,
+    mut query: Query<Entity, (With<LocalEntity>, With<Player>)>,
+    entities: EntityFinder<With<Player>>,
     targets: Query<(&Position, Option<&EyeHeight>)>,
     mut look_at_events: EventWriter<LookAtEvent>,
 ) {
-    for entity in query.iter() {
+    for entity in &mut query {
         let Some(target) = entities.nearest_to_entity(entity, f64::MAX) else {
             continue;
         };

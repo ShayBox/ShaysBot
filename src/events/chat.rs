@@ -27,6 +27,10 @@ impl EventHandler for Chat {
             regex_captures!("^([a-zA-Z_0-9]{1,16}) (?:whispers: )?(.+)$", &content)
         {
             (sender.to_string(), content.to_string())
+        } else if let Some((_whole, sender, content)) = /* VengeanceCraft Chat Format */
+            regex_captures!(r"^\[.+\] ([a-zA-Z_0-9]{1,16}) > (.+)$", &content)
+        {
+            (sender.to_string(), content.to_string())
         } else {
             return Ok(());
         };
@@ -45,7 +49,7 @@ impl EventHandler for Chat {
         };
 
         let command = match command.execute(args, &client, &state, &sender).await? {
-            CommandResponse::Whisper(message) => format!("w {sender} {}", message),
+            CommandResponse::Whisper(message) => format!("w {sender} {message}"),
             CommandResponse::Command(command) => command.to_string(),
             CommandResponse::None => return Ok(()),
         };

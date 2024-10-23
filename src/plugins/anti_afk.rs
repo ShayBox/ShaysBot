@@ -3,7 +3,7 @@ use azalea::{
     ecs::prelude::*,
     entity::{metadata::Player, LocalEntity},
     interact::{handle_swing_arm_event, SwingArmEvent},
-    mining::continue_mining_block,
+    physics::PhysicsSet,
     prelude::*,
 };
 
@@ -15,7 +15,7 @@ impl Plugin for AntiAfkPlugin {
             GameTick,
             handle_anti_afk
                 .before(handle_swing_arm_event)
-                .after(continue_mining_block),
+                .after(PhysicsSet),
         );
     }
 }
@@ -37,37 +37,34 @@ impl Iterator for Ticks {
 }
 
 #[derive(Component, Default)]
-struct Afk {
+struct AntiAfk {
     ticks: Ticks,
 }
 
-#[allow(clippy::type_complexity)]
+type InitQueryData = Entity;
+type InitQueryFilter = (With<Player>, With<LocalEntity>, Without<AntiAfk>);
+
+type RunQueryData<'a> = (Entity, &'a mut AntiAfk);
+type RunQueryFilter = (With<Player>, With<LocalEntity>, With<AntiAfk>);
+
 fn handle_anti_afk(
-    mut query: Query<(&mut Afk, Entity), (With<Player>, With<LocalEntity>)>,
+    mut init_query: Query<InitQueryData, InitQueryFilter>,
+    mut commands: Commands,
+
+    mut run_query: Query<RunQueryData, RunQueryFilter>,
     mut swing_arm_events: EventWriter<SwingArmEvent>,
 ) {
-    for (mut afk, entity) in &mut query.iter_mut() {
+    for entity in &mut init_query {
+        commands.entity(entity).insert(AntiAfk::default());
+    }
+
+    for (entity, mut afk) in &mut run_query {
         let Some(ticks) = afk.ticks.next() else {
             return;
         };
 
         if ticks == u8::MAX {
             swing_arm_events.send(SwingArmEvent { entity });
-        }
-    }
-}
-
-pub trait AntiAfkClientExt {
-    fn init_anti_afk(&self);
-}
-
-impl AntiAfkClientExt for Client {
-    fn init_anti_afk(&self) {
-        let mut ecs = self.ecs.lock();
-        let mut entity = ecs.entity_mut(self.entity);
-
-        if entity.get::<Afk>().is_none() {
-            entity.insert(Afk::default());
         }
     }
 }

@@ -2,7 +2,6 @@ pub mod prelude;
 
 mod chat;
 mod disconnect;
-mod init;
 mod packet;
 
 use anyhow::Result;
@@ -28,7 +27,6 @@ impl State {
         match event {
             Event::Chat(packet) => Chat(packet).execute(client, state).await,
             Event::Disconnect(reason) => Disconnect(reason).execute(client, state).await,
-            Event::Init => Init.execute(client, state).await,
             Event::Packet(packet) => Packet(packet).execute(client, state).await,
 
             _ => return Ok(()),

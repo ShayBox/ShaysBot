@@ -74,8 +74,8 @@ impl CommandHandler for Pearl {
             client.send_command_packet(&command);
         }
 
-        state.wait_for_pathfinder(&client).await?;
-        client.goto(ReachBlockPosGoal {
+        state.wait_for_pathfinder(client).await?;
+        client.goto_without_mining(ReachBlockPosGoal {
             chunk_storage: client.world().read().chunks.clone(),
             pos:           trapdoor.block_pos,
         });

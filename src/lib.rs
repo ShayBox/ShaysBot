@@ -28,6 +28,24 @@ pub use crate::{
     trapdoor::{Trapdoor, Trapdoors},
 };
 
+pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const CARGO_PKG_HOMEPAGE: &str = env!("CARGO_PKG_HOMEPAGE");
+
+/// # Check for updates using GitHub's latest release link redirect
+///
+/// # Errors
+/// Will return `Err` if `reqwest::get` fails.
+pub async fn check_for_updates() -> reqwest::Result<bool> {
+    let response = reqwest::get(CARGO_PKG_HOMEPAGE).await?;
+    if let Some(segments) = response.url().path_segments() {
+        if let Some(remote_version) = segments.last() {
+            return Ok(remote_version > CARGO_PKG_VERSION);
+        };
+    };
+
+    Ok(false)
+}
+
 #[derive(Clone, Component, Resource)]
 pub struct State {
     settings:  Arc<RwLock<Settings>>,
