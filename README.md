@@ -9,10 +9,13 @@
 
 # ShaysBot
 
-Minecraft Pearl Stasis Bot
+My personal Minecraft bot using Azalea
 
-## TODO
+## Plugins
 
-- AutoEatPlugin
-- AutoReconnectPlugin
-- AutoTotemPlugin
+- [AntiAfkPlugin](src/plugins/anti_afk.rs)
+- [AutoEatPlugin](src/plugins/auto_eat.rs)
+- [AutoLookPlugin](src/plugins/auto_look.rs)
+- [AutoPearlPlugin](src/plugins/auto_pearl.rs)
+- [AutoTotemPlugin](src/plugins/auto_totem.rs)
+- [SettingsPlugin](src/plugins/settings.rs)

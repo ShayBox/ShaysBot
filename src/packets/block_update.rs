@@ -21,7 +21,7 @@ impl PacketHandler for BlockUpdate<'_> {
             }
         };
 
-        let mut trapdoors = state.trapdoors.write().await;
+        let mut trapdoors = state.trapdoors.write();
 
         trapdoors
             .0

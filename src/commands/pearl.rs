@@ -1,22 +1,10 @@
 use std::collections::VecDeque;
 
 use anyhow::Result;
-use azalea::{
-    core::direction::Direction,
-    packet_handling::game::SendPacketEvent,
-    pathfinder::goals::ReachBlockPosGoal,
-    prelude::*,
-    protocol::packets::game::{
-        serverbound_interact_packet::InteractionHand,
-        serverbound_use_item_on_packet::{BlockHit, ServerboundUseItemOnPacket},
-        ServerboundGamePacket,
-    },
-    BlockPos,
-    Vec3,
-};
+use azalea::{prelude::*, BlockPos};
 
 use super::{CommandHandler, CommandResponse};
-use crate::State;
+use crate::{plugins::prelude::AutoPearlClientExt, State};
 
 #[derive(Clone)]
 pub struct Pearl;
@@ -44,7 +32,7 @@ impl CommandHandler for Pearl {
             return Ok(CommandResponse::Whisper(message));
         };
 
-        let trapdoors = state.trapdoors.read().await.0.clone();
+        let trapdoors = state.trapdoors.read().0.clone();
         let Some(trapdoor) = trapdoors
             .clone()
             .into_values()
@@ -69,35 +57,13 @@ impl CommandHandler for Pearl {
             return Ok(CommandResponse::Whisper(message));
         };
 
-        if !state.settings.read().await.quiet {
+        client.pearl(trapdoor.block_pos);
+        if !state.settings.read().quiet {
             let command = format!("w {username} [202] I'm on my way!");
             client.send_command_packet(&command);
         }
 
         state.wait_for_pathfinder(client).await?;
-        client.goto_without_mining(ReachBlockPosGoal {
-            chunk_storage: client.world().read().chunks.clone(),
-            pos:           trapdoor.block_pos,
-        });
-
-        state.wait_for_pathfinder(&client).await?;
-        client.ecs.lock().send_event(SendPacketEvent {
-            entity: client.entity,
-            packet: ServerboundGamePacket::UseItemOn(ServerboundUseItemOnPacket {
-                hand:      InteractionHand::MainHand,
-                sequence:  0,
-                block_hit: BlockHit {
-                    block_pos: trapdoor.block_pos,
-                    direction: Direction::Down,
-                    inside:    true,
-                    location:  Vec3 {
-                        x: f64::from(trapdoor.block_pos.x) + 0.5,
-                        y: f64::from(trapdoor.block_pos.y) + 0.5,
-                        z: f64::from(trapdoor.block_pos.z) + 0.5,
-                    },
-                },
-            }),
-        });
 
         let message = String::from("[200] OK");
         Ok(CommandResponse::Whisper(message))

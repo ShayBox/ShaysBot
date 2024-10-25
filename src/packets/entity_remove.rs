@@ -20,9 +20,9 @@ impl PacketHandler for EntityRemove<'_> {
     /// Will return `Err` if `DeriveYamlConfig::save` fails.
     async fn execute(self, client: Client, state: State) -> Result<()> {
         let client_pos = client.position();
-        let view_distance = state.settings.read().await.pearl_view_distance;
+        let view_distance = state.settings.read().pearl_view_distance;
         let view_distance_sqr = f64::from(view_distance.pow(2));
-        let mut trapdoors = state.trapdoors.write().await;
+        let mut trapdoors = state.trapdoors.write();
 
         trapdoors.0.retain(|_, trapdoor| {
             let trapdoor_pos = trapdoor.block_pos.to_vec3_floored();

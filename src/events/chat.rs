@@ -23,13 +23,10 @@ impl EventHandler for Chat {
         let (sender, content) = self.0.split_sender_and_content();
         let (sender, content) = if let Some(sender) = sender {
             (sender, content)
-        } else if let Some((_whole, sender, content)) = /* 2B2T Whisper Format */
-            regex_captures!("^([a-zA-Z_0-9]{1,16}) (?:whispers: )?(.+)$", &content)
-        {
-            (sender.to_string(), content.to_string())
-        } else if let Some((_whole, sender, content)) = /* VengeanceCraft Chat Format */
-            regex_captures!(r"^\[.+\] ([a-zA-Z_0-9]{1,16}) > (.+)$", &content)
-        {
+        } else if let Some((_whole, sender, content)) = regex_captures!(
+            r"^(?:\[.+\])? ([a-zA-Z_0-9]{1,16}) (?:> )?(?:whispers: )?(.+)$",
+            &content
+        ) {
             (sender.to_string(), content.to_string())
         } else {
             return Ok(());
@@ -54,7 +51,7 @@ impl EventHandler for Chat {
             CommandResponse::None => return Ok(()),
         };
 
-        if !state.settings.read().await.quiet {
+        if !state.settings.read().quiet {
             client.send_command_packet(&command);
         }
 

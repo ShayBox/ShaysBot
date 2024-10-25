@@ -7,7 +7,9 @@ pub mod prelude;
 mod anti_afk;
 mod auto_eat;
 mod auto_look;
+mod auto_pearl;
 mod auto_totem;
+mod settings;
 
 pub struct ShaysPluginGroup;
 
@@ -17,6 +19,7 @@ impl PluginGroup for ShaysPluginGroup {
             .add(AntiAfkPlugin)
             .add(AutoEatPlugin)
             .add(AutoLookPlugin)
+            .add(AutoPearlPlugin)
             .add(AutoTotemPlugin)
     }
 }

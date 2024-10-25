@@ -1,15 +1,14 @@
 use azalea::{
-    app::{App, Plugin},
+    app::{App, Plugin, Update},
     ecs::prelude::*,
     entity::{metadata::Player, LocalEntity},
     inventory::{
-        handle_container_click_event,
         operations::{ClickOperation, SwapClick},
         ContainerClickEvent,
         Inventory,
+        InventorySet,
         Menu,
     },
-    prelude::*,
     registry::Item,
 };
 
@@ -20,10 +19,10 @@ pub struct AutoTotemPlugin;
 impl Plugin for AutoTotemPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            GameTick,
+            Update,
             handle_auto_totem
-                .ambiguous_with(handle_auto_eat)
-                .before(handle_container_click_event),
+                .after(handle_auto_eat)
+                .before(InventorySet),
         );
     }
 }
@@ -34,7 +33,7 @@ type QueryFilter = (With<Player>, With<LocalEntity>);
 #[allow(clippy::needless_pass_by_value)]
 pub fn handle_auto_totem(
     mut query: Query<QueryData, QueryFilter>,
-    mut send_container_click_events: EventWriter<ContainerClickEvent>,
+    mut container_click_events: EventWriter<ContainerClickEvent>,
 ) {
     for (entity, inventory) in &mut query {
         let Menu::Player(player) = &inventory.inventory_menu else {
@@ -53,7 +52,7 @@ pub fn handle_auto_totem(
             continue;
         };
 
-        send_container_click_events.send(ContainerClickEvent {
+        container_click_events.send(ContainerClickEvent {
             entity,
             window_id: inventory.id,
             operation: ClickOperation::Swap(SwapClick {

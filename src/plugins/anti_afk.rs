@@ -14,14 +14,14 @@ impl Plugin for AntiAfkPlugin {
         app.add_systems(
             GameTick,
             handle_anti_afk
-                .before(handle_swing_arm_event)
-                .after(PhysicsSet),
+                .after(PhysicsSet)
+                .before(handle_swing_arm_event),
         );
     }
 }
 
 #[derive(Default)]
-struct Ticks(u8);
+pub struct Ticks(pub u8);
 
 impl Iterator for Ticks {
     type Item = u8;
@@ -37,8 +37,8 @@ impl Iterator for Ticks {
 }
 
 #[derive(Component, Default)]
-struct AntiAfk {
-    ticks: Ticks,
+pub struct AntiAfk {
+    pub ticks: Ticks,
 }
 
 type InitQueryData = Entity;
@@ -47,7 +47,7 @@ type InitQueryFilter = (With<Player>, With<LocalEntity>, Without<AntiAfk>);
 type RunQueryData<'a> = (Entity, &'a mut AntiAfk);
 type RunQueryFilter = (With<Player>, With<LocalEntity>, With<AntiAfk>);
 
-fn handle_anti_afk(
+pub fn handle_anti_afk(
     mut init_query: Query<InitQueryData, InitQueryFilter>,
     mut commands: Commands,
 

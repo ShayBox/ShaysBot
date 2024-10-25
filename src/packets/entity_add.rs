@@ -48,7 +48,7 @@ impl PacketHandler for EntityAdd<'_> {
             profile.uuid
         };
 
-        let mut trapdoors = state.trapdoors.write().await;
+        let mut trapdoors = state.trapdoors.write();
         let new_trapdoor = Trapdoor::new(block_pos, self.0.id, owner_uuid);
 
         if let Some(old_trapdoor) = trapdoors.0.get_mut(&self.0.uuid) {

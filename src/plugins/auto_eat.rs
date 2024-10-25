@@ -1,16 +1,16 @@
 use azalea::{
-    app::{App, Plugin},
+    app::{App, Plugin, Update},
+    chunks::handle_chunk_batch_finished_event,
     ecs::prelude::*,
-    entity::{metadata::Player, LocalEntity, LookDirection},
+    entity::{clamp_look_direction, metadata::Player, LocalEntity, LookDirection},
     inventory::{
         handle_container_click_event,
         operations::{ClickOperation, SwapClick},
         ContainerClickEvent,
         Inventory,
+        InventorySet,
     },
-    movement::send_position,
     packet_handling::game::{handle_send_packet_event, SendPacketEvent},
-    prelude::*,
     protocol::packets::game::{
         serverbound_interact_packet::InteractionHand,
         serverbound_use_item_packet::ServerboundUseItemPacket,
@@ -27,12 +27,14 @@ pub struct AutoEatPlugin;
 impl Plugin for AutoEatPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            GameTick,
+            Update,
             handle_auto_eat
-                .after(send_position)
-                .ambiguous_with(handle_auto_totem)
+                .after(clamp_look_direction)
+                .before(handle_chunk_batch_finished_event)
                 .before(handle_container_click_event)
-                .before(handle_send_packet_event),
+                .before(handle_send_packet_event)
+                .before(handle_auto_totem)
+                .before(InventorySet),
         );
     }
 }
@@ -43,8 +45,8 @@ type QueryFilter = (With<Player>, With<LocalEntity>);
 #[allow(clippy::needless_pass_by_value)]
 pub fn handle_auto_eat(
     mut query: Query<QueryData, QueryFilter>,
-    mut send_packet_events: EventWriter<SendPacketEvent>,
-    mut send_container_click_events: EventWriter<ContainerClickEvent>,
+    mut packet_events: EventWriter<SendPacketEvent>,
+    mut container_click_events: EventWriter<ContainerClickEvent>,
 ) {
     for (entity, hunger, inventory, direction) in &mut query {
         if hunger.food >= 18 {
@@ -72,7 +74,7 @@ pub fn handle_auto_eat(
                     }
                 })
                 .for_each(|event| {
-                    send_container_click_events.send(event);
+                    container_click_events.send(event);
                 });
         }
 
@@ -83,11 +85,11 @@ pub fn handle_auto_eat(
             sequence: 0,
         });
 
-        send_packet_events.send(SendPacketEvent { entity, packet });
+        packet_events.send(SendPacketEvent { entity, packet });
     }
 }
 
-const FOOD_ITEMS: [Item; 32] = [
+pub const FOOD_ITEMS: [Item; 32] = [
     Item::Apple,
     Item::BakedPotato,
     Item::Beef,

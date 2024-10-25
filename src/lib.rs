@@ -20,10 +20,10 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use azalea::prelude::*;
-use tokio::sync::RwLock;
+use parking_lot::RwLock;
 
 pub use crate::{
-    plugins::ShaysPluginGroup,
+    plugins::{prelude::*, ShaysPluginGroup},
     settings::Settings,
     trapdoor::{Trapdoor, Trapdoors},
 };
@@ -76,7 +76,7 @@ impl State {
     /// Will return `Err` if `ClientBuilder::start` fails.
     #[allow(clippy::future_not_send)]
     pub async fn start(self) -> Result<()> {
-        let settings = self.settings.read().await.clone();
+        let settings = self.settings.read().clone();
         let account = if settings.online {
             Account::microsoft(&settings.username).await?
         } else {
@@ -85,6 +85,7 @@ impl State {
 
         let client = ClientBuilder::new()
             .add_plugins(ShaysPluginGroup)
+            .add_plugins(SettingsPlugin(self.settings.clone()))
             .set_handler(Self::handler)
             .set_state(self);
 
