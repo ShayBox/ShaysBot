@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use azalea::{
     app::{App, First, Plugin},
@@ -20,11 +20,11 @@ impl Plugin for SettingsPlugin {
 }
 
 #[derive(Component, Clone)]
-pub struct SettingsLock(pub Arc<Mutex<Settings>>);
+pub struct SettingsLock(pub Arc<RwLock<Settings>>);
 
 impl SettingsLock {
     fn new(settings: Settings) -> Self {
-        Self(Arc::new(Mutex::new(settings)))
+        Self(Arc::new(RwLock::new(settings)))
     }
 }
 

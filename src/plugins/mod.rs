@@ -9,7 +9,9 @@ mod auto_eat;
 mod auto_look;
 mod auto_pearl;
 mod auto_totem;
+mod pearl_tracker;
 mod settings;
+mod trapdoors;
 
 pub struct ShaysPluginGroup;
 
@@ -21,5 +23,6 @@ impl PluginGroup for ShaysPluginGroup {
             .add(AutoLookPlugin)
             .add(AutoPearlPlugin)
             .add(AutoTotemPlugin)
+            .add(PearlTrackerPlugin)
     }
 }

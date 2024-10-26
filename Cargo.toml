@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2021"
 description = "My personal Minecraft bot using Azalea"
@@ -48,4 +48,3 @@ pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 # cargo = { level = "warn", priority = -1 }
 multiple_crate_versions = "allow"
-needless_return = "allow"

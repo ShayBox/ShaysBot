@@ -11,10 +11,9 @@ extern crate tracing;
 
 mod commands;
 mod events;
-mod packets;
 mod plugins;
 mod settings;
-mod trapdoor;
+mod trapdoors;
 
 use std::sync::Arc;
 
@@ -25,7 +24,7 @@ use parking_lot::RwLock;
 pub use crate::{
     plugins::{prelude::*, ShaysPluginGroup},
     settings::Settings,
-    trapdoor::{Trapdoor, Trapdoors},
+    trapdoors::{Trapdoor, Trapdoors},
 };
 
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -86,6 +85,7 @@ impl State {
         let client = ClientBuilder::new()
             .add_plugins(ShaysPluginGroup)
             .add_plugins(SettingsPlugin(self.settings.clone()))
+            .add_plugins(TrapdoorsPlugin(self.trapdoors.clone()))
             .set_handler(Self::handler)
             .set_state(self);
 

@@ -18,4 +18,6 @@ My personal Minecraft bot using Azalea
 - [AutoLookPlugin](src/plugins/auto_look.rs)
 - [AutoPearlPlugin](src/plugins/auto_pearl.rs)
 - [AutoTotemPlugin](src/plugins/auto_totem.rs)
+- [PearlTrackerPlugin](src/plugins/pearl_tracker.rs)
 - [SettingsPlugin](src/plugins/settings.rs)
+- [TrapdoorsPlugin](src/plugins/trapdoors.rs)

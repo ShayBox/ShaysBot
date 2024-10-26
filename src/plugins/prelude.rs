@@ -4,5 +4,7 @@ pub use super::{
     auto_look::*,
     auto_pearl::*,
     auto_totem::*,
+    pearl_tracker::*,
     settings::*,
+    trapdoors::*,
 };

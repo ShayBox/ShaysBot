@@ -4,8 +4,8 @@ mod pearl;
 
 use std::{collections::VecDeque, sync::LazyLock, time::Duration};
 
-use anyhow::{bail, Result};
-use azalea::{blocks::Block, pathfinder::Pathfinder, BlockPos, Client, Vec3};
+use anyhow::Result;
+use azalea::{pathfinder::Pathfinder, Client};
 
 use crate::{commands::prelude::*, State};
 
@@ -40,34 +40,6 @@ pub trait CommandHandler: Clone {
 }
 
 impl State {
-    /// # Find the nearest trapdoor vertically.
-    ///
-    /// # Errors
-    /// Will return `Err` if no trapdoor was found.
-    #[allow(clippy::cast_possible_truncation)]
-    pub(crate) fn find_nearest_trapdoor(
-        &self,
-        client: &Client,
-        position: Vec3,
-    ) -> Result<BlockPos> {
-        let x = position.x.floor() as i32;
-        let z = position.z.floor() as i32;
-        let min_y = position.y.floor() as i32 - 5;
-        let max_y = position.y.ceil() as i32 + 5;
-        for y in min_y..max_y {
-            let pos = BlockPos::new(x, y, z);
-            let Some(state) = client.world().write().get_block_state(&pos) else {
-                continue;
-            };
-
-            if Box::<dyn Block>::from(state).id().ends_with("_trapdoor") {
-                return Ok(pos);
-            }
-        }
-
-        bail!("Unable to a find nearby trapdoor")
-    }
-
     /// # Wait for the pathfinder to finish calculating.
     ///
     /// # Errors

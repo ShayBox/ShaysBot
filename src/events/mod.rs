@@ -2,7 +2,6 @@ pub mod prelude;
 
 mod chat;
 mod disconnect;
-mod packet;
 
 use anyhow::Result;
 use azalea::{Client, Event};
@@ -27,7 +26,6 @@ impl State {
         match event {
             Event::Chat(packet) => Chat(packet).execute(client, state).await,
             Event::Disconnect(reason) => Disconnect(reason).execute(client, state).await,
-            Event::Packet(packet) => Packet(packet).execute(client, state).await,
 
             _ => return Ok(()),
         }
