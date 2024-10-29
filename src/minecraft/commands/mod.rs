@@ -1,6 +1,8 @@
 pub mod prelude;
 
 mod pearl;
+mod playtime;
+mod seen;
 
 use std::collections::{HashMap, VecDeque};
 
@@ -11,11 +13,13 @@ use azalea::{
     prelude::*,
 };
 
-use crate::{minecraft::prelude::*, settings::SettingsLock};
+use crate::settings::Settings;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Command {
     Pearl,
+    Playtime,
+    Seen,
 }
 
 #[derive(Debug, Event)]
@@ -23,6 +27,7 @@ pub struct CommandEvent {
     entity:  Entity,
     sender:  String,
     command: Command,
+    args:    VecDeque<String>,
 }
 
 #[derive(Debug, Event)]
@@ -33,7 +38,13 @@ pub struct WhisperEvent {
 }
 
 #[derive(Default, Resource)]
-pub struct Commands(pub HashMap<String, Command>);
+pub struct Registry(HashMap<String, Command>);
+
+impl Registry {
+    fn register(&mut self, alias: &str, command: Command) {
+        self.0.insert(alias.into(), command);
+    }
+}
 
 pub struct CommandsPlugin;
 
@@ -41,11 +52,11 @@ impl Plugin for CommandsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<CommandEvent>()
             .add_event::<WhisperEvent>()
-            .insert_resource(Commands::default())
+            .insert_resource(Registry::default())
             .add_systems(
                 Update,
                 (
-                    handle_chat_received_event.before(handle_command_event),
+                    handle_chat_received_event,
                     handle_whisper_event.before(handle_send_chat_event),
                 ),
             );
@@ -56,14 +67,10 @@ impl Plugin for CommandsPlugin {
 pub fn handle_chat_received_event(
     mut events: EventReader<ChatReceivedEvent>,
     mut command_events: EventWriter<CommandEvent>,
-    query: Query<&SettingsLock>,
-    commands: Res<Commands>,
+    commands: Res<Registry>,
+    settings: Res<Settings>,
 ) {
     for event in events.read() {
-        let Ok(settings) = query.get(event.entity) else {
-            continue;
-        };
-
         let (sender, content) = event.packet.split_sender_and_content();
         let (sender, content) = if let Some(sender) = sender {
             (sender, content)
@@ -76,7 +83,10 @@ pub fn handle_chat_received_event(
             continue;
         };
 
-        let mut args = content.split(' ').collect::<VecDeque<_>>();
+        let mut args = content
+            .split(' ')
+            .map(String::from)
+            .collect::<VecDeque<_>>();
         let Some(alias) = args.pop_front() else {
             continue;
         };
@@ -85,7 +95,7 @@ pub fn handle_chat_received_event(
             .0
             .clone()
             .into_iter()
-            .find(|cmd| format!("{}{}", settings.0.read().chat_prefix, cmd.0) == alias)
+            .find(|cmd| format!("{}{}", settings.chat_prefix, cmd.0) == alias)
         else {
             continue;
         };
@@ -94,6 +104,7 @@ pub fn handle_chat_received_event(
             entity: event.entity,
             sender,
             command,
+            args,
         });
     }
 }

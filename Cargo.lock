@@ -898,8 +898,10 @@ checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-targets 0.52.6",
 ]
 
@@ -2611,6 +2613,7 @@ version = "0.23.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eee87ff5d9b36712a58574e12e9f0ea80f915a5b0ac518d322b24a465617925e"
 dependencies = [
+ "log",
  "once_cell",
  "ring",
  "rustls-pki-types",
@@ -2900,23 +2903,25 @@ dependencies = [
 
 [[package]]
 name = "shaysbot"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "anyhow",
  "azalea",
  "bevy-discord",
+ "chrono",
  "derive-config",
  "derive_more 1.0.0",
  "lazy-regex",
  "num-traits",
  "parking_lot",
- "reqwest 0.12.9",
  "serde",
  "serde_with",
  "serenity",
  "terminal-link",
  "tokio",
  "tracing",
+ "ureq",
+ "url",
  "uuid",
 ]
 
@@ -3671,6 +3676,24 @@ name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
+
+[[package]]
+name = "ureq"
+version = "2.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b74fc6b57825be3373f7054754755f03ac3a8f5d70015ccad699ba2029956f4a"
+dependencies = [
+ "base64 0.22.1",
+ "flate2",
+ "log",
+ "once_cell",
+ "rustls 0.23.16",
+ "rustls-pki-types",
+ "serde",
+ "serde_json",
+ "url",
+ "webpki-roots 0.26.6",
+]
 
 [[package]]
 name = "url"

@@ -17,7 +17,7 @@ use azalea::{
 use derive_config::DeriveYamlConfig;
 use uuid::Uuid;
 
-use crate::{settings::SettingsLock, trapdoors::TrapdoorsLock, Trapdoor};
+use crate::{settings::Settings, trapdoors::Trapdoors, Trapdoor};
 
 pub struct PearlTrackerPlugin;
 
@@ -54,11 +54,12 @@ pub fn handle_packet_events(
 pub fn handle_add_entity_packet(
     mut events: EventReader<PacketEvent>,
     mut packet_events: ResMut<PacketEvents>,
-    query: Query<(&InstanceHolder, &TrapdoorsLock)>,
+    mut query: Query<&InstanceHolder>,
+    mut trapdoors: ResMut<Trapdoors>,
     profiles: Query<(&MinecraftEntityId, &GameProfileComponent), With<Player>>,
 ) {
     for event in events.read() {
-        let Ok((holder, trapdoors)) = query.get(event.entity) else {
+        let Ok(holder) = query.get_mut(event.entity) else {
             continue;
         };
 
@@ -90,7 +91,6 @@ pub fn handle_add_entity_packet(
             continue;
         };
 
-        let mut trapdoors = trapdoors.0.write();
         let new_trapdoor = Trapdoor::new(block_pos, packet.id, owner_uuid);
 
         if let Some(old_trapdoor) = trapdoors.0.get_mut(&packet.uuid) {
@@ -102,7 +102,6 @@ pub fn handle_add_entity_packet(
         }
 
         trapdoors.save().expect("Failed to save trapdoors");
-        drop(trapdoors);
     }
 }
 
@@ -110,13 +109,9 @@ pub fn handle_add_entity_packet(
 /// Will panic of `Settings::save` fails.
 pub fn handle_block_update_packet(
     mut events: EventReader<PacketEvent>,
-    mut query: Query<&TrapdoorsLock>,
+    mut trapdoors: ResMut<Trapdoors>,
 ) {
     for event in events.read() {
-        let Ok(trapdoors) = query.get_mut(event.entity) else {
-            continue;
-        };
-
         let ClientboundGamePacket::BlockUpdate(packet) = event.packet.as_ref() else {
             continue;
         };
@@ -126,8 +121,6 @@ pub fn handle_block_update_packet(
                 return;
             }
         };
-
-        let mut trapdoors = trapdoors.0.write();
 
         trapdoors
             .0
@@ -139,18 +132,20 @@ pub fn handle_block_update_packet(
             });
 
         trapdoors.save().expect("Failed to save trapdoors");
-        drop(trapdoors);
     }
 }
 
 /// # Panics
 /// Will panic of `Settings::save` fails.
+#[allow(clippy::needless_pass_by_value)]
 pub fn handle_remove_entities_packet(
     mut events: EventReader<PacketEvent>,
-    mut query: Query<(&TrapdoorsLock, &Position, &SettingsLock)>,
+    mut query: Query<&Position>,
+    mut trapdoors: ResMut<Trapdoors>,
+    settings: Res<Settings>,
 ) {
     for event in events.read() {
-        let Ok((trapdoors, position, settings)) = query.get_mut(event.entity) else {
+        let Ok(position) = query.get_mut(event.entity) else {
             continue;
         };
 
@@ -158,9 +153,8 @@ pub fn handle_remove_entities_packet(
             continue;
         };
 
-        let view_distance = settings.0.read().pearl_view_distance;
+        let view_distance = settings.pearl_view_distance;
         let view_distance_sqr = f64::from(view_distance.pow(2));
-        let mut trapdoors = trapdoors.0.write();
 
         trapdoors.0.retain(|_, trapdoor| {
             let trapdoor_pos = trapdoor.block_pos.to_vec3_floored();
@@ -170,7 +164,6 @@ pub fn handle_remove_entities_packet(
         });
 
         trapdoors.save().expect("Failed to save trapdoors");
-        drop(trapdoors);
     }
 }
 

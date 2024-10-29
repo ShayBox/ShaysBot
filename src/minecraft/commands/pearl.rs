@@ -8,28 +8,37 @@ use azalea::{
 
 use crate::{
     minecraft::{
-        commands::{handle_whisper_event, Command, CommandEvent, Commands, WhisperEvent},
+        commands::{
+            handle_chat_received_event,
+            handle_whisper_event,
+            Command,
+            CommandEvent,
+            Registry,
+            WhisperEvent,
+        },
         prelude::*,
     },
-    trapdoors::TrapdoorsLock,
+    trapdoors::Trapdoors,
 };
 
 pub struct PearlCommandPlugin;
 
 impl Plugin for PearlCommandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, handle_startup).add_systems(
+        app.add_systems(Startup, handle_register).add_systems(
             Update,
             handle_command_event
+                .ambiguous_with_all()
                 .before(handle_pearl_event)
-                .before(handle_whisper_event),
+                .before(handle_whisper_event)
+                .after(handle_chat_received_event),
         );
     }
 }
 
-pub fn handle_startup(mut commands: ResMut<Commands>) {
+pub fn handle_register(mut registry: ResMut<Registry>) {
     for alias in ["pearl", "tp", "teleport", "pull", "here", "home", "warp"] {
-        commands.0.insert(String::from(alias), Command::Pearl);
+        registry.register(alias, Command::Pearl);
     }
 }
 
@@ -38,10 +47,11 @@ pub fn handle_command_event(
     mut events: EventReader<CommandEvent>,
     mut pearl_events: EventWriter<PearlEvent>,
     mut whisper_events: EventWriter<WhisperEvent>,
-    query: Query<(&TabList, &TrapdoorsLock, &Position)>,
+    query: Query<(&TabList, &Position)>,
+    trapdoors: Res<Trapdoors>,
 ) {
     for event in events.read() {
-        let Ok((tab_list, trapdoors, position)) = query.get(event.entity) else {
+        let Ok((tab_list, position)) = query.get(event.entity) else {
             continue;
         };
 
@@ -64,13 +74,14 @@ pub fn handle_command_event(
             continue;
         };
 
-        let trapdoors = trapdoors.0.read().0.clone();
         let Some(trapdoor) = trapdoors
+            .0
             .clone()
             .into_values()
             .filter(|trapdoor| &trapdoor.owner_uuid == uuid)
             .min_by_key(|trapdoor| {
                 let shared_count = trapdoors
+                    .0
                     .values()
                     .filter(|td| td.block_pos == trapdoor.block_pos)
                     .filter(|td| td.owner_uuid != trapdoor.owner_uuid)

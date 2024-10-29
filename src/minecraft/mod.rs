@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use azalea::{
     ecs::prelude::*,
@@ -8,7 +6,6 @@ use azalea::{
     Account,
 };
 use derive_config::{DeriveTomlConfig, DeriveYamlConfig};
-use parking_lot::RwLock;
 
 use crate::{
     minecraft::{commands::CommandsPlugin, prelude::*},
@@ -48,12 +45,15 @@ pub async fn start() -> Result<()> {
     };
 
     settings.save()?;
-    let settings = Arc::new(RwLock::new(settings));
-    let trapdoors = Arc::new(RwLock::new(trapdoors));
     let client = SwarmBuilder::new()
         .set_swarm_handler(swarm_handler)
         .add_account(account)
-        .add_plugins((CommandsPlugin, PearlCommandPlugin))
+        .add_plugins((
+            CommandsPlugin,
+            PearlCommandPlugin,
+            PlaytimeCommandPlugin,
+            SeenCommandPlugin,
+        ))
         .add_plugins((
             AntiAfkPlugin,
             AutoEatPlugin,

@@ -1,1 +1,5 @@
-pub use super::pearl::*;
+pub use super::{
+    pearl::PearlCommandPlugin,
+    playtime::PlaytimeCommandPlugin,
+    seen::SeenCommandPlugin,
+};

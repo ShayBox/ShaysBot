@@ -12,6 +12,7 @@ pub mod trapdoors;
 use std::ops::{AddAssign, RemAssign};
 
 use num_traits::{Bounded, One};
+use url::Url;
 
 use crate::{
     settings::Settings,
@@ -24,14 +25,17 @@ pub const CARGO_PKG_HOMEPAGE: &str = env!("CARGO_PKG_HOMEPAGE");
 /// # Check for updates using GitHub's latest release link redirect
 ///
 /// # Errors
-/// Will return `Err` if `reqwest::get` fails.
-pub async fn check_for_updates() -> reqwest::Result<bool> {
-    let response = reqwest::get(CARGO_PKG_HOMEPAGE).await?;
-    if let Some(segments) = response.url().path_segments() {
-        if let Some(remote_version) = segments.last() {
-            return Ok(remote_version > CARGO_PKG_VERSION);
-        };
-    };
+/// Will return `Err` if `ureq::get` fails.
+pub fn check_for_updates() -> anyhow::Result<bool> {
+    let response = ureq::get(CARGO_PKG_HOMEPAGE).call()?;
+
+    if let Ok(parsed_url) = Url::parse(response.get_url()) {
+        if let Some(segments) = parsed_url.path_segments() {
+            if let Some(remote_version) = segments.last() {
+                return Ok(remote_version > CARGO_PKG_VERSION);
+            }
+        }
+    }
 
     Ok(false)
 }
