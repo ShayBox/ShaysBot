@@ -17,6 +17,7 @@ My personal Minecraft bot using Azalea
 - [PearlCommandPlugin](src/minecraft/commands/pearl.rs)
 - [AntiAfkPlugin](src/minecraft/anti_afk.rs)
 - [AutoEatPlugin](src/minecraft/auto_eat.rs)
+- [AutoExitPlugin](src/minecraft/auto_exit.rs)
 - [AutoLookPlugin](src/minecraft/auto_look.rs)
 - [AutoPearlPlugin](src/minecraft/auto_pearl.rs)
 - [PearlTrackerPlugin](src/minecraft/pearl_tracker.rs)

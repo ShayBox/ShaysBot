@@ -60,8 +60,6 @@ pub fn handle_chat_received_event(
     commands: Res<Commands>,
 ) {
     for event in events.read() {
-        println!("{}", event.packet.message().to_ansi());
-
         let Ok(settings) = query.get(event.entity) else {
             continue;
         };
