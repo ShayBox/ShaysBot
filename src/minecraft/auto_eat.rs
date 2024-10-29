@@ -1,16 +1,17 @@
 use azalea::{
-    app::{App, Plugin, Update},
-    chunks::handle_chunk_batch_finished_event,
+    app::{App, Plugin},
     ecs::prelude::*,
-    entity::{clamp_look_direction, metadata::Player, LocalEntity, LookDirection},
+    entity::{metadata::Player, LocalEntity, LookDirection},
     inventory::{
-        handle_container_click_event,
         operations::{ClickOperation, SwapClick},
         ContainerClickEvent,
         Inventory,
         InventorySet,
     },
+    mining::continue_mining_block,
     packet_handling::game::{handle_send_packet_event, SendPacketEvent},
+    physics::PhysicsSet,
+    prelude::*,
     protocol::packets::game::{
         serverbound_interact_packet::InteractionHand,
         serverbound_use_item_packet::ServerboundUseItemPacket,
@@ -20,21 +21,17 @@ use azalea::{
     Hunger,
 };
 
-use crate::plugins::auto_totem::handle_auto_totem;
-
 pub struct AutoEatPlugin;
 
 impl Plugin for AutoEatPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            Update,
+            GameTick,
             handle_auto_eat
-                .after(clamp_look_direction)
-                .before(handle_chunk_batch_finished_event)
-                .before(handle_container_click_event)
                 .before(handle_send_packet_event)
-                .before(handle_auto_totem)
-                .before(InventorySet),
+                .before(continue_mining_block)
+                .before(InventorySet)
+                .before(PhysicsSet),
         );
     }
 }

@@ -2,12 +2,22 @@ use std::sync::Arc;
 
 use azalea::{
     app::{App, Plugin, Update},
+    chunks::handle_receive_chunk_events,
     core::direction::Direction,
     ecs::prelude::*,
     entity::{metadata::Player, LocalEntity},
-    movement::MoveEventsSet,
+    interact::handle_swing_arm_event,
+    inventory::InventorySet,
+    mining::MiningSet,
     packet_handling::game::{handle_send_packet_event, SendPacketEvent},
-    pathfinder::{goals::ReachBlockPosGoal, moves::default_move, GotoEvent, Pathfinder},
+    pathfinder::{
+        goals::ReachBlockPosGoal,
+        goto_listener,
+        moves::default_move,
+        GotoEvent,
+        Pathfinder,
+    },
+    physics::PhysicsSet,
     prelude::*,
     protocol::packets::game::{
         serverbound_interact_packet::InteractionHand,
@@ -27,10 +37,15 @@ impl Plugin for AutoPearlPlugin {
             Update,
             (
                 handle_pearl_event,
-                handle_pearl_goto.after(MoveEventsSet),
+                handle_pearl_goto
+                    .before(goto_listener)
+                    .after(handle_receive_chunk_events),
                 handle_pearl_pull
-                    .after(MoveEventsSet)
-                    .before(handle_send_packet_event),
+                    .before(handle_send_packet_event)
+                    .before(handle_swing_arm_event)
+                    .after(InventorySet)
+                    .after(PhysicsSet)
+                    .after(MiningSet),
             ),
         );
     }
@@ -122,18 +137,5 @@ pub fn handle_pearl_pull(
 
         packet_events.send(SendPacketEvent { entity, packet });
         commands.entity(entity).remove::<PearlPull>();
-    }
-}
-
-pub trait AutoPearlClientExt {
-    fn pearl(&self, block_pos: BlockPos);
-}
-
-impl AutoPearlClientExt for Client {
-    fn pearl(&self, block_pos: BlockPos) {
-        self.ecs.lock().send_event(PearlEvent {
-            entity: self.entity,
-            block_pos,
-        });
     }
 }
