@@ -3,9 +3,16 @@ use azalea::{
     ecs::prelude::*,
     entity::{metadata::Player, LocalEntity},
     interact::{handle_swing_arm_event, SwingArmEvent},
-    physics::PhysicsSet,
+    mining::continue_mining_block,
     prelude::*,
 };
+
+use crate::BoundedCounter;
+
+#[derive(Component, Default)]
+pub struct AntiAfk {
+    pub ticks: BoundedCounter<u8>,
+}
 
 pub struct AntiAfkPlugin;
 
@@ -14,31 +21,10 @@ impl Plugin for AntiAfkPlugin {
         app.add_systems(
             GameTick,
             handle_anti_afk
-                .after(PhysicsSet)
-                .before(handle_swing_arm_event),
+                .before(handle_swing_arm_event)
+                .after(continue_mining_block),
         );
     }
-}
-
-#[derive(Default)]
-pub struct Ticks(pub u8);
-
-impl Iterator for Ticks {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let ticks = self.0;
-
-        self.0 %= u8::MAX;
-        self.0 += 1;
-
-        Some(ticks)
-    }
-}
-
-#[derive(Component, Default)]
-pub struct AntiAfk {
-    pub ticks: Ticks,
 }
 
 type InitQueryData = Entity;

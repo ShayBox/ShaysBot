@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2021"
 description = "My personal Minecraft bot using Azalea"
@@ -13,13 +13,13 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1"
-async-trait = "0.1"
+#azalea = { path = "../azalea/azalea" }
 azalea = { git = "https://github.com/Shays-Forks/azalea.git" }
 bevy-discord = "0.2"
 derive-config = { version = "2", features = ["toml", "yaml"] }
 derive_more = { version = "1", features = ["full"] }
-dyn-clonable = "0.9"
 lazy-regex = "3"
+num-traits = "0.2"
 parking_lot = "0.12"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 serde = "1"

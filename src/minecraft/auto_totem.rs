@@ -1,28 +1,29 @@
 use azalea::{
-    app::{App, Plugin, Update},
+    app::{App, Plugin},
     ecs::prelude::*,
     entity::{metadata::Player, LocalEntity},
     inventory::{
+        handle_container_click_event,
         operations::{ClickOperation, SwapClick},
         ContainerClickEvent,
         Inventory,
-        InventorySet,
         Menu,
     },
+    prelude::*,
     registry::Item,
 };
 
-use crate::plugins::auto_eat::handle_auto_eat;
+use crate::minecraft::prelude::*;
 
 pub struct AutoTotemPlugin;
 
 impl Plugin for AutoTotemPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            Update,
+            GameTick,
             handle_auto_totem
-                .after(handle_auto_eat)
-                .before(InventorySet),
+                .before(handle_container_click_event)
+                .after(handle_auto_eat),
         );
     }
 }

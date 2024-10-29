@@ -1,10 +1,10 @@
 use azalea::{
     app::{App, Plugin},
     ecs::prelude::*,
-    entity::{clamp_look_direction, metadata::Player, EyeHeight, LocalEntity, Position},
+    entity::{metadata::Player, EyeHeight, LocalEntity, Position},
     nearest_entity::EntityFinder,
     physics::PhysicsSet,
-    prelude::GameTick,
+    prelude::*,
     LookAtEvent,
 };
 
@@ -12,12 +12,7 @@ pub struct AutoLookPlugin;
 
 impl Plugin for AutoLookPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            GameTick,
-            handle_auto_look
-                .after(clamp_look_direction)
-                .before(PhysicsSet),
-        );
+        app.add_systems(GameTick, handle_auto_look.before(PhysicsSet));
     }
 }
 
