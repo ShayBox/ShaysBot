@@ -15,8 +15,7 @@ use azalea::{
 };
 use bevy_discord::{
     bot::{events::BMessage, DiscordBotRes},
-    runtime::tokio_runtime
-    ,
+    runtime::tokio_runtime,
 };
 use serenity::{all::ChannelId, json::json};
 
@@ -90,7 +89,10 @@ pub fn handle_message_event(
     settings: Res<Settings>,
 ) {
     for event in message_events.read() {
-        let entity = query.single_mut();
+        let Ok(entity) = query.get_single_mut() else {
+            continue;
+        };
+
         let http = event.ctx.http.clone();
         let message = event.new_message.clone();
         let Some((args, command)) =
@@ -161,28 +163,35 @@ pub fn handle_chat_received_event(
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn handle_whisper_event(
-    mut whisper_events: EventReader<WhisperEvent>,
     mut chat_kind_events: EventWriter<SendChatKindEvent>,
-    discord_bot_res: Res<DiscordBotRes>,
+    mut whisper_events: EventReader<WhisperEvent>,
+    discord: Res<DiscordBotRes>,
+    settings: Res<Settings>,
 ) {
     for event in whisper_events.read() {
         let content = event.content.clone();
 
         match event.source {
             CommandSource::Discord(channel_id) => {
-                if let Ok(http) = discord_bot_res.get_http() {
-                    tokio_runtime().spawn(async move {
-                        let map = &json!({
-                            "content": content,
-                        });
+                let Ok(http) = discord.get_http() else {
+                    continue;
+                };
 
-                        if let Err(error) = http.send_message(channel_id, Vec::new(), map).await {
-                            eprintln!("{error}");
-                        }
+                tokio_runtime().spawn(async move {
+                    let map = &json!({
+                        "content": content,
                     });
-                }
+
+                    if let Err(error) = http.send_message(channel_id, Vec::new(), map).await {
+                        eprintln!("{error}");
+                    }
+                });
             }
             CommandSource::Minecraft => {
+                if settings.quiet {
+                    continue;
+                }
+
                 chat_kind_events.send(SendChatKindEvent {
                     entity:  event.entity,
                     kind:    ChatPacketKind::Command,

@@ -27,7 +27,7 @@ impl Plugin for PearlCommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, handle_register).add_systems(
             Update,
-            handle_command_event
+            handle_pearl_command_event
                 .ambiguous_with_all()
                 .before(handle_pearl_goto_event)
                 .before(handle_whisper_event)
@@ -43,7 +43,7 @@ pub fn handle_register(mut registry: ResMut<Registry>) {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn handle_command_event(
+pub fn handle_pearl_command_event(
     mut command_events: EventReader<CommandEvent>,
     mut pearl_events: EventWriter<PearlGotoEvent>,
     mut whisper_events: EventWriter<WhisperEvent>,
@@ -60,14 +60,16 @@ pub fn handle_command_event(
         }
 
         let sender = &event.sender;
-        if sender.is_empty() {
-            whisper_events.send(WhisperEvent {
-                source:  event.source,
-                entity:  event.entity,
-                sender:  sender.clone(),
-                content: String::from("[404] Missing Sender!"),
-            });
+        let mut whisper_event = WhisperEvent {
+            source:  event.source,
+            entity:  event.entity,
+            sender:  event.sender.clone(),
+            content: String::new(),
+        };
 
+        if sender.is_empty() {
+            whisper_event.content = String::from("[404] Missing Sender!");
+            whisper_events.send(whisper_event);
             continue;
         }
 
@@ -76,13 +78,8 @@ pub fn handle_command_event(
             .find(|(_, info)| &info.profile.name == sender)
             .map(|(uuid, _)| uuid)
         else {
-            whisper_events.send(WhisperEvent {
-                source:  event.source,
-                entity:  event.entity,
-                sender:  sender.clone(),
-                content: format!("[404] Sender not found: {sender}"),
-            });
-
+            whisper_event.content = format!("[404] Sender not found: {sender}");
+            whisper_events.send(whisper_event);
             continue;
         };
 
@@ -108,22 +105,13 @@ pub fn handle_command_event(
                 (shared_count, distance)
             })
         else {
-            whisper_events.send(WhisperEvent {
-                source:  event.source,
-                entity:  event.entity,
-                sender:  sender.clone(),
-                content: String::from("[404] Pearl not found."),
-            });
-
+            whisper_event.content = String::from("[404] Pearl not found.");
+            whisper_events.send(whisper_event);
             continue;
         };
 
-        whisper_events.send(WhisperEvent {
-            source:  event.source,
-            entity:  event.entity,
-            sender:  sender.clone(),
-            content: String::from("[202] I'm on my way!"),
-        });
+        whisper_event.content = String::from("[202] I'm on my way!");
+        whisper_events.send(whisper_event);
 
         pearl_events.send(PearlGotoEvent {
             entity:     event.entity,

@@ -25,7 +25,7 @@ impl Plugin for PlaytimeCommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, handle_register).add_systems(
             Update,
-            handle_command_event
+            handle_playtime_command_event
                 .ambiguous_with_all()
                 .before(handle_whisper_event)
                 .after(handle_chat_received_event),
@@ -37,7 +37,7 @@ pub fn handle_register(mut registry: ResMut<Registry>) {
     registry.register("playtime", Command::Playtime);
 }
 
-pub fn handle_command_event(
+pub fn handle_playtime_command_event(
     mut command_events: EventReader<CommandEvent>,
     mut whisper_events: EventWriter<WhisperEvent>,
 ) {
@@ -59,8 +59,11 @@ pub fn handle_command_event(
             continue;
         };
 
-        let request = ureq::get("https://api.2b2t.vc/playtime").query("playerName", player_name);
-        let response = match request.call() {
+        let response = match ureq::get("https://api.2b2t.vc/playtime")
+            .query("playerName", player_name)
+            .timeout(Duration::from_secs(25))
+            .call()
+        {
             Ok(response) => response,
             Err(error) => {
                 whisper_event.content = String::from("[404] Player not found.");
@@ -69,6 +72,12 @@ pub fn handle_command_event(
                 continue;
             }
         };
+
+        if response.status() == 204 {
+            whisper_event.content = String::from("[204] Invalid player?");
+            whisper_events.send(whisper_event);
+            continue;
+        }
 
         let Ok(json) = response.into_json::<Json>() else {
             whisper_event.content = String::from("[500] Failed to parse JSON");

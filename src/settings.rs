@@ -16,6 +16,7 @@ impl Plugin for SettingsPlugin {
 }
 
 #[derive(Clone, Debug, DeriveTomlConfig, Deserialize, Serialize, Resource)]
+#[serde(default)] /* Default missing fields */
 pub struct Settings {
     /// This is the distance in blocks that ender pearls are visible from the player.
     /// It is better to under-estimate the value than to over-estimate it.
