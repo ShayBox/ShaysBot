@@ -5,7 +5,6 @@ use azalea::{
     chunks::handle_receive_chunk_events,
     core::direction::Direction,
     ecs::prelude::*,
-    entity::{metadata::Player, LocalEntity},
     interact::handle_swing_arm_event,
     inventory::InventorySet,
     mining::MiningSet,
@@ -26,116 +25,170 @@ use azalea::{
     },
     BlockPos,
     InstanceHolder,
+    TabList,
     Vec3,
 };
+use uuid::Uuid;
 
 pub struct AutoPearlPlugin;
 
 impl Plugin for AutoPearlPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PearlEvent>().add_systems(
-            Update,
-            (
-                handle_pearl_event,
-                handle_pearl_goto
-                    .before(goto_listener)
-                    .after(handle_receive_chunk_events),
-                handle_pearl_pull
-                    .before(handle_send_packet_event)
-                    .before(handle_swing_arm_event)
-                    .after(InventorySet)
-                    .after(PhysicsSet)
-                    .after(MiningSet),
-            ),
-        );
+        app.insert_resource(PendingPearlEvents::default())
+            .add_event::<PearlGotoEvent>()
+            .add_event::<PearlPullEvent>()
+            .add_systems(
+                Update,
+                (
+                    handle_pearl_goto_event
+                        .before(goto_listener)
+                        .after(handle_receive_chunk_events),
+                    handle_pearl_pull_event
+                        .before(handle_send_packet_event)
+                        .before(handle_swing_arm_event)
+                        .after(InventorySet)
+                        .after(PhysicsSet)
+                        .after(MiningSet),
+                    process_pending_pearl_events,
+                )
+                    .chain(),
+            );
     }
 }
 
-#[derive(Event)]
-pub struct PearlEvent {
-    pub entity:    Entity,
-    pub block_pos: BlockPos,
+#[derive(Clone, Event)]
+pub struct PearlGotoEvent {
+    pub entity:     Entity,
+    pub block_pos:  BlockPos,
+    pub owner_uuid: Uuid,
 }
 
-pub fn handle_pearl_event(mut events: EventReader<PearlEvent>, mut commands: Commands) {
-    for event in events.read() {
-        commands.entity(event.entity).insert(PearlGoto {
-            block_pos: event.block_pos,
-        });
-    }
-}
-
-#[derive(Component)]
-pub struct PearlGoto {
-    pub block_pos: BlockPos,
-}
-
-type GotoQueryData<'a> = (Entity, &'a PearlGoto, &'a Pathfinder, &'a InstanceHolder);
-type GotoQueryFilter = (With<Player>, With<LocalEntity>, With<PearlGoto>);
-
-pub fn handle_pearl_goto(
-    mut query: Query<GotoQueryData, GotoQueryFilter>,
+pub fn handle_pearl_goto_event(
     mut goto_events: EventWriter<GotoEvent>,
-    mut commands: Commands,
+    mut pearl_goto_events: EventReader<PearlGotoEvent>,
+    mut pearl_pull_events: EventWriter<PearlPullEvent>,
+    mut pearl_pending_events: ResMut<PendingPearlEvents>,
+    mut query: Query<(&Pathfinder, &InstanceHolder)>,
 ) {
-    for (entity, pearl, pathfinder, holder) in &mut query {
+    for event in pearl_goto_events.read() {
+        let Ok((pathfinder, holder)) = query.get_mut(event.entity) else {
+            continue;
+        };
+
         if let Some(_goal) = &pathfinder.goal {
+            pearl_pending_events.goto.push(event.clone());
             continue;
         }
 
         let goal = ReachBlockPosGoal {
             chunk_storage: holder.instance.read().chunks.clone(),
-            pos:           pearl.block_pos,
+            pos:           event.block_pos,
         };
 
         goto_events.send(GotoEvent {
-            entity,
-            goal: Arc::new(goal),
+            entity:        event.entity,
+            goal:          Arc::new(goal),
             successors_fn: default_move,
-            allow_mining: false,
+            allow_mining:  false,
         });
 
-        commands.entity(entity).remove::<PearlGoto>();
-        commands.entity(entity).insert(PearlPull {
-            block_pos: pearl.block_pos,
-        });
+        pearl_pull_events.send(event.into());
     }
 }
 
-#[derive(Component)]
-pub struct PearlPull {
-    pub block_pos: BlockPos,
+#[derive(Clone, Event)]
+pub struct PearlPullEvent {
+    pub entity:     Entity,
+    pub block_pos:  BlockPos,
+    pub owner_uuid: Uuid,
 }
 
-type PullQueryData<'a> = (Entity, &'a PearlPull, &'a Pathfinder);
-type PullQueryFilter = (With<Player>, With<LocalEntity>, With<PearlPull>);
-
-pub fn handle_pearl_pull(
-    mut query: Query<PullQueryData, PullQueryFilter>,
-    mut packet_events: EventWriter<SendPacketEvent>,
-    mut commands: Commands,
+pub fn handle_pearl_pull_event(
+    mut pearl_pull_events: EventReader<PearlPullEvent>,
+    mut pearl_pending_events: ResMut<PendingPearlEvents>,
+    mut send_packet_events: EventWriter<SendPacketEvent>,
+    mut query: Query<(&Pathfinder, &TabList)>,
 ) {
-    for (entity, pearl, pathfinder) in &mut query {
+    for event in pearl_pull_events.read() {
+        let Ok((pathfinder, tab_list)) = query.get_mut(event.entity) else {
+            continue;
+        };
+
         if let Some(_goal) = &pathfinder.goal {
+            pearl_pending_events.pull.push(event.clone());
+            continue;
+        }
+
+        if !tab_list.contains_key(&event.owner_uuid) {
+            pearl_pending_events.goto.push(event.into());
             continue;
         }
 
         let packet = ServerboundGamePacket::UseItemOn(ServerboundUseItemOnPacket {
             hand:      InteractionHand::MainHand,
             block_hit: BlockHit {
-                block_pos: pearl.block_pos,
+                block_pos: event.block_pos,
                 direction: Direction::Down,
                 location:  Vec3 {
-                    x: f64::from(pearl.block_pos.x) + 0.5,
-                    y: f64::from(pearl.block_pos.y) + 0.5,
-                    z: f64::from(pearl.block_pos.z) + 0.5,
+                    x: f64::from(event.block_pos.x) + 0.5,
+                    y: f64::from(event.block_pos.y) + 0.5,
+                    z: f64::from(event.block_pos.z) + 0.5,
                 },
                 inside:    false,
             },
             sequence:  0,
         });
 
-        packet_events.send(SendPacketEvent { entity, packet });
-        commands.entity(entity).remove::<PearlPull>();
+        send_packet_events.send(SendPacketEvent {
+            entity: event.entity,
+            packet,
+        });
+    }
+}
+
+#[derive(Default, Resource)]
+pub struct PendingPearlEvents {
+    goto: Vec<PearlGotoEvent>,
+    pull: Vec<PearlPullEvent>,
+}
+
+pub fn process_pending_pearl_events(
+    mut pearl_goto_events: EventWriter<PearlGotoEvent>,
+    mut pearl_pull_events: EventWriter<PearlPullEvent>,
+    mut pearl_pending_events: ResMut<PendingPearlEvents>,
+    mut query: Query<&Pathfinder>,
+) {
+    for pathfinder in &mut query {
+        if let Some(_goal) = &pathfinder.goal {
+            continue;
+        }
+
+        if let Some(event) = pearl_pending_events.goto.pop() {
+            pearl_goto_events.send(event);
+        }
+
+        if let Some(event) = pearl_pending_events.pull.pop() {
+            pearl_pull_events.send(event);
+        }
+    }
+}
+
+impl From<&PearlGotoEvent> for PearlPullEvent {
+    fn from(event: &PearlGotoEvent) -> Self {
+        Self {
+            entity:     event.entity,
+            block_pos:  event.block_pos,
+            owner_uuid: event.owner_uuid,
+        }
+    }
+}
+
+impl From<&PearlPullEvent> for PearlGotoEvent {
+    fn from(event: &PearlPullEvent) -> Self {
+        Self {
+            entity:     event.entity,
+            block_pos:  event.block_pos,
+            owner_uuid: event.owner_uuid,
+        }
     }
 }

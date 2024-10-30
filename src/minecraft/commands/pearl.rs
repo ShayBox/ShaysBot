@@ -29,7 +29,7 @@ impl Plugin for PearlCommandPlugin {
             Update,
             handle_command_event
                 .ambiguous_with_all()
-                .before(handle_pearl_event)
+                .before(handle_pearl_goto_event)
                 .before(handle_whisper_event)
                 .after(handle_chat_received_event),
         );
@@ -45,7 +45,7 @@ pub fn handle_register(mut registry: ResMut<Registry>) {
 #[allow(clippy::needless_pass_by_value)]
 pub fn handle_command_event(
     mut events: EventReader<CommandEvent>,
-    mut pearl_events: EventWriter<PearlEvent>,
+    mut pearl_events: EventWriter<PearlGotoEvent>,
     mut whisper_events: EventWriter<WhisperEvent>,
     query: Query<(&TabList, &Position)>,
     trapdoors: Res<Trapdoors>,
@@ -111,9 +111,10 @@ pub fn handle_command_event(
             content: String::from("[202] I'm on my way!"),
         });
 
-        pearl_events.send(PearlEvent {
-            entity:    event.entity,
-            block_pos: trapdoor.block_pos,
+        pearl_events.send(PearlGotoEvent {
+            entity:     event.entity,
+            block_pos:  trapdoor.block_pos,
+            owner_uuid: trapdoor.owner_uuid,
         });
     }
 }
