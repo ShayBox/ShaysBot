@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.3.3"
+version = "0.4.0"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2021"
 description = "My personal Minecraft bot using Azalea"
@@ -15,7 +15,7 @@ license = "MIT"
 anyhow = "1"
 #azalea = { path = "../azalea/azalea" }
 azalea = { git = "https://github.com/Shays-Forks/azalea.git" }
-bevy-discord = "0.2"
+bevy-discord = { version = "0.2", features = ["full"] }
 chrono = "0.4"
 derive-config = { version = "2", features = ["toml", "yaml"] }
 derive_more = { version = "1", features = ["full"] }

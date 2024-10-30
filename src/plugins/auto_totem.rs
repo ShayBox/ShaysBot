@@ -13,7 +13,7 @@ use azalea::{
     registry::Item,
 };
 
-use crate::minecraft::prelude::*;
+use crate::plugins::prelude::*;
 
 pub struct AutoTotemPlugin;
 

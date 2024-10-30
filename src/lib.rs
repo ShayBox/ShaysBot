@@ -5,18 +5,28 @@ extern crate serde_with;
 #[macro_use]
 extern crate tracing;
 
-pub mod minecraft;
+pub mod plugins;
 pub mod settings;
 pub mod trapdoors;
 
 use std::ops::{AddAssign, RemAssign};
 
+use azalea::{
+    ecs::prelude::*,
+    prelude::*,
+    swarm::{Swarm, SwarmBuilder, SwarmEvent},
+    Account,
+};
+use bevy_discord::bot::{DiscordBotConfig, DiscordBotPlugin};
+use derive_config::{DeriveTomlConfig, DeriveYamlConfig};
 use num_traits::{Bounded, One};
+use serenity::prelude::*;
 use url::Url;
 
 use crate::{
-    settings::Settings,
-    trapdoors::{Trapdoor, Trapdoors},
+    plugins::ShaysPluginGroup,
+    settings::{Settings, SettingsPlugin},
+    trapdoors::{Trapdoor, Trapdoors, TrapdoorsPlugin},
 };
 
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -38,6 +48,63 @@ pub fn check_for_updates() -> anyhow::Result<bool> {
     }
 
     Ok(false)
+}
+
+#[derive(Clone, Component, Default, Resource)]
+pub struct SwarmState;
+
+/// # Create and start the Minecraft bot client
+///
+/// # Errors
+/// Will return `Err` if `ClientBuilder::start` fails.
+#[allow(clippy::future_not_send)]
+pub async fn start() -> anyhow::Result<()> {
+    let settings = Settings::load().unwrap_or_default();
+    let trapdoors = Trapdoors::load().unwrap_or_default();
+    let server_address = settings.server_address.clone();
+    let discord_token = settings.discord_token.clone();
+    let minecraft_account = if settings.online {
+        Account::microsoft(&settings.username).await?
+    } else {
+        Account::offline(&settings.username)
+    };
+
+    settings.save()?;
+    let mut client = SwarmBuilder::new()
+        .set_swarm_handler(swarm_handler)
+        .add_account(minecraft_account)
+        .add_plugins(ShaysPluginGroup)
+        .add_plugins((SettingsPlugin(settings), TrapdoorsPlugin(trapdoors)));
+
+    if let Some(token) = discord_token {
+        let intents = GatewayIntents::GUILD_MESSAGES
+            | GatewayIntents::MESSAGE_CONTENT
+            | GatewayIntents::DIRECT_MESSAGES;
+        let config = DiscordBotConfig::default()
+            .gateway_intents(intents)
+            .token(token);
+        client = client.add_plugins(DiscordBotPlugin::new(config));
+    }
+
+    client.start(server_address).await?
+}
+
+/// # Errors
+/// Will return `Err` if `Swarm::add_with_opts` fails.
+pub async fn swarm_handler(
+    mut swarm: Swarm,
+    event: SwarmEvent,
+    state: SwarmState,
+) -> anyhow::Result<()> {
+    match event {
+        SwarmEvent::Chat(chat_packet) => println!("{}", chat_packet.message().to_ansi()),
+        SwarmEvent::Disconnect(account, options) => {
+            swarm.add_with_opts(&account, state, &options).await?;
+        }
+        _ => {}
+    }
+
+    Ok(())
 }
 
 #[derive(Default)]

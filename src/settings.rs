@@ -26,6 +26,9 @@ pub struct Settings {
     /// Minecraft Server Address
     pub server_address: ServerAddress,
 
+    // Discord Client Token
+    pub discord_token: Option<String>,
+
     /// Minecraft Chat Prefix
     pub chat_prefix: String,
 
@@ -44,6 +47,7 @@ impl Default for Settings {
         Self {
             pearl_view_distance: 64,
             server_address: ServerAddress::try_from("play.vengeancecraft.net").unwrap(),
+            discord_token: None,
             chat_prefix: String::from("!"),
             username: String::from("ShaysBot"),
             online: true,

@@ -5,7 +5,7 @@ use azalea::{
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
-use crate::minecraft::commands::{
+use crate::plugins::commands::{
     handle_chat_received_event,
     handle_whisper_event,
     Command,
@@ -33,15 +33,16 @@ pub fn handle_register(mut registry: ResMut<Registry>) {
 }
 
 pub fn handle_command_event(
-    mut events: EventReader<CommandEvent>,
+    mut command_events: EventReader<CommandEvent>,
     mut whisper_events: EventWriter<WhisperEvent>,
 ) {
-    for event in events.read() {
+    for event in command_events.read() {
         if event.command != Command::Seen {
             continue;
         }
 
         let mut whisper_event = WhisperEvent {
+            source:  event.source,
             entity:  event.entity,
             sender:  event.sender.clone(),
             content: String::new(),

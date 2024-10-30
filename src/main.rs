@@ -9,5 +9,5 @@ async fn main() -> anyhow::Result<()> {
         println!("{link}");
     }
 
-    shaysbot::minecraft::start().await
+    shaysbot::start().await
 }

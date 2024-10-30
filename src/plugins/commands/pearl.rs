@@ -7,7 +7,7 @@ use azalea::{
 };
 
 use crate::{
-    minecraft::{
+    plugins::{
         commands::{
             handle_chat_received_event,
             handle_whisper_event,
@@ -44,13 +44,13 @@ pub fn handle_register(mut registry: ResMut<Registry>) {
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn handle_command_event(
-    mut events: EventReader<CommandEvent>,
+    mut command_events: EventReader<CommandEvent>,
     mut pearl_events: EventWriter<PearlGotoEvent>,
     mut whisper_events: EventWriter<WhisperEvent>,
     query: Query<(&TabList, &Position)>,
     trapdoors: Res<Trapdoors>,
 ) {
-    for event in events.read() {
+    for event in command_events.read() {
         let Ok((tab_list, position)) = query.get(event.entity) else {
             continue;
         };
@@ -60,15 +60,27 @@ pub fn handle_command_event(
         }
 
         let sender = &event.sender;
+        if sender.is_empty() {
+            whisper_events.send(WhisperEvent {
+                source:  event.source,
+                entity:  event.entity,
+                sender:  sender.clone(),
+                content: String::from("[404] Missing Sender!"),
+            });
+
+            continue;
+        }
+
         let Some(uuid) = tab_list
             .iter()
             .find(|(_, info)| &info.profile.name == sender)
             .map(|(uuid, _)| uuid)
         else {
             whisper_events.send(WhisperEvent {
+                source:  event.source,
                 entity:  event.entity,
                 sender:  sender.clone(),
-                content: String::from("I couldn't find you in my list"),
+                content: format!("[404] Sender not found: {sender}"),
             });
 
             continue;
@@ -97,6 +109,7 @@ pub fn handle_command_event(
             })
         else {
             whisper_events.send(WhisperEvent {
+                source:  event.source,
                 entity:  event.entity,
                 sender:  sender.clone(),
                 content: String::from("[404] Pearl not found."),
@@ -106,6 +119,7 @@ pub fn handle_command_event(
         };
 
         whisper_events.send(WhisperEvent {
+            source:  event.source,
             entity:  event.entity,
             sender:  sender.clone(),
             content: String::from("[202] I'm on my way!"),
