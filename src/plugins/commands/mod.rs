@@ -15,7 +15,8 @@ use azalea::{
 };
 use bevy_discord::{
     bot::{events::BMessage, DiscordBotRes},
-    runtime::tokio_runtime,
+    runtime::tokio_runtime
+    ,
 };
 use serenity::{all::ChannelId, json::json};
 
@@ -134,7 +135,7 @@ pub fn handle_chat_received_event(
         let (sender, content) = if let Some(sender) = sender {
             (sender, content)
         } else if let Some((_whole, sender, content)) = regex_captures!(
-            r"^(?:\[.+\])? ([a-zA-Z_0-9]{1,16}) (?:> )?(?:whispers: )?(.+)$",
+            r"^(?:\[.+\] )?([a-zA-Z_0-9]{1,16}) (?:> )?(?:whispers: )?(.+)$",
             &content
         ) {
             (sender.to_string(), content.to_string())
@@ -158,6 +159,7 @@ pub fn handle_chat_received_event(
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 pub fn handle_whisper_event(
     mut whisper_events: EventReader<WhisperEvent>,
     mut chat_kind_events: EventWriter<SendChatKindEvent>,

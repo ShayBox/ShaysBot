@@ -61,32 +61,35 @@ pub struct SwarmState;
 pub async fn start() -> anyhow::Result<()> {
     let settings = Settings::load().unwrap_or_default();
     let trapdoors = Trapdoors::load().unwrap_or_default();
-    let server_address = settings.server_address.clone();
-    let discord_token = settings.discord_token.clone();
-    let minecraft_account = if settings.online {
+    let address = settings.server_address.clone();
+    let token = settings.discord_token.clone();
+    let account = if settings.online {
         Account::microsoft(&settings.username).await?
     } else {
         Account::offline(&settings.username)
     };
 
     settings.save()?;
-    let mut client = SwarmBuilder::new()
+
+    let intents = GatewayIntents::GUILD_MESSAGES
+        | GatewayIntents::MESSAGE_CONTENT
+        | GatewayIntents::DIRECT_MESSAGES;
+
+    let config = DiscordBotConfig::default()
+        .gateway_intents(intents)
+        .token(token);
+
+    let client = SwarmBuilder::new()
         .set_swarm_handler(swarm_handler)
-        .add_account(minecraft_account)
-        .add_plugins(ShaysPluginGroup)
-        .add_plugins((SettingsPlugin(settings), TrapdoorsPlugin(trapdoors)));
+        .add_account(account)
+        .add_plugins((
+            ShaysPluginGroup,
+            SettingsPlugin(settings),
+            TrapdoorsPlugin(trapdoors),
+            DiscordBotPlugin::new(config),
+        ));
 
-    if let Some(token) = discord_token {
-        let intents = GatewayIntents::GUILD_MESSAGES
-            | GatewayIntents::MESSAGE_CONTENT
-            | GatewayIntents::DIRECT_MESSAGES;
-        let config = DiscordBotConfig::default()
-            .gateway_intents(intents)
-            .token(token);
-        client = client.add_plugins(DiscordBotPlugin::new(config));
-    }
-
-    client.start(server_address).await?
+    client.start(address).await?
 }
 
 /// # Errors
