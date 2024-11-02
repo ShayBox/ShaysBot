@@ -16,6 +16,7 @@ use crate::plugins::commands::{
     WhisperEvent,
 };
 
+/// 2B2T Seen Command <https://2b2t.vc>
 pub struct SeenCommandPlugin;
 
 impl Plugin for SeenCommandPlugin {
@@ -44,8 +45,8 @@ pub fn handle_seen_command_event(
         }
 
         let mut whisper_event = WhisperEvent {
-            source:  event.source,
             entity:  event.entity,
+            source:  event.source.clone(),
             sender:  event.sender.clone(),
             content: String::new(),
         };
@@ -65,7 +66,7 @@ pub fn handle_seen_command_event(
             Err(error) => {
                 whisper_event.content = format!("[500] Error: {error}");
                 whisper_events.send(whisper_event);
-                eprintln!("{error}");
+                error!("{error}");
                 continue;
             }
         };

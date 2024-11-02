@@ -30,6 +30,7 @@ use azalea::{
 };
 use uuid::Uuid;
 
+/// Automatically pull stasis chamber pearls
 pub struct AutoPearlPlugin;
 
 impl Plugin for AutoPearlPlugin {

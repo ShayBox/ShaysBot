@@ -13,25 +13,26 @@ use azalea::{
     entity::{metadata::Player, LocalEntity},
     prelude::*,
 };
-use bevy_discord::{
-    bot::{events::BMessage, DiscordBotRes},
-    runtime::tokio_runtime,
-};
+use bevy_discord::{bot::events::BMessage, http::DiscordHttpResource, runtime::tokio_runtime};
+use ncr::AesKey;
 use serenity::{all::ChannelId, json::json};
 
-use crate::settings::Settings;
+use crate::{
+    ncr::{find_encryption, try_encrypt, EncryptionType, KEY},
+    settings::Settings,
+};
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Command {
     Pearl,
     Playtime,
     Seen,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum CommandSource {
     Discord(ChannelId),
-    Minecraft,
+    Minecraft(Option<EncryptionType>),
 }
 
 #[derive(Debug, Event)]
@@ -45,8 +46,8 @@ pub struct CommandEvent {
 
 #[derive(Debug, Event)]
 pub struct WhisperEvent {
-    source:  CommandSource,
     entity:  Entity,
+    source:  CommandSource,
     sender:  String,
     content: String,
 }
@@ -57,6 +58,21 @@ pub struct Registry(HashMap<String, Command>);
 impl Registry {
     fn register(&mut self, alias: &str, command: Command) {
         self.0.insert(alias.into(), command);
+    }
+
+    fn find_command(&self, content: &str, prefix: &str) -> Option<(VecDeque<String>, &Command)> {
+        let mut args = content
+            .split(' ')
+            .map(String::from)
+            .collect::<VecDeque<_>>();
+
+        let alias = args.pop_front()?;
+        let (_, command) = self
+            .0
+            .iter()
+            .find(|cmd| format!("{}{}", prefix, cmd.0) == alias)?;
+
+        Some((args, command))
     }
 }
 
@@ -95,8 +111,7 @@ pub fn handle_message_event(
 
         let http = event.ctx.http.clone();
         let message = event.new_message.clone();
-        let Some((args, command)) =
-            try_find_command(registry.0.clone(), &message.content, &settings.chat_prefix)
+        let Some((args, command)) = registry.find_command(&message.content, &settings.chat_prefix)
         else {
             continue;
         };
@@ -108,7 +123,7 @@ pub fn handle_message_event(
                 });
 
                 if let Err(error) = http.send_message(message.channel_id, Vec::new(), map).await {
-                    eprintln!("{error}");
+                    error!("{error}");
                 };
             });
 
@@ -119,7 +134,7 @@ pub fn handle_message_event(
             source: CommandSource::Discord(message.channel_id),
             entity,
             sender,
-            command,
+            command: *command,
             args,
         });
     }
@@ -137,7 +152,7 @@ pub fn handle_chat_received_event(
         let (sender, content) = if let Some(sender) = sender {
             (sender, content)
         } else if let Some((_whole, sender, content)) = regex_captures!(
-            r"^(?:\[.+\] )?([a-zA-Z_0-9]{1,16}) (?:> )?(?:whispers: )?(.+)$",
+            r"^(?:\[.+\] )?([a-zA-Z_0-9]{1,16}) (?:> )?(?:whispers: |-> )?(.+)$",
             &content
         ) {
             (sender.to_string(), content.to_string())
@@ -145,17 +160,17 @@ pub fn handle_chat_received_event(
             continue;
         };
 
-        let Some((args, command)) =
-            try_find_command(registry.0.clone(), &content, &settings.chat_prefix)
-        else {
+        let key = AesKey::decode_base64(&settings.encryption.key).unwrap_or_else(|_| KEY.clone());
+        let (encryption, content) = find_encryption(&content, &key);
+        let Some((args, command)) = registry.find_command(&content, &settings.chat_prefix) else {
             continue;
         };
 
         command_events.send(CommandEvent {
-            source: CommandSource::Minecraft,
+            source: CommandSource::Minecraft(encryption),
             entity: event.entity,
             sender,
-            command,
+            command: *command,
             args,
         });
     }
@@ -165,7 +180,7 @@ pub fn handle_chat_received_event(
 pub fn handle_whisper_event(
     mut chat_kind_events: EventWriter<SendChatKindEvent>,
     mut whisper_events: EventReader<WhisperEvent>,
-    discord: Res<DiscordBotRes>,
+    discord: Res<DiscordHttpResource>,
     settings: Res<Settings>,
 ) {
     for event in whisper_events.read() {
@@ -173,49 +188,30 @@ pub fn handle_whisper_event(
 
         match event.source {
             CommandSource::Discord(channel_id) => {
-                let Ok(http) = discord.get_http() else {
-                    continue;
-                };
-
+                let client = discord.client();
                 tokio_runtime().spawn(async move {
                     let map = &json!({
                         "content": content,
                     });
 
-                    if let Err(error) = http.send_message(channel_id, Vec::new(), map).await {
-                        eprintln!("{error}");
+                    if let Err(error) = client.send_message(channel_id, Vec::new(), map).await {
+                        error!("{error}");
                     }
                 });
             }
-            CommandSource::Minecraft => {
+            CommandSource::Minecraft(encryption) => {
                 if settings.quiet {
                     continue;
                 }
 
+                let content = try_encrypt(&settings.encryption, encryption, content);
+
                 chat_kind_events.send(SendChatKindEvent {
                     entity:  event.entity,
                     kind:    ChatPacketKind::Command,
-                    content: format!("w {} {}", event.sender, event.content),
+                    content: format!("w {} {content}", event.sender),
                 });
             }
         }
     }
-}
-
-pub fn try_find_command(
-    commands: HashMap<String, Command>,
-    content: &str,
-    prefix: &str,
-) -> Option<(VecDeque<String>, Command)> {
-    let mut args = content
-        .split(' ')
-        .map(String::from)
-        .collect::<VecDeque<_>>();
-
-    let alias = args.pop_front()?;
-    let (_, command) = commands
-        .into_iter()
-        .find(|cmd| format!("{}{}", prefix, cmd.0) == alias)?;
-
-    Some((args, command))
 }

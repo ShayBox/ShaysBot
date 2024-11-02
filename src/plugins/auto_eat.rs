@@ -21,6 +21,7 @@ use azalea::{
     Hunger,
 };
 
+/// Automatically eat any food item when below 18 hunger
 pub struct AutoEatPlugin;
 
 impl Plugin for AutoEatPlugin {

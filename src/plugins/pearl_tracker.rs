@@ -17,8 +17,9 @@ use azalea::{
 use derive_config::DeriveYamlConfig;
 use uuid::Uuid;
 
-use crate::{settings::Settings, trapdoors::Trapdoors, Trapdoor};
+use crate::{Settings, Trapdoor, Trapdoors};
 
+/// Keep track of thrown pearls inside of stasis chambers for `AutoPearlPlugin`
 pub struct PearlTrackerPlugin;
 
 impl Plugin for PearlTrackerPlugin {
@@ -179,7 +180,6 @@ pub fn find_nearest_trapdoor(position: Vec3, holder: &InstanceHolder) -> Option<
     for y in min_y..max_y {
         let pos = BlockPos::new(x, y, z);
         let Some(state) = instance.get_block_state(&pos) else {
-            println!("A");
             continue;
         };
 

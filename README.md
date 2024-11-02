@@ -11,17 +11,23 @@
 
 My personal Minecraft bot using Azalea
 
-## Plugins
+## Settings
+
+- [Settings](src/settings.rs)
+- [Trapdoors](src/trapdoors.rs)
+
+## Commands
 
 - [CommandsPlugin](src/plugins/commands/mod.rs)
 - [PearlCommandPlugin](src/plugins/commands/pearl.rs)
 - [PlaytimeCommandPlugin](src/plugins/commands/playtime.rs)
 - [SeenCommandPlugin](src/plugins/commands/seen.rs)
+
+## Plugins
+
 - [AntiAfkPlugin](src/plugins/anti_afk.rs)
 - [AutoEatPlugin](src/plugins/auto_eat.rs)
 - [AutoExitPlugin](src/plugins/auto_exit.rs)
 - [AutoLookPlugin](src/plugins/auto_look.rs)
 - [AutoPearlPlugin](src/plugins/auto_pearl.rs)
 - [PearlTrackerPlugin](src/plugins/pearl_tracker.rs)
-- [SettingsPlugin](src/settings.rs)
-- [TrapdoorsPlugin](src/trapdoors.rs)

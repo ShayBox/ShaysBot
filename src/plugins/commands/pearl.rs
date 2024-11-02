@@ -21,6 +21,7 @@ use crate::{
     trapdoors::Trapdoors,
 };
 
+/// Pearl Stasis Command
 pub struct PearlCommandPlugin;
 
 impl Plugin for PearlCommandPlugin {
@@ -61,8 +62,8 @@ pub fn handle_pearl_command_event(
 
         let sender = &event.sender;
         let mut whisper_event = WhisperEvent {
-            source:  event.source,
             entity:  event.entity,
+            source:  event.source.clone(),
             sender:  event.sender.clone(),
             content: String::new(),
         };

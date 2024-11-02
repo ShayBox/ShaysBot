@@ -15,6 +15,7 @@ use azalea::{
 
 use crate::plugins::prelude::*;
 
+/// Automatically equip totems in the offhand slot
 pub struct AutoTotemPlugin;
 
 impl Plugin for AutoTotemPlugin {

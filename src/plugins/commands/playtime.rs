@@ -2,11 +2,7 @@ use std::time::Duration;
 
 use azalea::{
     app::{App, Plugin, Startup, Update},
-    ecs::{
-        change_detection::ResMut,
-        event::{EventReader, EventWriter},
-        prelude::IntoSystemConfigs,
-    },
+    ecs::prelude::*,
 };
 use serde::Deserialize;
 
@@ -19,6 +15,7 @@ use crate::plugins::commands::{
     WhisperEvent,
 };
 
+/// 2B2T Playtime Command <https://2b2t.vc>
 pub struct PlaytimeCommandPlugin;
 
 impl Plugin for PlaytimeCommandPlugin {
@@ -47,8 +44,8 @@ pub fn handle_playtime_command_event(
         }
 
         let mut whisper_event = WhisperEvent {
-            source:  event.source,
             entity:  event.entity,
+            source:  event.source.clone(),
             sender:  event.sender.clone(),
             content: String::new(),
         };
@@ -68,7 +65,7 @@ pub fn handle_playtime_command_event(
             Err(error) => {
                 whisper_event.content = String::from("[404] Player not found.");
                 whisper_events.send(whisper_event);
-                eprintln!("{error}");
+                error!("{error}");
                 continue;
             }
         };

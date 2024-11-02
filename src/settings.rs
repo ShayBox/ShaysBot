@@ -1,58 +1,70 @@
 use azalea::{
     app::{App, Plugin},
-    ecs::prelude::*,
     prelude::*,
-    protocol::ServerAddress,
 };
 use derive_config::DeriveTomlConfig;
 use serde::{Deserialize, Serialize};
+use smart_default::SmartDefault;
 
-pub struct SettingsPlugin(pub Settings);
-
-impl Plugin for SettingsPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(self.0.clone());
-    }
+#[derive(Clone, Default, Deserialize, Eq, PartialEq, Serialize)]
+pub enum EncryptionMode {
+    #[default]
+    OnDemand,
+    Always,
+    Never,
 }
 
-#[derive(Clone, Debug, DeriveTomlConfig, Deserialize, Serialize, Resource)]
-#[serde(default)] /* Default missing fields */
+#[derive(Clone, Deserialize, Serialize, SmartDefault)]
+pub struct ChatEncryption {
+    /// OnDemand | Always | Never
+    #[default(EncryptionMode::OnDemand)]
+    pub mode: EncryptionMode,
+
+    /// Default No Chat Reports mod key
+    #[default("blfrngArk3chG6wzncOZ5A==")]
+    pub key: String,
+}
+
+#[derive(Clone, DeriveTomlConfig, Deserialize, Resource, Serialize, SmartDefault)]
+#[serde(default)] /* Default new or missing fields instead of the whole struct */
 pub struct Settings {
+    /// Minecraft Encryption Mode (NCR Mod)
+    pub encryption: ChatEncryption,
+
     /// This is the distance in blocks that ender pearls are visible from the player.
     /// It is better to under-estimate the value than to over-estimate it.
     /// If you notice pearls not saving outside visual range, try decreasing this value.
     /// If you notice manually pulled pearls not being removed, try increasing this value.
+    #[default(64)]
     pub pearl_view_distance: i32,
 
     /// Minecraft Server Address
-    pub server_address: ServerAddress,
+    #[default("play.vengeancecraft.net")]
+    pub server_address: String,
 
-    // Discord Client Token
+    /// Discord Client Token (Optional)
+    #[default("")]
     pub discord_token: String,
 
     /// Minecraft Chat Prefix
+    #[default("!")]
     pub chat_prefix: String,
 
     /// Minecraft Account Username
+    #[default("ShaysBot")]
     pub username: String,
 
-    /// Minecraft Auth Mode
+    /// Minecraft Online Auth
+    #[default(true)]
     pub online: bool,
 
-    /// Quiet Mode
+    /// Disable in-game command responses
+    #[default(false)]
     pub quiet: bool,
 }
 
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            pearl_view_distance: 64,
-            server_address: ServerAddress::try_from("play.vengeancecraft.net").unwrap(),
-            discord_token: String::new(),
-            chat_prefix: String::from("!"),
-            username: String::from("ShaysBot"),
-            online: true,
-            quiet: false,
-        }
+impl Plugin for Settings {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(self.clone());
     }
 }

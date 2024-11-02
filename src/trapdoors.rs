@@ -11,18 +11,6 @@ use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;
 use uuid::Uuid;
 
-pub struct TrapdoorsPlugin(pub Trapdoors);
-
-impl Plugin for TrapdoorsPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(self.0.clone());
-    }
-}
-
-#[serde_as]
-#[derive(Clone, Debug, Default, DeriveYamlConfig, Deserialize, Serialize, Resource)]
-pub struct Trapdoors(#[serde_as(as = "Vec<(_, _)>")] pub HashMap<Uuid, Trapdoor>);
-
 #[serde_as]
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct Trapdoor {
@@ -30,6 +18,16 @@ pub struct Trapdoor {
     pub block_pos:  BlockPos,
     pub entity_id:  u32,
     pub owner_uuid: Uuid,
+}
+
+#[serde_as]
+#[derive(Clone, Default, DeriveYamlConfig, Deserialize, Resource, Serialize)]
+pub struct Trapdoors(#[serde_as(as = "Vec<(_, _)>")] pub HashMap<Uuid, Trapdoor>);
+
+impl Plugin for Trapdoors {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(self.clone());
+    }
 }
 
 impl Trapdoor {

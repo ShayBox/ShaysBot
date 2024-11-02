@@ -4,6 +4,7 @@ use azalea::{
     ecs::prelude::*,
 };
 
+/// Automatically exit the process if `ZenithProxy` disconnects it
 pub struct AutoExitPlugin;
 
 impl Plugin for AutoExitPlugin {
@@ -18,9 +19,9 @@ pub fn handle_disconnect_event(mut events: EventReader<DisconnectEvent>) {
             continue;
         };
 
-        println!("Disconnect Reason: {}", reason.to_ansi());
+        info!("Disconnect Reason: {}", reason.to_ansi());
         if ["AutoDisconnect"].contains(&&*reason.to_string()) {
-            eprintln!("Exiting to stay disconnected...");
+            info!("Exiting to stay disconnected...");
             std::process::exit(1);
         }
     }

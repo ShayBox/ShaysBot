@@ -1,3 +1,6 @@
+#![feature(trivial_bounds)]
+
+extern crate core;
 #[macro_use]
 extern crate lazy_regex;
 #[macro_use]
@@ -5,6 +8,7 @@ extern crate serde_with;
 #[macro_use]
 extern crate tracing;
 
+pub mod ncr;
 pub mod plugins;
 pub mod settings;
 pub mod trapdoors;
@@ -23,10 +27,10 @@ use num_traits::{Bounded, One};
 use serenity::prelude::*;
 use url::Url;
 
-use crate::{
+pub use crate::{
     plugins::ShaysPluginGroup,
-    settings::{Settings, SettingsPlugin},
-    trapdoors::{Trapdoor, Trapdoors, TrapdoorsPlugin},
+    settings::Settings,
+    trapdoors::{Trapdoor, Trapdoors},
 };
 
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -71,25 +75,17 @@ pub async fn start() -> anyhow::Result<()> {
 
     settings.save()?;
 
-    let intents = GatewayIntents::GUILD_MESSAGES
-        | GatewayIntents::MESSAGE_CONTENT
-        | GatewayIntents::DIRECT_MESSAGES;
-
     let config = DiscordBotConfig::default()
-        .gateway_intents(intents)
+        .gateway_intents(GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT)
         .token(token);
 
     let client = SwarmBuilder::new()
         .set_swarm_handler(swarm_handler)
         .add_account(account)
-        .add_plugins((
-            ShaysPluginGroup,
-            SettingsPlugin(settings),
-            TrapdoorsPlugin(trapdoors),
-            DiscordBotPlugin::new(config),
-        ));
+        .add_plugins((settings, trapdoors))
+        .add_plugins((ShaysPluginGroup, DiscordBotPlugin::new(config)));
 
-    client.start(address).await?
+    client.start(address.as_str()).await?
 }
 
 /// # Errors
@@ -100,7 +96,7 @@ pub async fn swarm_handler(
     state: SwarmState,
 ) -> anyhow::Result<()> {
     match event {
-        SwarmEvent::Chat(chat_packet) => println!("{}", chat_packet.message().to_ansi()),
+        SwarmEvent::Chat(chat_packet) => info!("{}", chat_packet.message().to_ansi()),
         SwarmEvent::Disconnect(account, options) => {
             swarm.add_with_opts(&account, state, &options).await?;
         }
@@ -111,20 +107,20 @@ pub async fn swarm_handler(
 }
 
 #[derive(Default)]
-pub struct BoundedCounter<T>(T);
+pub struct BoundedCounter<I>(I);
 
-impl<T> Iterator for BoundedCounter<T>
+impl<I> Iterator for BoundedCounter<I>
 where
-    T: Copy + Bounded + One + AddAssign<T> + RemAssign<T>,
+    I: Copy + Bounded + One + AddAssign<I> + RemAssign<I>,
 {
-    type Item = T;
+    type Item = I;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let ticks = self.0;
+        let i = self.0;
 
-        self.0 %= T::max_value();
-        self.0 += T::one();
+        self.0 %= I::max_value();
+        self.0 += I::one();
 
-        Some(ticks)
+        Some(i)
     }
 }

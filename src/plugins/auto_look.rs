@@ -8,6 +8,7 @@ use azalea::{
     LookAtEvent,
 };
 
+/// Automatically stare at the closest player
 pub struct AutoLookPlugin;
 
 impl Plugin for AutoLookPlugin {

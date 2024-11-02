@@ -9,11 +9,7 @@ use azalea::{
 
 use crate::BoundedCounter;
 
-#[derive(Component, Default)]
-pub struct AntiAfk {
-    pub ticks: BoundedCounter<u8>,
-}
-
+/// Automatically send swing arm packets every 256 ticks
 pub struct AntiAfkPlugin;
 
 impl Plugin for AntiAfkPlugin {
@@ -25,6 +21,11 @@ impl Plugin for AntiAfkPlugin {
                 .after(continue_mining_block),
         );
     }
+}
+
+#[derive(Component, Default)]
+pub struct AntiAfk {
+    pub ticks: BoundedCounter<u8>,
 }
 
 type InitQueryData = Entity;
