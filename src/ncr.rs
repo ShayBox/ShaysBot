@@ -23,12 +23,20 @@ pub static KEY: LazyLock<AesKey> = LazyLock::new(|| {
     ])
 });
 
+static ENCODERS: LazyLock<[EncodingType; 3]> = LazyLock::new(|| {
+    [
+        EncodingType::NewBase64r,
+        EncodingType::Base64r,
+        EncodingType::Base64,
+    ]
+});
+
 #[derive(Clone, Copy, Debug)]
 pub enum EncodingType {
     Base64,
     Base64r,
     NewBase64r,
-    MC256,
+    Mc256,
     Sus16,
 }
 
@@ -38,7 +46,7 @@ impl Encoding for EncodingType {
             Self::NewBase64r => NewBase64rEncoding.encode(text),
             Self::Base64r => Base64rEncoding.encode(text),
             Self::Base64 => Base64Encoding.encode(text),
-            Self::MC256 => Mc256Encoding.encode(text),
+            Self::Mc256 => Mc256Encoding.encode(text),
             Self::Sus16 => Sus16Encoding.encode(text),
         }
     }
@@ -48,7 +56,7 @@ impl Encoding for EncodingType {
             Self::NewBase64r => NewBase64rEncoding.decode(text),
             Self::Base64r => Base64rEncoding.decode(text),
             Self::Base64 => Base64Encoding.decode(text),
-            Self::MC256 => Mc256Encoding.decode(text),
+            Self::Mc256 => Mc256Encoding.decode(text),
             Self::Sus16 => Sus16Encoding.decode(text),
         }
     }
@@ -83,20 +91,8 @@ impl Encryption for EncryptionType {
 
 #[must_use]
 pub fn find_encryption(ciphertext: &str, key: &AesKey) -> (Option<EncryptionType>, String) {
-    let encoders = vec![
-        EncodingType::NewBase64r,
-        EncodingType::Base64r,
-        EncodingType::Base64,
-        EncodingType::NewBase64r,
-        EncodingType::Base64r,
-        EncodingType::Base64,
-        EncodingType::NewBase64r,
-        EncodingType::Base64r,
-        EncodingType::Base64,
-    ];
-
-    for encoder in encoders {
-        let encryptors = vec![
+    for &encoder in ENCODERS.iter() {
+        let encryptors = [
             EncryptionType::CFB(encoder),
             EncryptionType::ECB(encoder),
             EncryptionType::GCM(encoder),
@@ -125,7 +121,8 @@ pub fn try_encrypt(
     }
 
     let key = AesKey::decode_base64(&chat_encryption.key).unwrap_or_else(|_| KEY.clone());
-    if let Some(encryption) = type_encryption.as_ref() {
+
+    if let Some(encryption) = type_encryption {
         if let Ok(ciphertext) = encryption.encrypt(&prepend_header(&plaintext), &key) {
             return ciphertext;
         }

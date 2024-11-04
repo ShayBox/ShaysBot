@@ -9,25 +9,25 @@
 
 # ShaysBot
 
-My personal Minecraft bot using Azalea
+A feature-rich Minecraft bot built using [Azalea](https://github.com/azalea-rs/azalea), designed to enhance gameplay
+with automated features and useful commands. Written in Rust for high performance and reliability. Includes support for
+No Chat Reports (NCR) encryption to ensure secure and private communication.
 
-## Settings
+## Features
 
-- [Settings](src/settings.rs)
-- [Trapdoors](src/trapdoors.rs)
+### Automation Plugins
 
-## Commands
+- [**AntiAFK**](src/plugins/anti_afk.rs) - Prevents being kicked for AFK by simulating activity
+- [**AutoEat**](src/plugins/auto_eat.rs) - Automatically eats food when hunger is low
+- [**AutoExit**](src/plugins/auto_exit.rs) - Automatically exits in dangerous situations
+- [**AutoLook**](src/plugins/auto_look.rs) - Automatically looks at specific targets
+- [**AutoPearl**](src/plugins/auto_pearl.rs) - Handles automatic ender pearl throwing
+- [**AutoTotem**](src/plugins/auto_totem.rs) - Automatically equips totems for survival
+- [**PearlTracker**](src/plugins/pearl_tracker.rs) - Tracks and manages ender pearl cooldowns and usage
+- [**Discord Integration**](src/plugins/commands/discord.rs) - Discord bot integration for commands
 
-- [CommandsPlugin](src/plugins/commands/mod.rs)
-- [PearlCommandPlugin](src/plugins/commands/pearl.rs)
-- [PlaytimeCommandPlugin](src/plugins/commands/playtime.rs)
-- [SeenCommandPlugin](src/plugins/commands/seen.rs)
+### Commands
 
-## Plugins
-
-- [AntiAfkPlugin](src/plugins/anti_afk.rs)
-- [AutoEatPlugin](src/plugins/auto_eat.rs)
-- [AutoExitPlugin](src/plugins/auto_exit.rs)
-- [AutoLookPlugin](src/plugins/auto_look.rs)
-- [AutoPearlPlugin](src/plugins/auto_pearl.rs)
-- [PearlTrackerPlugin](src/plugins/pearl_tracker.rs)
+- [**Pearl**](src/plugins/commands/pearl.rs) - Manages ender pearl-related commands and tracking
+- [**Playtime**](src/plugins/commands/playtime.rs) - Tracks and displays player playtime statistics (2b2t.vc)
+- [**Seen**](src/plugins/commands/seen.rs) - Shows when players were last seen online (2b2t.vc)

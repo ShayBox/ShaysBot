@@ -24,6 +24,7 @@ use azalea::{
 use bevy_discord::bot::{DiscordBotConfig, DiscordBotPlugin};
 use derive_config::{DeriveTomlConfig, DeriveYamlConfig};
 use num_traits::{Bounded, One};
+use plugins::prelude::DiscordCommandsPlugin;
 use serenity::prelude::*;
 use url::Url;
 
@@ -74,16 +75,19 @@ pub async fn start() -> anyhow::Result<()> {
     };
 
     settings.save()?;
-
-    let config = DiscordBotConfig::default()
-        .gateway_intents(GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT)
-        .token(token);
-
-    let client = SwarmBuilder::new()
+    let mut client = SwarmBuilder::new()
         .set_swarm_handler(swarm_handler)
         .add_account(account)
         .add_plugins((settings, trapdoors))
-        .add_plugins((ShaysPluginGroup, DiscordBotPlugin::new(config)));
+        .add_plugins(ShaysPluginGroup);
+
+    if !token.is_empty() {
+        let config = DiscordBotConfig::default()
+            .gateway_intents(GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT)
+            .token(token);
+
+        client = client.add_plugins((DiscordBotPlugin::new(config), DiscordCommandsPlugin));
+    }
 
     client.start(address.as_str()).await?
 }

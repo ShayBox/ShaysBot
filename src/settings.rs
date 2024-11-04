@@ -16,7 +16,7 @@ pub enum EncryptionMode {
 
 #[derive(Clone, Deserialize, Serialize, SmartDefault)]
 pub struct ChatEncryption {
-    /// OnDemand | Always | Never
+    /// `OnDemand` | `Always` | `Never`
     #[default(EncryptionMode::OnDemand)]
     pub mode: EncryptionMode,
 
@@ -28,9 +28,6 @@ pub struct ChatEncryption {
 #[derive(Clone, DeriveTomlConfig, Deserialize, Resource, Serialize, SmartDefault)]
 #[serde(default)] /* Default new or missing fields instead of the whole struct */
 pub struct Settings {
-    /// Minecraft Encryption Mode (NCR Mod)
-    pub encryption: ChatEncryption,
-
     /// This is the distance in blocks that ender pearls are visible from the player.
     /// It is better to under-estimate the value than to over-estimate it.
     /// If you notice pearls not saving outside visual range, try decreasing this value.
@@ -61,6 +58,9 @@ pub struct Settings {
     /// Disable in-game command responses
     #[default(false)]
     pub quiet: bool,
+
+    /// Minecraft Encryption Mode (NCR Mod)
+    pub encryption: ChatEncryption,
 }
 
 impl Plugin for Settings {

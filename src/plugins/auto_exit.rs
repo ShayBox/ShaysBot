@@ -13,6 +13,8 @@ impl Plugin for AutoExitPlugin {
     }
 }
 
+const ZENITH_REASON: &str = "AutoDisconnect";
+
 pub fn handle_disconnect_event(mut events: EventReader<DisconnectEvent>) {
     for event in events.read() {
         let Some(reason) = &event.reason else {
@@ -20,7 +22,7 @@ pub fn handle_disconnect_event(mut events: EventReader<DisconnectEvent>) {
         };
 
         info!("Disconnect Reason: {}", reason.to_ansi());
-        if ["AutoDisconnect"].contains(&&*reason.to_string()) {
+        if reason.to_string() == ZENITH_REASON {
             info!("Exiting to stay disconnected...");
             std::process::exit(1);
         }
