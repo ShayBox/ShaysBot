@@ -7,17 +7,7 @@ use azalea::{
 };
 
 use crate::{
-    plugins::{
-        commands::{
-            handle_chat_received_event,
-            handle_whisper_event,
-            Command,
-            CommandEvent,
-            Registry,
-            WhisperEvent,
-        },
-        prelude::*,
-    },
+    plugins::{commands::prelude::*, prelude::*},
     trapdoors::Trapdoors,
 };
 
@@ -26,18 +16,19 @@ pub struct PearlCommandPlugin;
 
 impl Plugin for PearlCommandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, handle_register).add_systems(
+        app.add_systems(Startup, handle_pearl_register).add_systems(
             Update,
             handle_pearl_command_event
                 .ambiguous_with_all()
                 .before(handle_pearl_goto_event)
-                .before(handle_whisper_event)
+                .before(handle_discord_whisper_event)
+                .before(handle_minecraft_whisper_event)
                 .after(handle_chat_received_event),
         );
     }
 }
 
-pub fn handle_register(mut registry: ResMut<Registry>) {
+pub fn handle_pearl_register(mut registry: ResMut<Registry>) {
     for alias in ["pearl", "tp", "teleport", "pull", "here", "home", "warp"] {
         registry.register(alias, Command::Pearl);
     }

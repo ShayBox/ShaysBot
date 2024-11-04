@@ -1,6 +1,1 @@
-pub use super::{
-    pearl::PearlCommandPlugin,
-    playtime::PlaytimeCommandPlugin,
-    seen::SeenCommandPlugin,
-    CommandsPlugin,
-};
+pub use super::{discord::*, pearl::*, playtime::*, seen::*, *};

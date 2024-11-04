@@ -7,31 +7,25 @@ use azalea::{
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
-use crate::plugins::commands::{
-    handle_chat_received_event,
-    handle_whisper_event,
-    Command,
-    CommandEvent,
-    Registry,
-    WhisperEvent,
-};
+use crate::plugins::commands::prelude::*;
 
 /// 2B2T Seen Command <https://2b2t.vc>
 pub struct SeenCommandPlugin;
 
 impl Plugin for SeenCommandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, handle_register).add_systems(
+        app.add_systems(Startup, handle_seen_register).add_systems(
             Update,
             handle_seen_command_event
                 .ambiguous_with_all()
-                .before(handle_whisper_event)
+                .before(handle_discord_whisper_event)
+                .before(handle_minecraft_whisper_event)
                 .after(handle_chat_received_event),
         );
     }
 }
 
-pub fn handle_register(mut registry: ResMut<Registry>) {
+pub fn handle_seen_register(mut registry: ResMut<Registry>) {
     registry.register("seen", Command::Seen);
 }
 

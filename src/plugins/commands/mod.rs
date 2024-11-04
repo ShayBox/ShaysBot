@@ -1,5 +1,6 @@
 pub mod prelude;
 
+mod discord;
 mod pearl;
 mod playtime;
 mod seen;
@@ -10,12 +11,10 @@ use azalea::{
     app::{App, Plugin, Update},
     chat::{handle_send_chat_event, ChatPacketKind, ChatReceivedEvent, SendChatKindEvent},
     ecs::prelude::*,
-    entity::{metadata::Player, LocalEntity},
     prelude::*,
 };
-use bevy_discord::{bot::events::BMessage, http::DiscordHttpResource, runtime::tokio_runtime};
 use ncr::AesKey;
-use serenity::{all::ChannelId, json::json};
+use serenity::all::ChannelId;
 
 use crate::{
     ncr::{find_encryption, try_encrypt, EncryptionType, KEY},
@@ -37,30 +36,34 @@ pub enum CommandSource {
 
 #[derive(Debug, Event)]
 pub struct CommandEvent {
-    source:  CommandSource,
-    entity:  Entity,
-    sender:  String,
-    command: Command,
-    args:    VecDeque<String>,
+    pub source:  CommandSource,
+    pub entity:  Entity,
+    pub sender:  String,
+    pub command: Command,
+    pub args:    VecDeque<String>,
 }
 
 #[derive(Debug, Event)]
 pub struct WhisperEvent {
-    entity:  Entity,
-    source:  CommandSource,
-    sender:  String,
-    content: String,
+    pub entity:  Entity,
+    pub source:  CommandSource,
+    pub sender:  String,
+    pub content: String,
 }
 
 #[derive(Default, Resource)]
 pub struct Registry(HashMap<String, Command>);
 
 impl Registry {
-    fn register(&mut self, alias: &str, command: Command) {
+    pub fn register(&mut self, alias: &str, command: Command) {
         self.0.insert(alias.into(), command);
     }
 
-    fn find_command(&self, content: &str, prefix: &str) -> Option<(VecDeque<String>, &Command)> {
+    pub fn find_command(
+        &self,
+        content: &str,
+        prefix: &str,
+    ) -> Option<(VecDeque<String>, &Command)> {
         let mut args = content
             .split(' ')
             .map(String::from)
@@ -80,63 +83,17 @@ pub struct CommandsPlugin;
 
 impl Plugin for CommandsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<BMessage>()
-            .add_event::<CommandEvent>()
+        app.add_event::<CommandEvent>()
             .add_event::<WhisperEvent>()
             .insert_resource(Registry::default())
             .add_systems(
                 Update,
                 (
-                    handle_message_event,
                     handle_chat_received_event,
-                    handle_whisper_event.before(handle_send_chat_event),
+                    handle_minecraft_whisper_event.before(handle_send_chat_event),
                 )
                     .chain(),
             );
-    }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-pub fn handle_message_event(
-    mut command_events: EventWriter<CommandEvent>,
-    mut message_events: EventReader<BMessage>,
-    mut query: Query<Entity, (With<Player>, With<LocalEntity>)>,
-    registry: Res<Registry>,
-    settings: Res<Settings>,
-) {
-    for event in message_events.read() {
-        let Ok(entity) = query.get_single_mut() else {
-            continue;
-        };
-
-        let http = event.ctx.http.clone();
-        let message = event.new_message.clone();
-        let Some((args, command)) = registry.find_command(&message.content, &settings.chat_prefix)
-        else {
-            continue;
-        };
-
-        let Some(sender) = args.front().map(String::to_owned) else {
-            tokio_runtime().spawn(async move {
-                let map = &json!({
-                    "content": "[404] Missing Player Name!"
-                });
-
-                if let Err(error) = http.send_message(message.channel_id, Vec::new(), map).await {
-                    error!("{error}");
-                };
-            });
-
-            continue;
-        };
-
-        command_events.send(CommandEvent {
-            source: CommandSource::Discord(message.channel_id),
-            entity,
-            sender,
-            command: *command,
-            args,
-        });
     }
 }
 
@@ -177,41 +134,24 @@ pub fn handle_chat_received_event(
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn handle_whisper_event(
+pub fn handle_minecraft_whisper_event(
     mut chat_kind_events: EventWriter<SendChatKindEvent>,
     mut whisper_events: EventReader<WhisperEvent>,
-    discord: Res<DiscordHttpResource>,
     settings: Res<Settings>,
 ) {
     for event in whisper_events.read() {
-        let content = event.content.clone();
-
-        match event.source {
-            CommandSource::Discord(channel_id) => {
-                let client = discord.client();
-                tokio_runtime().spawn(async move {
-                    let map = &json!({
-                        "content": content,
-                    });
-
-                    if let Err(error) = client.send_message(channel_id, Vec::new(), map).await {
-                        error!("{error}");
-                    }
-                });
+        if let CommandSource::Minecraft(encryption) = event.source {
+            if settings.quiet {
+                continue;
             }
-            CommandSource::Minecraft(encryption) => {
-                if settings.quiet {
-                    continue;
-                }
 
-                let content = try_encrypt(&settings.encryption, encryption, content);
+            let content = try_encrypt(&settings.encryption, encryption, event.content.clone());
 
-                chat_kind_events.send(SendChatKindEvent {
-                    entity:  event.entity,
-                    kind:    ChatPacketKind::Command,
-                    content: format!("w {} {content}", event.sender),
-                });
-            }
+            chat_kind_events.send(SendChatKindEvent {
+                entity:  event.entity,
+                kind:    ChatPacketKind::Command,
+                content: format!("w {} {content}", event.sender),
+            });
         }
     }
 }

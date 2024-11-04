@@ -1,21 +1,45 @@
-MIT License
+Custom Proprietary License
 
-Copyright (c) 2023 Shayne Hartford
+Copyright (c) 2024 Shayne Hartford
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. Source Code Access
+   The source code of this software is proprietary and requires payment of a $10 fee to access.
+   Access to the source code does not transfer any ownership rights.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+2. Binary Distribution
+   The compiled binaries of this software may be freely distributed, provided:
+   a) No fee is charged for the binaries themselves
+   b) This license and copyright notice are included with all distributions
+   c) Recipients are clearly informed that the source code is not included and requires separate purchase
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+3. Permissions
+   This license grants the following rights:
+   a) Use and run the compiled binaries for any purpose
+   b) Distribute the compiled binaries at no cost
+   c) Make personal modifications to the source code (if purchased)
+   d) Provide access to hosted instances of the software
+
+4. Restrictions
+   The following are expressly prohibited:
+   a) Selling or commercially exploiting the software or modified versions
+   b) Sharing, redistributing, or publishing the source code (even if purchased)
+   c) Removing or modifying this license from any distribution
+   d) Using the software's name or branding for derivative works
+
+5. Source Code Purchase
+   a) The $10 source code access fee grants a personal, non-transferable right to view and modify the code
+   b) This purchase does not grant rights to redistribute the source code
+   c) Each individual or entity must purchase their own source code access
+
+6. Warranty Disclaimer
+   THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+7. Termination
+   Violation of any terms related to source code access or distribution will result in immediate termination of source code access rights.
+   Binary usage and distribution rights remain unaffected by termination.

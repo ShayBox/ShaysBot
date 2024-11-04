@@ -4,9 +4,6 @@ on:
 
 jobs:
   release:
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     strategy:
       fail-fast: false
       matrix:
@@ -58,14 +55,34 @@ jobs:
       - name: Build Release Binaries
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Rename Binary and Upload to GitHub Release
+      - name: Upload to Private Repo (Windows)
         if: ${{ matrix.runner == 'windows-latest' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mv target/${{ matrix.target }}/release/shaysbot.exe ShaysBot-${{ matrix.name }}.exe
           gh release upload ${{ github.ref_name }} ShaysBot-${{ matrix.name }}.exe --clobber
 
-      - name: Rename Binary and Upload to GitHub Release
+      - name: Upload to Private Repo (Unix)
         if: ${{ matrix.runner != 'windows-latest' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mv target/${{ matrix.target }}/release/shaysbot ShaysBot-${{ matrix.name }}
           gh release upload ${{ github.ref_name }} ShaysBot-${{ matrix.name }} --clobber
+
+      - name: Upload to Public Repo (Windows)
+        if: ${{ matrix.runner == 'windows-latest' }}
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ github.ref_name }} --repo ShayBox/ShaysBot --title "${{ github.event.release.name }}" --notes "${{ github.event.release.body }}" || true
+          gh release upload ${{ github.ref_name }} ShaysBot-${{ matrix.name }}.exe --clobber --repo ShayBox/ShaysBot
+
+      - name: Upload to Public Repo (Unix)
+        if: ${{ matrix.runner != 'windows-latest' }}
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ github.ref_name }} --repo ShayBox/ShaysBot --title "${{ github.event.release.name }}" --notes "${{ github.event.release.body }}" || true
+          gh release upload ${{ github.ref_name }} ShaysBot-${{ matrix.name }} --clobber --repo ShayBox/ShaysBot
