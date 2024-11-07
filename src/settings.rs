@@ -1,10 +1,14 @@
+use std::collections::HashMap;
+
 use azalea::{
     app::{App, Plugin},
     prelude::*,
 };
 use derive_config::DeriveTomlConfig;
 use serde::{Deserialize, Serialize};
+use serde_with::NoneAsEmptyString;
 use smart_default::SmartDefault;
+use uuid::Uuid;
 
 #[derive(Clone, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum EncryptionMode {
@@ -14,53 +18,61 @@ pub enum EncryptionMode {
     Never,
 }
 
-#[derive(Clone, Deserialize, Serialize, SmartDefault)]
-pub struct ChatEncryption {
-    /// `OnDemand` | `Always` | `Never`
-    #[default(EncryptionMode::OnDemand)]
-    pub mode: EncryptionMode,
+strike! {
+    #[strikethrough[serde_as]]
+    #[strikethrough[derive(Clone, Deserialize, Serialize, SmartDefault)]]
+    #[strikethrough[serde(default)]]
+    #[derive(DeriveTomlConfig, Resource)]
+    pub struct Settings {
+        /// Minecraft server ender pearl view distance in blocks.
+        /// It is better to under-estimate than to over-estimate.
+        #[default(64)]
+        pub pearl_view_distance: i32,
 
-    /// Default No Chat Reports mod key
-    #[default("blfrngArk3chG6wzncOZ5A==")]
-    pub key: String,
-}
+        /// Disable in-game command responses globally.
+        #[default(false)]
+        #[serde(alias = "quiet")] /* Deprecated: 0.6.0 */
+        pub disable_responses: bool,
 
-#[derive(Clone, DeriveTomlConfig, Deserialize, Resource, Serialize, SmartDefault)]
-#[serde(default)] /* Default new or missing fields instead of the whole struct */
-pub struct Settings {
-    /// This is the distance in blocks that ender pearls are visible from the player.
-    /// It is better to under-estimate the value than to over-estimate it.
-    /// If you notice pearls not saving outside visual range, try decreasing this value.
-    /// If you notice manually pulled pearls not being removed, try increasing this value.
-    #[default(64)]
-    pub pearl_view_distance: i32,
+        /// Minecraft online-mode auth.
+        #[default(true)]
+        #[serde(alias = "online")] /* Deprecated: 0.6.0 */
+        pub online_mode: bool,
 
-    /// Minecraft Server Address
-    #[default("play.vengeancecraft.net")]
-    pub server_address: String,
+        /// Minecraft account username.
+        #[default("ShaysBot")]
+        #[serde(alias = "username")] /* Deprecated: 0.6.0 */
+        pub account_username: String,
 
-    /// Discord Client Token (Optional)
-    #[default("")]
-    pub discord_token: String,
+        /// Minecraft server address.
+        #[default("play.vengeancecraft.net")]
+        pub server_address: String,
 
-    /// Minecraft Chat Prefix
-    #[default("!")]
-    pub chat_prefix: String,
+        /// Discord client token. (Optional)
+        #[default("")]
+        pub discord_token: String,
 
-    /// Minecraft Account Username
-    #[default("ShaysBot")]
-    pub username: String,
+        /// Chat command prefix.
+        #[default("!")]
+        #[serde(alias = "chat_prefix")] /* Deprecated: 0.6.0 */
+        pub command_prefix: String,
 
-    /// Minecraft Online Auth
-    #[default(true)]
-    pub online: bool,
+        /// Chat encryption using the NCR (No Chat Reports) mod.
+        pub encryption: pub struct ChatEncryption {
+            /// Encryption key (default is public)
+            #[default("blfrngArk3chG6wzncOZ5A==")]
+            pub key: String,
 
-    /// Disable in-game command responses
-    #[default(false)]
-    pub quiet: bool,
+            /// Encryption response mode. (OnDemand, Always, or Never)
+            #[default(EncryptionMode::OnDemand)]
+            pub mode: EncryptionMode,
+        },
 
-    /// Minecraft Encryption Mode (NCR Mod)
-    pub encryption: ChatEncryption,
+        /// Minecraft and Discord users allowed to use the bot.
+        /// The whitelist is disabled if it's empty.
+        #[serde_as(as = "HashMap<_, NoneAsEmptyString>")]
+        pub whitelist: HashMap<Uuid, Option<String>>,
+    }
 }
 
 impl Plugin for Settings {

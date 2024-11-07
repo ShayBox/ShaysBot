@@ -17,7 +17,6 @@ impl Plugin for AutoLookPlugin {
     }
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn handle_auto_look(
     mut query: Query<Entity, (With<LocalEntity>, With<Player>)>,
     entities: EntityFinder<With<Player>>,

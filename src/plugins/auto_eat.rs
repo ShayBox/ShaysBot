@@ -40,7 +40,6 @@ impl Plugin for AutoEatPlugin {
 type QueryData<'a> = (Entity, &'a Hunger, &'a Inventory, &'a LookDirection);
 type QueryFilter = (With<Player>, With<LocalEntity>);
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn handle_auto_eat(
     mut query: Query<QueryData, QueryFilter>,
     mut packet_events: EventWriter<SendPacketEvent>,

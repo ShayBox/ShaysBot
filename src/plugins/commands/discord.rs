@@ -6,7 +6,7 @@ use azalea::{
 use bevy_discord::{bot::events::BMessage, http::DiscordHttpResource, runtime::tokio_runtime};
 use serenity::json::json;
 
-use super::{CommandEvent, CommandSource, Registry, WhisperEvent};
+use super::{CommandEvent, CommandSender, CommandSource, Registry, WhisperEvent};
 use crate::settings::Settings;
 
 pub struct DiscordCommandsPlugin;
@@ -17,7 +17,6 @@ impl Plugin for DiscordCommandsPlugin {
     }
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn handle_message_event(
     mut command_events: EventWriter<CommandEvent>,
     mut message_events: EventReader<BMessage>,
@@ -30,38 +29,53 @@ pub fn handle_message_event(
             continue;
         };
 
-        let http = event.ctx.http.clone();
         let message = event.new_message.clone();
-        let Some((args, command)) = registry.find_command(&message.content, &settings.chat_prefix)
+        let Some((args, command)) =
+            registry.find_command(&message.content, &settings.command_prefix)
         else {
             continue;
         };
 
-        let Some(sender) = args.front().map(String::to_owned) else {
+        // Check if whitelist is enabled and if the user is whitelisted.
+        if !settings.whitelist.is_empty()
+            && !settings
+                .whitelist
+                .iter()
+                .filter_map(|(uuid, user_id)| user_id.as_ref().map(|user_id| (*uuid, user_id)))
+                .any(|(_, user_id)| user_id == &message.author.id.to_string())
+        {
+            let http = event.ctx.http.clone();
+            let prefix = settings.command_prefix.clone();
+            let user_id = message.author.id.to_string();
             tokio_runtime().spawn(async move {
-                let map = &json!({
-                    "content": "[404] Missing Player Name!"
+                let content = [
+                    String::from("[404] Your Discord account isn't linked to a Minecraft account."),
+                    format!("Message the bot in-game '{prefix}whitelist link {user_id}' to link."),
+                ]
+                .join("\n");
+
+                let map = json!({
+                    "content": content,
                 });
 
-                if let Err(error) = http.send_message(message.channel_id, Vec::new(), map).await {
+                if let Err(error) = http.send_message(message.channel_id, vec![], &map).await {
                     error!("{error}");
                 };
             });
 
             continue;
-        };
+        }
 
         command_events.send(CommandEvent {
-            source: CommandSource::Discord(message.channel_id),
             entity,
-            sender,
-            command: *command,
             args,
+            command: *command,
+            source: CommandSource::Discord(message.channel_id),
+            sender: CommandSender::Discord(message.author.id),
         });
     }
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn handle_discord_whisper_event(
     mut whisper_events: EventReader<WhisperEvent>,
     discord: Res<DiscordHttpResource>,

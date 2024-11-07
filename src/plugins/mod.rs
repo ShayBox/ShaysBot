@@ -22,6 +22,7 @@ impl PluginGroup for ShaysPluginGroup {
             .add(PearlCommandPlugin)
             .add(PlaytimeCommandPlugin)
             .add(SeenCommandPlugin)
+            .add(WhitelistCommandPlugin)
             .add(AntiAfkPlugin)
             .add(AutoEatPlugin)
             .add(AutoExitPlugin)

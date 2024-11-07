@@ -4,6 +4,7 @@ mod discord;
 mod pearl;
 mod playtime;
 mod seen;
+mod whitelist;
 
 use std::collections::{HashMap, VecDeque};
 
@@ -12,9 +13,10 @@ use azalea::{
     chat::{handle_send_chat_event, ChatPacketKind, ChatReceivedEvent, SendChatKindEvent},
     ecs::prelude::*,
     prelude::*,
+    TabList,
 };
 use ncr::AesKey;
-use serenity::all::ChannelId;
+use serenity::all::{ChannelId, UserId};
 
 use crate::{
     ncr::{find_encryption, try_encrypt, EncryptionType, KEY},
@@ -26,6 +28,13 @@ pub enum Command {
     Pearl,
     Playtime,
     Seen,
+    Whitelist,
+}
+
+#[derive(Clone, Debug)]
+pub enum CommandSender {
+    Discord(UserId),
+    Minecraft(String),
 }
 
 #[derive(Clone, Debug)]
@@ -34,21 +43,21 @@ pub enum CommandSource {
     Minecraft(Option<EncryptionType>),
 }
 
-#[derive(Debug, Event)]
+#[derive(Clone, Debug, Event)]
 pub struct CommandEvent {
-    pub source:  CommandSource,
     pub entity:  Entity,
-    pub sender:  String,
-    pub command: Command,
     pub args:    VecDeque<String>,
+    pub command: Command,
+    pub sender:  CommandSender,
+    pub source:  CommandSource,
 }
 
-#[derive(Debug, Event)]
+#[derive(Clone, Debug, Event)]
 pub struct WhisperEvent {
     pub entity:  Entity,
-    pub source:  CommandSource,
-    pub sender:  String,
     pub content: String,
+    pub sender:  CommandSender,
+    pub source:  CommandSource,
 }
 
 #[derive(Default, Resource)]
@@ -97,10 +106,10 @@ impl Plugin for CommandsPlugin {
     }
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn handle_chat_received_event(
     mut events: EventReader<ChatReceivedEvent>,
     mut command_events: EventWriter<CommandEvent>,
+    query: Query<&TabList>,
     registry: Res<Registry>,
     settings: Res<Settings>,
 ) {
@@ -119,39 +128,62 @@ pub fn handle_chat_received_event(
 
         let key = AesKey::decode_base64(&settings.encryption.key).unwrap_or_else(|_| KEY.clone());
         let (encryption, content) = find_encryption(&content, &key);
-        let Some((args, command)) = registry.find_command(&content, &settings.chat_prefix) else {
+        let Some((args, command)) = registry.find_command(&content, &settings.command_prefix)
+        else {
             continue;
         };
 
+        if !settings.whitelist.is_empty() {
+            let Ok(tab_list) = query.get_single() else {
+                continue;
+            };
+
+            let Some((uuid, _info)) = tab_list
+                .iter()
+                .find(|(_, info)| info.profile.name == sender)
+            else {
+                continue; /* Not Online */
+            };
+
+            if !settings.whitelist.contains_key(uuid) {
+                continue; /* Not Whitelisted */
+            }
+        }
+
         command_events.send(CommandEvent {
-            source: CommandSource::Minecraft(encryption),
             entity: event.entity,
-            sender,
-            command: *command,
             args,
+            command: *command,
+            sender: CommandSender::Minecraft(sender),
+            source: CommandSource::Minecraft(encryption),
         });
     }
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn handle_minecraft_whisper_event(
     mut chat_kind_events: EventWriter<SendChatKindEvent>,
     mut whisper_events: EventReader<WhisperEvent>,
     settings: Res<Settings>,
 ) {
-    for event in whisper_events.read() {
-        if let CommandSource::Minecraft(encryption) = event.source {
-            if settings.quiet {
-                continue;
-            }
+    for event in whisper_events.read().cloned() {
+        let CommandSender::Minecraft(sender) = event.sender else {
+            continue;
+        };
 
-            let content = try_encrypt(&settings.encryption, encryption, event.content.clone());
+        let CommandSource::Minecraft(type_encryption) = event.source else {
+            continue;
+        };
 
-            chat_kind_events.send(SendChatKindEvent {
-                entity:  event.entity,
-                kind:    ChatPacketKind::Command,
-                content: format!("w {} {content}", event.sender),
-            });
+        if settings.disable_responses {
+            continue;
         }
+
+        let content = try_encrypt(&settings.encryption, type_encryption, event.content);
+
+        chat_kind_events.send(SendChatKindEvent {
+            entity:  event.entity,
+            kind:    ChatPacketKind::Command,
+            content: format!("w {sender} {content}"),
+        });
     }
 }

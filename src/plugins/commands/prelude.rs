@@ -1,1 +1,1 @@
-pub use super::{discord::*, pearl::*, playtime::*, seen::*, *};
+pub use super::{discord::*, pearl::*, playtime::*, seen::*, whitelist::*, *};

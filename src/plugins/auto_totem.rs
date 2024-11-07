@@ -32,7 +32,6 @@ impl Plugin for AutoTotemPlugin {
 type QueryData<'a> = (Entity, &'a Inventory);
 type QueryFilter = (With<Player>, With<LocalEntity>);
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn handle_auto_totem(
     mut query: Query<QueryData, QueryFilter>,
     mut container_click_events: EventWriter<ContainerClickEvent>,

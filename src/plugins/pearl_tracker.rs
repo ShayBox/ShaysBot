@@ -51,7 +51,6 @@ pub fn handle_packet_events(
 /// # Panics
 /// Will panic if `MinecraftEntityId` is out of bounds.
 /// Will panic of `Settings::save` fails.
-#[allow(clippy::needless_pass_by_value)]
 pub fn handle_add_entity_packet(
     mut events: EventReader<PacketEvent>,
     mut packet_events: ResMut<PacketEvents>,
@@ -138,7 +137,6 @@ pub fn handle_block_update_packet(
 
 /// # Panics
 /// Will panic of `Settings::save` fails.
-#[allow(clippy::needless_pass_by_value)]
 pub fn handle_remove_entities_packet(
     mut events: EventReader<PacketEvent>,
     mut query: Query<&Position>,
