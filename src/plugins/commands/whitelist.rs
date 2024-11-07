@@ -66,17 +66,17 @@ pub fn handle_whitelist_command_event(
             continue;
         };
 
-        let Some((uuid, _info)) = tab_list
-            .iter()
-            .find(|(_, info)| info.profile.name == username)
-        else {
-            whisper_event.content = String::from("[404] Player not found");
-            whisper_events.send(whisper_event);
-            continue;
-        };
-
         whisper_event.content = match action.as_ref() {
             "add" => {
+                let Some((uuid, _info)) = tab_list
+                    .iter()
+                    .find(|(_, info)| info.profile.name == username)
+                else {
+                    whisper_event.content = String::from("[404] Player not found");
+                    whisper_events.send(whisper_event);
+                    continue;
+                };
+
                 if settings.whitelist.contains_key(uuid) {
                     String::from("[409] Already whitelisted.")
                 } else {
@@ -87,6 +87,15 @@ pub fn handle_whitelist_command_event(
                 }
             }
             "remove" => {
+                let Some((uuid, _info)) = tab_list
+                    .iter()
+                    .find(|(_, info)| info.profile.name == username)
+                else {
+                    whisper_event.content = String::from("[404] Player not found");
+                    whisper_events.send(whisper_event);
+                    continue;
+                };
+
                 if settings.whitelist.contains_key(uuid) {
                     settings.whitelist.remove(uuid);
                     settings.save().expect("Failed to save settings");
@@ -100,7 +109,16 @@ pub fn handle_whitelist_command_event(
                 CommandSender::Discord(_) => {
                     String::from("[403] You must run this sub-command in-game")
                 }
-                CommandSender::Minecraft(_) => {
+                CommandSender::Minecraft(sender) => {
+                    let Some((uuid, _info)) = tab_list
+                        .iter()
+                        .find(|(_, info)| &info.profile.name == sender)
+                    else {
+                        whisper_event.content = String::from("[404] Sender not found");
+                        whisper_events.send(whisper_event);
+                        continue;
+                    };
+
                     settings.whitelist.insert(*uuid, Some(username));
                     settings.save().expect("Failed to save settings");
 
