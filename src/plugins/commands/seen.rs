@@ -46,7 +46,7 @@ pub fn handle_seen_command_event(
         };
 
         let Some(player_name) = event.args.iter().next() else {
-            whisper_event.content = String::from("[400] Missing player name!");
+            whisper_event.content = String::from("[400] Missing player name");
             whisper_events.send(whisper_event);
             continue;
         };
@@ -66,7 +66,7 @@ pub fn handle_seen_command_event(
         };
 
         if response.status() == 204 {
-            whisper_event.content = String::from("[204] Player doesn't exist.");
+            whisper_event.content = format!("[204] Player not found: {player_name}");
             whisper_events.send(whisper_event);
             continue;
         }

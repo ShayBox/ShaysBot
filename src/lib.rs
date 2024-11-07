@@ -6,6 +6,8 @@ extern crate lazy_regex;
 #[macro_use]
 extern crate serde_with;
 #[macro_use]
+extern crate structstruck;
+#[macro_use]
 extern crate tracing;
 
 pub mod ncr;
@@ -68,10 +70,10 @@ pub async fn start() -> anyhow::Result<()> {
     let trapdoors = Trapdoors::load().unwrap_or_default();
     let address = settings.server_address.clone();
     let token = settings.discord_token.clone();
-    let account = if settings.online {
-        Account::microsoft(&settings.username).await?
+    let account = if settings.online_mode {
+        Account::microsoft(&settings.account_username).await?
     } else {
-        Account::offline(&settings.username)
+        Account::offline(&settings.account_username)
     };
 
     settings.save()?;

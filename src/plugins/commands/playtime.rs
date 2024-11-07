@@ -46,7 +46,7 @@ pub fn handle_playtime_command_event(
         };
 
         let Some(player_name) = event.args.iter().next() else {
-            whisper_event.content = String::from("[400] Missing player name!");
+            whisper_event.content = String::from("[400] Missing player name");
             whisper_events.send(whisper_event);
             continue;
         };
@@ -58,7 +58,7 @@ pub fn handle_playtime_command_event(
         {
             Ok(response) => response,
             Err(error) => {
-                whisper_event.content = String::from("[404] Player not found.");
+                whisper_event.content = format!("[404] Player not found: {player_name}");
                 whisper_events.send(whisper_event);
                 error!("{error}");
                 continue;

@@ -90,7 +90,7 @@ impl Encryption for EncryptionType {
 }
 
 #[must_use]
-pub fn find_encryption(ciphertext: &str, key: &AesKey) -> (Option<EncryptionType>, String) {
+pub fn find_encryption(content: &str, key: &AesKey) -> (Option<EncryptionType>, String) {
     for &encoder in ENCODERS.iter() {
         let encryptors = [
             EncryptionType::CFB(encoder),
@@ -99,7 +99,7 @@ pub fn find_encryption(ciphertext: &str, key: &AesKey) -> (Option<EncryptionType
         ];
 
         for encryptor in encryptors {
-            if let Ok(plaintext) = encryptor.decrypt(ciphertext, key) {
+            if let Ok(plaintext) = encryptor.decrypt(content, key) {
                 if let Ok(trimmed) = trim_header(&plaintext) {
                     return (Some(encryptor), String::from(trimmed));
                 }
@@ -107,32 +107,31 @@ pub fn find_encryption(ciphertext: &str, key: &AesKey) -> (Option<EncryptionType
         }
     }
 
-    (None, String::from(ciphertext))
+    (None, String::from(content))
 }
 
 #[must_use]
 pub fn try_encrypt(
     chat_encryption: &ChatEncryption,
     type_encryption: Option<EncryptionType>,
-    plaintext: String,
+    content: String,
 ) -> String {
     if chat_encryption.mode == EncryptionMode::Never {
-        return plaintext;
+        return content;
     }
 
     let key = AesKey::decode_base64(&chat_encryption.key).unwrap_or_else(|_| KEY.clone());
+    let plaintext = prepend_header(&content);
 
     if let Some(encryption) = type_encryption {
-        if let Ok(ciphertext) = encryption.encrypt(&prepend_header(&plaintext), &key) {
+        if let Ok(ciphertext) = encryption.encrypt(&plaintext, &key) {
             return ciphertext;
         }
     } else if chat_encryption.mode == EncryptionMode::Always {
-        if let Ok(ciphertext) =
-            Cfb8Encryption(NewBase64rEncoding).encrypt(&prepend_header(&plaintext), &key)
-        {
+        if let Ok(ciphertext) = Cfb8Encryption(NewBase64rEncoding).encrypt(&plaintext, &key) {
             return ciphertext;
         }
     }
 
-    plaintext
+    content
 }
