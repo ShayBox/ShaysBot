@@ -30,6 +30,8 @@ use azalea::{
 };
 use uuid::Uuid;
 
+use crate::Settings;
+
 /// Automatically pull stasis chamber pearls
 pub struct AutoPearlPlugin;
 
@@ -105,13 +107,15 @@ pub struct PearlPullEvent {
 }
 
 pub fn handle_pearl_pull_event(
-    mut pearl_pull_events: EventReader<PearlPullEvent>,
+    mut goto_events: EventWriter<GotoEvent>,
     mut pearl_pending_events: ResMut<PendingPearlEvents>,
+    mut pearl_pull_events: EventReader<PearlPullEvent>,
     mut send_packet_events: EventWriter<SendPacketEvent>,
-    mut query: Query<(&Pathfinder, &TabList)>,
+    mut query: Query<(&Pathfinder, &TabList, &InstanceHolder)>,
+    settings: Res<Settings>,
 ) {
     for event in pearl_pull_events.read() {
-        let Ok((pathfinder, tab_list)) = query.get_mut(event.entity) else {
+        let Ok((pathfinder, tab_list, holder)) = query.get_mut(event.entity) else {
             continue;
         };
 
@@ -125,6 +129,7 @@ pub fn handle_pearl_pull_event(
             continue;
         }
 
+        // Flip the trapdoor
         let packet = ServerboundGamePacket::UseItemOn(ServerboundUseItemOnPacket {
             hand:      InteractionHand::MainHand,
             block_hit: BlockHit {
@@ -143,6 +148,26 @@ pub fn handle_pearl_pull_event(
         send_packet_events.send(SendPacketEvent {
             entity: event.entity,
             packet,
+        });
+
+        // Return to the idle position
+        #[allow(clippy::cast_possible_truncation)]
+        let pos = BlockPos {
+            x: settings.idle_pos.x as i32,
+            y: settings.idle_pos.y as i32,
+            z: settings.idle_pos.z as i32,
+        };
+
+        let goal = ReachBlockPosGoal {
+            chunk_storage: holder.instance.read().chunks.clone(),
+            pos,
+        };
+
+        goto_events.send(GotoEvent {
+            entity:        event.entity,
+            goal:          Arc::new(goal),
+            successors_fn: default_move,
+            allow_mining:  false,
         });
     }
 }

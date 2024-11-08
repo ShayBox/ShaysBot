@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use azalea::{
     app::{App, Plugin},
     prelude::*,
+    Vec3,
 };
 use derive_config::DeriveTomlConfig;
 use serde::{Deserialize, Serialize};
@@ -67,6 +68,10 @@ strike! {
             #[default(EncryptionMode::OnDemand)]
             pub mode: EncryptionMode,
         },
+
+        /// Target location to idle at fater pearling.
+        #[default(Vec3::new(-0.0, -0.0, -0.0))]
+        pub idle_pos: Vec3,
 
         /// Minecraft and Discord users allowed to use the bot.
         /// The whitelist is disabled if it's empty.
