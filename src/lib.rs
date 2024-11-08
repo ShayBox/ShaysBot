@@ -25,8 +25,9 @@ use azalea::{
 };
 use bevy_discord::bot::{DiscordBotConfig, DiscordBotPlugin};
 use derive_config::{DeriveTomlConfig, DeriveYamlConfig};
+use handlers::prelude::*;
 use num_traits::{Bounded, One};
-use plugins::prelude::DiscordCommandsPlugin;
+use plugins::prelude::*;
 use serenity::prelude::*;
 use url::Url;
 
@@ -89,7 +90,7 @@ pub async fn start() -> anyhow::Result<()> {
         .set_swarm_handler(swarm_handler)
         .add_account(account)
         .add_plugins((settings, trapdoors))
-        .add_plugins(ShaysPluginGroup);
+        .add_plugins((ShaysPluginGroup, MinecraftCommandsPlugin));
 
     if !token.is_empty() {
         let config = DiscordBotConfig::default()

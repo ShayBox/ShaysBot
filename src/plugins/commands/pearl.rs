@@ -5,10 +5,12 @@ use azalea::{
     BlockPos,
     TabList,
 };
+use handlers::prelude::*;
 
 use crate::{
     plugins::{commands::prelude::*, prelude::*},
     trapdoors::Trapdoors,
+    Settings,
 };
 
 /// Pearl Stasis Command

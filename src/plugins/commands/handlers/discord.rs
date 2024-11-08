@@ -6,8 +6,10 @@ use azalea::{
 use bevy_discord::{bot::events::BMessage, http::DiscordHttpResource, runtime::tokio_runtime};
 use serenity::json::json;
 
-use super::{CommandEvent, CommandSender, CommandSource, Registry, WhisperEvent};
-use crate::settings::Settings;
+use crate::{
+    plugins::commands::{CommandEvent, CommandSender, CommandSource, Registry, WhisperEvent},
+    settings::Settings,
+};
 
 pub struct DiscordCommandsPlugin;
 
@@ -51,11 +53,10 @@ pub fn handle_message_event(
                 let content = [
                     String::from("[404] Your Discord account isn't linked to a Minecraft account."),
                     format!("Message the bot in-game '{prefix}whitelist link {user_id}' to link."),
-                ]
-                .join("\n");
+                ];
 
                 let map = json!({
-                    "content": content,
+                    "content": content.join("\n"),
                 });
 
                 if let Err(error) = http.send_message(message.channel_id, vec![], &map).await {
