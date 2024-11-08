@@ -66,8 +66,16 @@ pub struct SwarmState;
 /// Will return `Err` if `ClientBuilder::start` fails.
 #[allow(clippy::future_not_send)]
 pub async fn start() -> anyhow::Result<()> {
-    let settings = Settings::load().unwrap_or_default();
-    let trapdoors = Trapdoors::load().unwrap_or_default();
+    let settings = Settings::load().unwrap_or_else(|error| {
+        eprintln!("Error loading settings: {error}");
+        Settings::default()
+    });
+
+    let trapdoors = Trapdoors::load().unwrap_or_else(|error| {
+        eprintln!("Error loading trapdoors: {error}");
+        Trapdoors::default()
+    });
+
     let address = settings.server_address.clone();
     let token = settings.discord_token.clone();
     let account = if settings.online_mode {
