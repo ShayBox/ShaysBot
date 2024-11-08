@@ -58,6 +58,10 @@ strike! {
         #[serde(alias = "chat_prefix")] /* Deprecated: 0.6.0 */
         pub command_prefix: String,
 
+        /// Command cooldown in seconds.
+        #[default(5)]
+        pub command_cooldown: u64,
+
         /// Chat encryption using the NCR (No Chat Reports) mod.
         pub encryption: pub struct ChatEncryption {
             /// Encryption key (default is public)

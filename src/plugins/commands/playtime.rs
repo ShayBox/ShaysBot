@@ -4,6 +4,7 @@ use azalea::{
     app::{App, Plugin, Startup, Update},
     ecs::prelude::*,
 };
+use handlers::prelude::*;
 use serde::Deserialize;
 
 use crate::plugins::commands::prelude::*;

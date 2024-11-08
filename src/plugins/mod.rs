@@ -18,7 +18,6 @@ pub struct ShaysPluginGroup;
 impl PluginGroup for ShaysPluginGroup {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
-            .add(CommandsPlugin)
             .add(PearlCommandPlugin)
             .add(PlaytimeCommandPlugin)
             .add(SeenCommandPlugin)

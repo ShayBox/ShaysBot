@@ -4,8 +4,9 @@ use azalea::{
     TabList,
 };
 use derive_config::DeriveTomlConfig;
+use handlers::prelude::*;
 
-use crate::plugins::commands::prelude::*;
+use crate::{plugins::commands::prelude::*, Settings};
 
 /// Whitelist command
 pub struct WhitelistCommandPlugin;
