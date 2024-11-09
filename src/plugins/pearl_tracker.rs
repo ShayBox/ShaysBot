@@ -75,9 +75,8 @@ pub fn handle_add_entity_packet(
             continue;
         };
 
-        /* Player is outside visual range */
         let owner_uuid = if packet.data == 0 {
-            Uuid::max()
+            Uuid::max() /* Player is offline */
         } else if let Some((_, profile)) = profiles
             .iter()
             .find(|(id, _)| i32::try_from(id.0).unwrap() == packet.data)

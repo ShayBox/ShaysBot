@@ -151,11 +151,16 @@ pub fn handle_pearl_pull_event(
         });
 
         // Return to the idle position
+        let pos = settings.idle_pos;
+        if pos.x == -0.0 && pos.y == -0.0 && pos.z == -0.0 {
+            continue;
+        };
+
         #[allow(clippy::cast_possible_truncation)]
         let pos = BlockPos {
-            x: settings.idle_pos.x as i32,
-            y: settings.idle_pos.y as i32,
-            z: settings.idle_pos.z as i32,
+            x: pos.x as i32,
+            y: pos.y as i32,
+            z: pos.z as i32,
         };
 
         let goal = ReachBlockPosGoal {
