@@ -1,10 +1,13 @@
 use azalea::{
     app::{App, Plugin, Startup, Update},
     ecs::prelude::*,
+    PlayerInfo,
     TabList,
 };
 use derive_config::DeriveTomlConfig;
 use handlers::prelude::*;
+use serde::Deserialize;
+use uuid::Uuid;
 
 use crate::{plugins::commands::prelude::*, Settings};
 
@@ -61,74 +64,114 @@ pub fn handle_whitelist_command_event(
             continue;
         };
 
-        let Some(username) = args.pop_front() else {
-            whisper_event.content = String::from("[400] Missing username");
-            whisper_events.send(whisper_event);
-            continue;
-        };
-
+        let user = args.pop_front();
         whisper_event.content = match action.as_ref() {
-            "add" => {
-                let Some((uuid, _info)) = tab_list
-                    .iter()
-                    .find(|(_, info)| info.profile.name == username)
-                else {
-                    whisper_event.content = String::from("[404] Player not found");
-                    whisper_events.send(whisper_event);
-                    continue;
-                };
-
-                if settings.whitelist.contains_key(uuid) {
-                    String::from("[409] Already whitelisted.")
-                } else {
-                    settings.whitelist.insert(*uuid, None);
-                    settings.save().expect("Failed to save settings");
-
-                    String::from("[200] Successfully added")
-                }
-            }
-            "remove" => {
-                let Some((uuid, _info)) = tab_list
-                    .iter()
-                    .find(|(_, info)| info.profile.name == username)
-                else {
-                    whisper_event.content = String::from("[404] Player not found");
-                    whisper_events.send(whisper_event);
-                    continue;
-                };
-
-                if settings.whitelist.contains_key(uuid) {
-                    settings.whitelist.remove(uuid);
-                    settings.save().expect("Failed to save settings");
-
-                    String::from("[200] Succesfully removed")
-                } else {
-                    String::from("[409] Already not whitelisted")
-                }
-            }
-            "link" => match &event.sender {
-                CommandSender::Discord(_) => {
-                    String::from("[403] You must run this sub-command in-game")
-                }
-                CommandSender::Minecraft(sender) => {
-                    let Some((uuid, _info)) = tab_list
-                        .iter()
-                        .find(|(_, info)| &info.profile.name == sender)
-                    else {
-                        whisper_event.content = String::from("[404] Sender not found");
-                        whisper_events.send(whisper_event);
-                        continue;
-                    };
-
-                    settings.whitelist.insert(*uuid, Some(username));
-                    settings.save().expect("Failed to save settings");
-
-                    String::from("[200] Successfully linked")
-                }
-            },
+            "add" => handle_add(&mut settings, tab_list, user),
+            "remove" => handle_remove(&mut settings, tab_list, user),
+            "link" => handle_link(&mut settings, tab_list, user, &event.sender),
             _ => String::from("[400] Invalid Action: 'add', 'remove', or 'link'"),
         };
 
         whisper_events.send(whisper_event);
     }
+}
+
+fn handle_add(settings: &mut ResMut<Settings>, tab_list: &TabList, user: Option<String>) -> String {
+    let Some(player_name) = user else {
+        return String::from("[400] Missing Minecraft player name");
+    };
+
+    let Some((uuid, _info)) = try_find_player(tab_list, &player_name) else {
+        return String::from("[404] Player not found");
+    };
+
+    if settings.whitelist.contains_key(uuid) {
+        String::from("[409] Already whitelisted.")
+    } else {
+        settings.whitelist.insert(*uuid, None);
+        settings.save().expect("Failed to save settings");
+
+        String::from("[200] Successfully added")
+    }
+}
+
+fn handle_remove(
+    settings: &mut ResMut<Settings>,
+    tab_list: &TabList,
+    user: Option<String>,
+) -> String {
+    let Some(player_name) = user else {
+        return String::from("[400] Missing Minecraft player name");
+    };
+
+    let Some((uuid, _info)) = try_find_player(tab_list, &player_name) else {
+        return String::from("[404] Player not found");
+    };
+
+    if settings.whitelist.contains_key(uuid) {
+        settings.whitelist.remove(uuid);
+        settings.save().expect("Failed to save settings");
+
+        String::from("[200] Successfully removed")
+    } else {
+        String::from("[409] Already not whitelisted")
+    }
+}
+
+fn handle_link(
+    settings: &mut ResMut<Settings>,
+    tab_list: &TabList,
+    user: Option<String>,
+    sender: &CommandSender,
+) -> String {
+    match sender {
+        CommandSender::Discord(_) => {
+            let Some(auth_code) = user else {
+                return String::from("[400] Missing auth code (Join: auth.aristois.net)");
+            };
+
+            let path = format!("https://auth.aristois.net/token/{auth_code}");
+            let response = ureq::get(&path).call().expect("Failed to authenticate");
+
+            let code = response.status();
+            let Ok(json) = response.into_json::<Json>() else {
+                return String::from("[500] Failed to parse JSON");
+            };
+
+            let Some(uuid) = json.uuid else {
+                return format!("[{code}] Authentication {}: {}", json.status, json.message);
+            };
+
+            settings.whitelist.insert(uuid, Some(auth_code));
+            settings.save().expect("Failed to save settings");
+
+            String::from("[200] Successfully linked")
+        }
+        CommandSender::Minecraft(sender) => {
+            let Some(user_id) = user else {
+                return String::from("[400] Missing Discord user id");
+            };
+
+            let Some((uuid, _info)) = try_find_player(tab_list, sender) else {
+                return String::from("[404] Sender not found");
+            };
+
+            settings.whitelist.insert(*uuid, Some(user_id));
+            settings.save().expect("Failed to save settings");
+
+            String::from("[200] Successfully linked")
+        }
+    }
+}
+
+fn try_find_player<'a>(tab_list: &'a TabList, name: &str) -> Option<(&'a Uuid, &'a PlayerInfo)> {
+    tab_list.iter().find(|(_, info)| info.profile.name == name)
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Json {
+    message: String,
+    status:  String,
+    uuid:    Option<Uuid>,
 }

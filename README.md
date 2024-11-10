@@ -15,7 +15,7 @@ No Chat Reports (NCR) encryption to ensure secure and private communication.
 
 ## Features
 
-### Automation Plugins
+### Plugins
 
 - [**AntiAFK**](src/plugins/anti_afk.rs) - Prevents being kicked for AFK by simulating activity
 - [**AutoEat**](src/plugins/auto_eat.rs) - Automatically eats food when hunger is low
@@ -24,7 +24,6 @@ No Chat Reports (NCR) encryption to ensure secure and private communication.
 - [**AutoPearl**](src/plugins/auto_pearl.rs) - Handles automatic ender pearl throwing
 - [**AutoTotem**](src/plugins/auto_totem.rs) - Automatically equips totems for survival
 - [**PearlTracker**](src/plugins/pearl_tracker.rs) - Tracks and manages ender pearl cooldowns and usage
-- [**Discord Integration**](src/plugins/commands/discord.rs) - Discord bot integration for commands
 
 ### Commands
 
