@@ -110,14 +110,13 @@ pub fn find_encryption(content: &str, key: &AesKey) -> (Option<EncryptionType>, 
     (None, String::from(content))
 }
 
-#[must_use]
 pub fn try_encrypt(
+    content: &mut String,
     chat_encryption: &ChatEncryption,
     type_encryption: Option<EncryptionType>,
-    content: String,
-) -> String {
+) {
     if chat_encryption.mode == EncryptionMode::Never {
-        return content;
+        return;
     }
 
     let key = AesKey::decode_base64(&chat_encryption.key).unwrap_or_else(|_| KEY.clone());
@@ -125,13 +124,11 @@ pub fn try_encrypt(
 
     if let Some(encryption) = type_encryption {
         if let Ok(ciphertext) = encryption.encrypt(&plaintext, &key) {
-            return ciphertext;
+            *content = ciphertext;
         }
     } else if chat_encryption.mode == EncryptionMode::Always {
         if let Ok(ciphertext) = Cfb8Encryption(NewBase64rEncoding).encrypt(&plaintext, &key) {
-            return ciphertext;
+            *content = ciphertext;
         }
     }
-
-    content
 }

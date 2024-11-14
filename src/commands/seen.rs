@@ -1,21 +1,28 @@
 use std::time::Duration;
 
 use azalea::{
-    app::{App, Plugin, Startup, Update},
+    app::{App, Plugin, Update},
     ecs::prelude::*,
 };
 use chrono::{DateTime, Utc};
 use handlers::prelude::*;
 use serde::Deserialize;
 
-use crate::plugins::commands::prelude::*;
+use crate::commands::{prelude::*, Commands};
 
 /// 2B2T Seen Command <https://2b2t.vc>
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct SeenCommandPlugin;
+
+impl Command for SeenCommandPlugin {
+    fn aliases(&self) -> Vec<&'static str> {
+        vec!["seen"]
+    }
+}
 
 impl Plugin for SeenCommandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, handle_seen_register).add_systems(
+        app.add_systems(
             Update,
             handle_seen_command_event
                 .ambiguous_with_all()
@@ -26,22 +33,18 @@ impl Plugin for SeenCommandPlugin {
     }
 }
 
-pub fn handle_seen_register(mut registry: ResMut<Registry>) {
-    registry.register("seen", Command::Seen);
-}
-
 pub fn handle_seen_command_event(
     mut command_events: EventReader<CommandEvent>,
     mut whisper_events: EventWriter<WhisperEvent>,
 ) {
     for event in command_events.read() {
-        if event.command != Command::Seen {
+        let Commands::Seen(_plugin) = event.command else {
             continue;
-        }
+        };
 
         let mut whisper_event = WhisperEvent {
             entity:  event.entity,
-            source:  event.source.clone(),
+            source:  event.source,
             sender:  event.sender.clone(),
             content: String::new(),
         };

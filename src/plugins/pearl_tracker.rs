@@ -3,8 +3,8 @@ use azalea::{
     blocks::{properties::Open, Block},
     ecs::prelude::*,
     entity::{metadata::Player, Position},
+    events::packet_listener,
     packet_handling::game::PacketEvent,
-    packet_listener,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
@@ -24,7 +24,7 @@ pub struct PearlTrackerPlugin;
 
 impl Plugin for PearlTrackerPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(PacketEvents::default()).add_systems(
+        app.add_event::<ResendPacketEvent>().add_systems(
             PostUpdate,
             (
                 handle_packet_events.before(packet_listener),
@@ -36,15 +36,15 @@ impl Plugin for PearlTrackerPlugin {
     }
 }
 
-#[derive(Default, Resource)]
-pub struct PacketEvents(pub Vec<PacketEvent>);
+#[derive(Clone, Event)]
+pub struct ResendPacketEvent(PacketEvent);
 
 pub fn handle_packet_events(
-    mut events: ResMut<PacketEvents>,
+    mut resend_packet_events: EventReader<ResendPacketEvent>,
     mut packet_events: EventWriter<PacketEvent>,
 ) {
-    for event in events.0.drain(..) {
-        packet_events.send(event);
+    for event in resend_packet_events.read().cloned() {
+        packet_events.send(event.0);
     }
 }
 
@@ -52,13 +52,13 @@ pub fn handle_packet_events(
 /// Will panic if `MinecraftEntityId` is out of bounds.
 /// Will panic of `Settings::save` fails.
 pub fn handle_add_entity_packet(
-    mut events: EventReader<PacketEvent>,
-    mut packet_events: ResMut<PacketEvents>,
+    mut packet_events: EventReader<PacketEvent>,
+    mut resend_packet_events: EventWriter<ResendPacketEvent>,
     mut query: Query<&InstanceHolder>,
     mut trapdoors: ResMut<Trapdoors>,
     profiles: Query<(&MinecraftEntityId, &GameProfileComponent), With<Player>>,
 ) {
-    for event in events.read() {
+    for event in packet_events.read().cloned() {
         let Ok(holder) = query.get_mut(event.entity) else {
             continue;
         };
@@ -77,28 +77,27 @@ pub fn handle_add_entity_packet(
 
         let owner_uuid = if packet.data == 0 {
             Uuid::max() /* Player is offline */
-        } else if let Some((_, profile)) = profiles
-            .iter()
-            .find(|(id, _)| i32::try_from(id.0).unwrap() == packet.data)
-        {
+        } else if let Some((_, profile)) = profiles.iter().find(|(id, _)| id.0 == packet.data) {
             info!("{}'s pearl at {block_pos}", profile.name);
             profile.uuid
         } else {
             // The owner's uuid was sent, but the owner wasn't found in the entity list
             // Send the event back and try again next update until the owner is received
-            packet_events.0.push(event.clone());
+            resend_packet_events.send(ResendPacketEvent(event));
             continue;
         };
 
         let new_trapdoor = Trapdoor::new(block_pos, packet.id, owner_uuid);
 
-        if let Some(old_trapdoor) = trapdoors.0.get_mut(&packet.uuid) {
-            if owner_uuid != Uuid::max() {
-                *old_trapdoor = new_trapdoor;
-            }
-        } else {
-            trapdoors.0.insert(packet.uuid, new_trapdoor);
-        }
+        trapdoors
+            .0
+            .entry(packet.uuid)
+            .and_modify(|old_trapdoor| {
+                if owner_uuid != Uuid::max() {
+                    *old_trapdoor = new_trapdoor;
+                }
+            })
+            .or_insert(new_trapdoor);
 
         trapdoors.save().expect("Failed to save trapdoors");
     }

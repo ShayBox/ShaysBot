@@ -23,10 +23,12 @@ No Chat Reports (NCR) encryption to ensure secure and private communication.
 - [**AutoLook**](src/plugins/auto_look.rs) - Automatically looks at specific targets
 - [**AutoPearl**](src/plugins/auto_pearl.rs) - Handles automatic ender pearl throwing
 - [**AutoTotem**](src/plugins/auto_totem.rs) - Automatically equips totems for survival
+- [**DiscordTracker**](src/plugins/pearl_tracker.rs) - Tracks visual range events like players and shulkers
 - [**PearlTracker**](src/plugins/pearl_tracker.rs) - Tracks and manages ender pearl cooldowns and usage
 
 ### Commands
 
-- [**Pearl**](src/plugins/commands/pearl.rs) - Manages ender pearl-related commands and tracking
-- [**Playtime**](src/plugins/commands/playtime.rs) - Tracks and displays player playtime statistics (2b2t.vc)
-- [**Seen**](src/plugins/commands/seen.rs) - Shows when players were last seen online (2b2t.vc)
+- [**Pearl**](src/commands/pearl.rs) - Manages ender pearl-related commands and tracking
+- [**Playtime**](src/commands/playtime.rs) - Tracks and displays player playtime statistics (2b2t.vc)
+- [**Seen**](src/commands/seen.rs) - Shows when players were last seen online (2b2t.vc)
+- [**Whitelist**](src/commands/whitelist.rs) - Whitelist and link Minecraft and Discord accounts

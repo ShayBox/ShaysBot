@@ -10,7 +10,7 @@ use azalea::{
     mining::MiningSet,
     packet_handling::game::{handle_send_packet_event, SendPacketEvent},
     pathfinder::{
-        goals::ReachBlockPosGoal,
+        goals::{RadiusGoal, ReachBlockPosGoal},
         goto_listener,
         moves::default_move,
         GotoEvent,
@@ -30,7 +30,7 @@ use azalea::{
 };
 use uuid::Uuid;
 
-use crate::Settings;
+use crate::{settings::IdleGoal, Settings};
 
 /// Automatically pull stasis chamber pearls
 pub struct AutoPearlPlugin;
@@ -111,11 +111,11 @@ pub fn handle_pearl_pull_event(
     mut pearl_pending_events: ResMut<PendingPearlEvents>,
     mut pearl_pull_events: EventReader<PearlPullEvent>,
     mut send_packet_events: EventWriter<SendPacketEvent>,
-    mut query: Query<(&Pathfinder, &TabList, &InstanceHolder)>,
+    mut query: Query<(&Pathfinder, &TabList)>,
     settings: Res<Settings>,
 ) {
     for event in pearl_pull_events.read() {
-        let Ok((pathfinder, tab_list, holder)) = query.get_mut(event.entity) else {
+        let Ok((pathfinder, tab_list)) = query.get_mut(event.entity) else {
             continue;
         };
 
@@ -129,7 +129,6 @@ pub fn handle_pearl_pull_event(
             continue;
         }
 
-        // Flip the trapdoor
         let packet = ServerboundGamePacket::UseItemOn(ServerboundUseItemOnPacket {
             hand:      InteractionHand::MainHand,
             block_hit: BlockHit {
@@ -150,30 +149,17 @@ pub fn handle_pearl_pull_event(
             packet,
         });
 
-        // Return to the idle position
-        let pos = settings.idle_pos;
-        if pos.x == -0.0 && pos.y == -0.0 && pos.z == -0.0 {
-            continue;
-        };
-
-        #[allow(clippy::cast_possible_truncation)]
-        let pos = BlockPos {
-            x: pos.x as i32,
-            y: pos.y as i32,
-            z: pos.z as i32,
-        };
-
-        let goal = ReachBlockPosGoal {
-            chunk_storage: holder.instance.read().chunks.clone(),
-            pos,
-        };
-
-        goto_events.send(GotoEvent {
-            entity:        event.entity,
-            goal:          Arc::new(goal),
-            successors_fn: default_move,
-            allow_mining:  false,
-        });
+        if settings.idle != IdleGoal::default() {
+            goto_events.send(GotoEvent {
+                entity:        event.entity,
+                allow_mining:  false,
+                successors_fn: default_move,
+                goal:          Arc::new(RadiusGoal {
+                    pos:    settings.idle.pos,
+                    radius: settings.idle.radius + 1.0,
+                }),
+            });
+        }
     }
 }
 

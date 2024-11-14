@@ -1,6 +1,5 @@
 #![feature(trivial_bounds)]
 
-extern crate core;
 #[macro_use]
 extern crate lazy_regex;
 #[macro_use]
@@ -8,15 +7,19 @@ extern crate serde_with;
 #[macro_use]
 extern crate structstruck;
 #[macro_use]
+extern crate strum;
+#[macro_use]
 extern crate tracing;
 
-pub mod ncr;
+pub mod commands;
+pub mod encryption;
 pub mod plugins;
 pub mod settings;
 pub mod trapdoors;
 
 use std::ops::{AddAssign, RemAssign};
 
+use anyhow::{bail, Result};
 use azalea::{
     ecs::prelude::*,
     prelude::*,
@@ -25,37 +28,49 @@ use azalea::{
 };
 use bevy_discord::bot::{DiscordBotConfig, DiscordBotPlugin};
 use derive_config::{DeriveTomlConfig, DeriveYamlConfig};
-use handlers::prelude::*;
 use num_traits::{Bounded, One};
-use plugins::prelude::*;
-use serenity::prelude::*;
+use semver::Version;
+use serenity::{all::ChannelId, prelude::*};
 use url::Url;
 
 pub use crate::{
-    plugins::ShaysPluginGroup,
+    commands::handlers::prelude::*,
+    plugins::{prelude::*, ShaysPluginGroup},
     settings::Settings,
     trapdoors::{Trapdoor, Trapdoors},
 };
 
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_HOMEPAGE: &str = env!("CARGO_PKG_HOMEPAGE");
+pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 
-/// # Check for updates using GitHub's latest release link redirect
+/// # Get the remote version using GitHub's latest release link redirect
 ///
 /// # Errors
 /// Will return `Err` if `ureq::get` fails.
-pub fn check_for_updates() -> anyhow::Result<bool> {
+pub fn get_remote_version() -> Result<Version> {
     let response = ureq::get(CARGO_PKG_HOMEPAGE).call()?;
 
     if let Ok(parsed_url) = Url::parse(response.get_url()) {
         if let Some(segments) = parsed_url.path_segments() {
             if let Some(remote_version) = segments.last() {
-                return Ok(remote_version > CARGO_PKG_VERSION);
+                return Ok(remote_version.parse()?);
             }
         }
     }
 
-    Ok(false)
+    bail!("Failed to get the remote version")
+}
+
+/// # Check for updates using GitHub's latest release link redirect
+///
+/// # Errors
+/// Will return `Err` if `ureq::get` fails.
+pub fn check_for_updates() -> Result<bool> {
+    let local_version = CARGO_PKG_VERSION.parse()?;
+    let remote_version = get_remote_version()?;
+
+    Ok(remote_version > local_version)
 }
 
 #[derive(Clone, Component, Default, Resource)]
@@ -66,19 +81,20 @@ pub struct SwarmState;
 /// # Errors
 /// Will return `Err` if `ClientBuilder::start` fails.
 #[allow(clippy::future_not_send)]
-pub async fn start() -> anyhow::Result<()> {
+pub async fn start() -> Result<()> {
     let settings = Settings::load().unwrap_or_else(|error| {
-        eprintln!("Error loading settings: {error}");
+        error!("Error loading settings: {error}");
         Settings::default()
     });
 
     let trapdoors = Trapdoors::load().unwrap_or_else(|error| {
-        eprintln!("Error loading trapdoors: {error}");
+        error!("Error loading trapdoors: {error}");
         Trapdoors::default()
     });
 
-    let address = settings.server_address.clone();
     let token = settings.discord_token.clone();
+    let channel = settings.discord_channel;
+    let address = settings.server_address.clone();
     let account = if settings.online_mode {
         Account::microsoft(&settings.account_username).await?
     } else {
@@ -93,11 +109,18 @@ pub async fn start() -> anyhow::Result<()> {
         .add_plugins((ShaysPluginGroup, MinecraftCommandsPlugin));
 
     if !token.is_empty() {
+        let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
         let config = DiscordBotConfig::default()
-            .gateway_intents(GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT)
+            .gateway_intents(intents)
             .token(token);
 
-        client = client.add_plugins((DiscordBotPlugin::new(config), DiscordCommandsPlugin));
+        client = client
+            .add_plugins(DiscordBotPlugin::new(config))
+            .add_plugins(DiscordCommandsPlugin);
+
+        if channel != ChannelId::default() {
+            client = client.add_plugins(DiscordTrackerPlugin);
+        }
     }
 
     client.start(address.as_str()).await?
@@ -105,11 +128,7 @@ pub async fn start() -> anyhow::Result<()> {
 
 /// # Errors
 /// Will return `Err` if `Swarm::add_with_opts` fails.
-pub async fn swarm_handler(
-    mut swarm: Swarm,
-    event: SwarmEvent,
-    state: SwarmState,
-) -> anyhow::Result<()> {
+pub async fn swarm_handler(mut swarm: Swarm, event: SwarmEvent, state: SwarmState) -> Result<()> {
     match event {
         SwarmEvent::Chat(chat_packet) => info!("{}", chat_packet.message().to_ansi()),
         SwarmEvent::Disconnect(account, options) => {

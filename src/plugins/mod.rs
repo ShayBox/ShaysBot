@@ -1,6 +1,6 @@
 use azalea::app::{PluginGroup, PluginGroupBuilder};
 
-use crate::plugins::prelude::*;
+use crate::{commands::prelude::*, plugins::prelude::*};
 
 pub mod prelude;
 
@@ -10,7 +10,7 @@ mod auto_exit;
 mod auto_look;
 mod auto_pearl;
 mod auto_totem;
-mod commands;
+mod discord_tracker;
 mod pearl_tracker;
 
 pub struct ShaysPluginGroup;

@@ -1,5 +1,5 @@
 use azalea::{
-    app::{App, Plugin, Startup, Update},
+    app::{App, Plugin, Update},
     ecs::prelude::*,
     entity::Position,
     BlockPos,
@@ -8,17 +8,25 @@ use azalea::{
 use handlers::prelude::*;
 
 use crate::{
-    plugins::{commands::prelude::*, prelude::*},
+    commands::{prelude::*, Commands},
+    plugins::prelude::*,
     trapdoors::Trapdoors,
     Settings,
 };
 
 /// Pearl Stasis Command
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct PearlCommandPlugin;
+
+impl Command for PearlCommandPlugin {
+    fn aliases(&self) -> Vec<&'static str> {
+        vec!["pearl", "tp", "teleport", "warp", "home"]
+    }
+}
 
 impl Plugin for PearlCommandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, handle_pearl_register).add_systems(
+        app.add_systems(
             Update,
             handle_pearl_command_event
                 .ambiguous_with_all()
@@ -27,12 +35,6 @@ impl Plugin for PearlCommandPlugin {
                 .before(handle_minecraft_whisper_event)
                 .after(handle_chat_received_event),
         );
-    }
-}
-
-pub fn handle_pearl_register(mut registry: ResMut<Registry>) {
-    for alias in ["pearl", "tp", "teleport", "pull", "here", "home", "warp"] {
-        registry.register(alias, Command::Pearl);
     }
 }
 
@@ -45,9 +47,9 @@ pub fn handle_pearl_command_event(
     trapdoors: Res<Trapdoors>,
 ) {
     for mut event in command_events.read().cloned() {
-        if event.command != Command::Pearl {
+        let Commands::Pearl(_plugin) = event.command else {
             continue;
-        }
+        };
 
         let Ok((tab_list, position)) = query.get(event.entity) else {
             continue;
@@ -60,7 +62,7 @@ pub fn handle_pearl_command_event(
             content: String::new(),
         };
 
-        let sender = match event.sender {
+        let uuid = match event.sender {
             CommandSender::Minecraft(username) => username,
             CommandSender::Discord(user_id) => {
                 let Some(username) = event.args.pop_front() else {
@@ -73,6 +75,8 @@ pub fn handle_pearl_command_event(
                     .iter()
                     .find(|(_, info)| info.profile.name == username)
                 else {
+                    whisper_event.content = format!("[404] {username} is not online");
+                    whisper_events.send(whisper_event);
                     continue;
                 };
 
@@ -94,25 +98,15 @@ pub fn handle_pearl_command_event(
                     }
                 }
 
-                username
+                uuid.clone()
             }
-        };
-
-        let Some(uuid) = tab_list
-            .iter()
-            .find(|(_, info)| info.profile.name == sender)
-            .map(|(uuid, _)| uuid)
-        else {
-            whisper_event.content = format!("[404] {sender} is not online");
-            whisper_events.send(whisper_event);
-            continue;
         };
 
         let Some(trapdoor) = trapdoors
             .0
             .clone()
             .into_values()
-            .filter(|trapdoor| &trapdoor.owner_uuid == uuid)
+            .filter(|trapdoor| trapdoor.owner_uuid == uuid)
             .min_by_key(|trapdoor| {
                 let shared_count = trapdoors
                     .0

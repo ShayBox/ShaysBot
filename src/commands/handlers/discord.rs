@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use azalea::{
     app::{App, Plugin, Update},
     ecs::prelude::*,
@@ -7,7 +9,7 @@ use bevy_discord::{bot::events::BMessage, http::DiscordHttpResource, runtime::to
 use serenity::json::json;
 
 use crate::{
-    plugins::commands::{CommandEvent, CommandSender, CommandSource, Registry, WhisperEvent},
+    commands::{CommandEvent, CommandSender, CommandSource, Commands, WhisperEvent},
     settings::Settings,
 };
 
@@ -23,7 +25,6 @@ pub fn handle_message_event(
     mut command_events: EventWriter<CommandEvent>,
     mut message_events: EventReader<BMessage>,
     mut query: Query<Entity, (With<Player>, With<LocalEntity>)>,
-    registry: Res<Registry>,
     settings: Res<Settings>,
 ) {
     for event in message_events.read() {
@@ -32,13 +33,7 @@ pub fn handle_message_event(
         };
 
         let message = event.new_message.clone();
-        let Some((args, command)) =
-            registry.find_command(&message.content, &settings.command_prefix)
-        else {
-            continue;
-        };
 
-        // Check if whitelist is enabled and if the user is whitelisted.
         if !settings.whitelist.is_empty()
             && !settings
                 .whitelist
@@ -51,8 +46,9 @@ pub fn handle_message_event(
             let user_id = message.author.id.to_string();
             tokio_runtime().spawn(async move {
                 let content = [
-                    String::from("[404] Your Discord account isn't linked to a Minecraft account."),
-                    format!("Message the bot in-game '{prefix}whitelist link {user_id}' to link."),
+                    String::from("[404] Your Discord and Minecraft accounts aren't linked,"),
+                    format!("In Game: `{prefix}whitelist link {user_id}`"),
+                    format!("Discord: `{prefix}whitelist link (auth.aristois.net)`"),
                 ];
 
                 let map = json!({
@@ -67,10 +63,19 @@ pub fn handle_message_event(
             continue;
         }
 
+        let mut args = message.content.split(' ').collect::<VecDeque<_>>();
+        let Some(alias) = args.pop_front() else {
+            continue; /* Command Missing */
+        };
+
+        let Some(command) = Commands::find(alias) else {
+            continue; /* Command Invalid */
+        };
+
         command_events.send(CommandEvent {
             entity,
-            args,
-            command: *command,
+            args: args.into_iter().map(String::from).collect(),
+            command,
             source: CommandSource::Discord(message.channel_id),
             sender: CommandSender::Discord(message.author.id),
         });

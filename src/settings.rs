@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use azalea::{
     app::{App, Plugin},
@@ -7,7 +7,8 @@ use azalea::{
 };
 use derive_config::DeriveTomlConfig;
 use serde::{Deserialize, Serialize};
-use serde_with::NoneAsEmptyString;
+use serde_with::{DisplayFromStr, DurationSeconds, NoneAsEmptyString};
+use serenity::all::ChannelId;
 use smart_default::SmartDefault;
 use uuid::Uuid;
 
@@ -21,7 +22,7 @@ pub enum EncryptionMode {
 
 strike! {
     #[strikethrough[serde_as]]
-    #[strikethrough[derive(Clone, Deserialize, Serialize, SmartDefault)]]
+    #[strikethrough[derive(Clone, PartialEq, Deserialize, Serialize, SmartDefault)]]
     #[strikethrough[serde(default)]]
     #[derive(DeriveTomlConfig, Resource)]
     pub struct Settings {
@@ -32,35 +33,43 @@ strike! {
 
         /// Disable in-game command responses globally.
         #[default(false)]
-        #[serde(alias = "quiet")] /* Deprecated: 0.6.0 */
         pub disable_responses: bool,
 
         /// Minecraft online-mode auth.
         #[default(true)]
-        #[serde(alias = "online")] /* Deprecated: 0.6.0 */
         pub online_mode: bool,
 
         /// Minecraft account username.
         #[default("ShaysBot")]
-        #[serde(alias = "username")] /* Deprecated: 0.6.0 */
         pub account_username: String,
 
         /// Minecraft server address.
         #[default("play.vengeancecraft.net")]
         pub server_address: String,
 
-        /// Discord client token. (Optional)
-        #[default("")]
-        pub discord_token: String,
-
         /// Chat command prefix.
         #[default("!")]
-        #[serde(alias = "chat_prefix")] /* Deprecated: 0.6.0 */
         pub command_prefix: String,
 
         /// Command cooldown in seconds.
-        #[default(5)]
-        pub command_cooldown: u64,
+        #[default(Duration::from_secs(10))]
+        #[serde_as(as = "DurationSeconds")]
+        pub command_cooldown: Duration,
+
+        /// Discord client token for commands and events. (Optional)
+        #[default("")]
+        pub discord_token: String,
+
+        /// Discord channel id for events. (Optional)
+        #[serde_as(as = "DisplayFromStr")]
+        pub discord_channel: ChannelId,
+
+        /// Target location to idle at after pearling.
+        pub idle: pub struct IdleGoal {
+            #[serde_as(as = "DisplayFromStr")]
+            pub pos: Vec3,
+            pub radius: f32,
+        },
 
         /// Chat encryption using the NCR (No Chat Reports) mod.
         pub encryption: pub struct ChatEncryption {
@@ -72,10 +81,6 @@ strike! {
             #[default(EncryptionMode::OnDemand)]
             pub mode: EncryptionMode,
         },
-
-        /// Target location to idle at fater pearling.
-        #[default(Vec3::new(-0.0, -0.0, -0.0))]
-        pub idle_pos: Vec3,
 
         /// Minecraft and Discord users allowed to use the bot.
         /// The whitelist is disabled if it's empty.

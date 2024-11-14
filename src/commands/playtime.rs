@@ -1,33 +1,35 @@
 use std::time::Duration;
 
 use azalea::{
-    app::{App, Plugin, Startup, Update},
+    app::{App, Plugin, Update},
     ecs::prelude::*,
 };
 use handlers::prelude::*;
 use serde::Deserialize;
 
-use crate::plugins::commands::prelude::*;
+use crate::commands::{prelude::*, Commands};
 
 /// 2B2T Playtime Command <https://2b2t.vc>
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct PlaytimeCommandPlugin;
 
-impl Plugin for PlaytimeCommandPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, handle_playtime_register)
-            .add_systems(
-                Update,
-                handle_playtime_command_event
-                    .ambiguous_with_all()
-                    .before(handle_discord_whisper_event)
-                    .before(handle_minecraft_whisper_event)
-                    .after(handle_chat_received_event),
-            );
+impl Command for PlaytimeCommandPlugin {
+    fn aliases(&self) -> Vec<&'static str> {
+        vec!["playtime"]
     }
 }
 
-pub fn handle_playtime_register(mut registry: ResMut<Registry>) {
-    registry.register("playtime", Command::Playtime);
+impl Plugin for PlaytimeCommandPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            handle_playtime_command_event
+                .ambiguous_with_all()
+                .before(handle_discord_whisper_event)
+                .before(handle_minecraft_whisper_event)
+                .after(handle_chat_received_event),
+        );
+    }
 }
 
 pub fn handle_playtime_command_event(
@@ -35,13 +37,13 @@ pub fn handle_playtime_command_event(
     mut whisper_events: EventWriter<WhisperEvent>,
 ) {
     for event in command_events.read() {
-        if event.command != Command::Playtime {
+        let Commands::Seen(_plugin) = event.command else {
             continue;
-        }
+        };
 
         let mut whisper_event = WhisperEvent {
             entity:  event.entity,
-            source:  event.source.clone(),
+            source:  event.source,
             sender:  event.sender.clone(),
             content: String::new(),
         };

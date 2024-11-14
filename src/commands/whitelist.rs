@@ -1,5 +1,5 @@
 use azalea::{
-    app::{App, Plugin, Startup, Update},
+    app::{App, Plugin, Update},
     ecs::prelude::*,
     PlayerInfo,
     TabList,
@@ -9,27 +9,32 @@ use handlers::prelude::*;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::{plugins::commands::prelude::*, Settings};
+use crate::{
+    commands::{prelude::*, Commands},
+    Settings,
+};
 
 /// Whitelist command
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WhitelistCommandPlugin;
 
-impl Plugin for WhitelistCommandPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, handle_whitelist_register)
-            .add_systems(
-                Update,
-                handle_whitelist_command_event
-                    .ambiguous_with_all()
-                    .before(handle_discord_whisper_event)
-                    .before(handle_minecraft_whisper_event)
-                    .after(handle_chat_received_event),
-            );
+impl Command for WhitelistCommandPlugin {
+    fn aliases(&self) -> Vec<&'static str> {
+        vec!["whitelist"]
     }
 }
 
-pub fn handle_whitelist_register(mut registry: ResMut<Registry>) {
-    registry.register("whitelist", Command::Whitelist);
+impl Plugin for WhitelistCommandPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            handle_whitelist_command_event
+                .ambiguous_with_all()
+                .before(handle_discord_whisper_event)
+                .before(handle_minecraft_whisper_event)
+                .after(handle_chat_received_event),
+        );
+    }
 }
 
 /// # Panics
@@ -41,9 +46,9 @@ pub fn handle_whitelist_command_event(
     query: Query<&TabList>,
 ) {
     for event in command_events.read() {
-        if event.command != Command::Whitelist {
+        let Commands::Whitelist(_plugin) = event.command else {
             continue;
-        }
+        };
 
         let Ok(tab_list) = query.get_single() else {
             continue;
@@ -52,23 +57,22 @@ pub fn handle_whitelist_command_event(
         let mut args = event.args.clone();
         let mut whisper_event = WhisperEvent {
             entity:  event.entity,
-            source:  event.source.clone(),
+            source:  event.source,
             sender:  event.sender.clone(),
             content: String::new(),
         };
 
         let Some(action) = args.pop_front() else {
-            whisper_event.content =
-                String::from("[400] Missing Action: 'add', 'remove', or 'link'");
+            whisper_event.content = String::from("[400] Missing Action: 'add', 'remove', 'link'");
             whisper_events.send(whisper_event);
             continue;
         };
 
         let user = args.pop_front();
         whisper_event.content = match action.as_ref() {
-            "add" => handle_add(&mut settings, tab_list, user),
-            "remove" => handle_remove(&mut settings, tab_list, user),
-            "link" => handle_link(&mut settings, tab_list, user, &event.sender),
+            "add" => handle_add(&mut settings, user, tab_list),
+            "remove" => handle_remove(&mut settings, user, tab_list),
+            "link" => handle_link(&mut settings, user, &event.sender),
             _ => String::from("[400] Invalid Action: 'add', 'remove', or 'link'"),
         };
 
@@ -76,7 +80,7 @@ pub fn handle_whitelist_command_event(
     }
 }
 
-fn handle_add(settings: &mut ResMut<Settings>, tab_list: &TabList, user: Option<String>) -> String {
+fn handle_add(settings: &mut ResMut<Settings>, user: Option<String>, tab_list: &TabList) -> String {
     let Some(player_name) = user else {
         return String::from("[400] Missing Minecraft player name");
     };
@@ -97,8 +101,8 @@ fn handle_add(settings: &mut ResMut<Settings>, tab_list: &TabList, user: Option<
 
 fn handle_remove(
     settings: &mut ResMut<Settings>,
-    tab_list: &TabList,
     user: Option<String>,
+    tab_list: &TabList,
 ) -> String {
     let Some(player_name) = user else {
         return String::from("[400] Missing Minecraft player name");
@@ -120,7 +124,6 @@ fn handle_remove(
 
 fn handle_link(
     settings: &mut ResMut<Settings>,
-    tab_list: &TabList,
     user: Option<String>,
     sender: &CommandSender,
 ) -> String {
@@ -147,13 +150,9 @@ fn handle_link(
 
             String::from("[200] Successfully linked")
         }
-        CommandSender::Minecraft(sender) => {
+        CommandSender::Minecraft(uuid) => {
             let Some(user_id) = user else {
                 return String::from("[400] Missing Discord user id");
-            };
-
-            let Some((uuid, _info)) = try_find_player(tab_list, sender) else {
-                return String::from("[404] Sender not found");
             };
 
             settings.whitelist.insert(*uuid, Some(user_id));

@@ -5,6 +5,6 @@ pub use super::{
     auto_look::*,
     auto_pearl::*,
     auto_totem::*,
-    commands::prelude::*,
+    discord_tracker::*,
     pearl_tracker::*,
 };
