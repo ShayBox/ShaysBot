@@ -33,6 +33,14 @@ pub fn handle_message_event(
         };
 
         let message = event.new_message.clone();
+        let mut args = message.content.split(' ').collect::<VecDeque<_>>();
+        let Some(alias) = args.pop_front() else {
+            continue; /* Command Missing */
+        };
+
+        let Some(command) = Commands::find(&alias.replace(&settings.command_prefix, "")) else {
+            continue; /* Command Invalid */
+        };
 
         if !settings.whitelist.is_empty()
             && !settings
@@ -62,15 +70,6 @@ pub fn handle_message_event(
 
             continue;
         }
-
-        let mut args = message.content.split(' ').collect::<VecDeque<_>>();
-        let Some(alias) = args.pop_front() else {
-            continue; /* Command Missing */
-        };
-
-        let Some(command) = Commands::find(alias) else {
-            continue; /* Command Invalid */
-        };
 
         command_events.send(CommandEvent {
             entity,

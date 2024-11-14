@@ -10,8 +10,10 @@ mod auto_exit;
 mod auto_look;
 mod auto_pearl;
 mod auto_totem;
-mod discord_tracker;
-mod pearl_tracker;
+mod block_state_tracker;
+mod discord_event_logger;
+mod ender_pearl_tracker;
+mod player_profile_tracker;
 
 pub struct ShaysPluginGroup;
 
@@ -28,6 +30,8 @@ impl PluginGroup for ShaysPluginGroup {
             .add(AutoLookPlugin)
             .add(AutoPearlPlugin)
             .add(AutoTotemPlugin)
-            .add(PearlTrackerPlugin)
+            .add(BlockStateTrackerPlugin)
+            .add(EnderPearlTrackerPlugin)
+            .add(PlayerProfileTrackerPlugin)
     }
 }

@@ -20,9 +20,9 @@ use uuid::Uuid;
 use crate::{Settings, Trapdoor, Trapdoors};
 
 /// Keep track of thrown pearls inside of stasis chambers for `AutoPearlPlugin`
-pub struct PearlTrackerPlugin;
+pub struct EnderPearlTrackerPlugin;
 
-impl Plugin for PearlTrackerPlugin {
+impl Plugin for EnderPearlTrackerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ResendPacketEvent>().add_systems(
             PostUpdate,

@@ -119,7 +119,7 @@ pub async fn start() -> Result<()> {
             .add_plugins(DiscordCommandsPlugin);
 
         if channel != ChannelId::default() {
-            client = client.add_plugins(DiscordTrackerPlugin);
+            client = client.add_plugins(DiscordEventLoggerPlugin);
         }
     }
 

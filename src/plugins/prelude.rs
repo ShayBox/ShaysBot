@@ -5,6 +5,8 @@ pub use super::{
     auto_look::*,
     auto_pearl::*,
     auto_totem::*,
-    discord_tracker::*,
-    pearl_tracker::*,
+    block_state_tracker::*,
+    discord_event_logger::*,
+    ender_pearl_tracker::*,
+    player_profile_tracker::*,
 };

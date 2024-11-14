@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
 use azalea::{
     app::{App, Plugin, Update},
     auth::game_profile::GameProfile,
-    blocks::{Block, BlockState},
+    blocks::Block,
     ecs::prelude::*,
     packet_handling::game::PacketEvent,
     prelude::*,
@@ -15,35 +13,26 @@ use azalea::{
 use bevy_discord::{http::DiscordHttpResource, runtime::tokio_runtime};
 use serenity::json::json;
 
-use crate::Settings;
+use crate::{plugins::block_state_tracker::BlockStates, PlayerProfiles, Settings};
 
-pub struct DiscordTrackerPlugin;
+pub struct DiscordEventLoggerPlugin;
 
-impl Plugin for DiscordTrackerPlugin {
+impl Plugin for DiscordEventLoggerPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(BlockStates::default())
-            .insert_resource(PlayerProfiles::default())
-            .add_systems(
-                Update,
-                (
-                    handle_add_entity_packet,
-                    handle_block_break_packet,
-                    handle_block_update_packet,
-                    handle_remove_entities_packet,
-                ),
-            );
+        app.add_systems(
+            Update,
+            (
+                handle_add_entity_packet,
+                handle_block_break_packet,
+                handle_block_update_packet,
+                handle_remove_entities_packet,
+            ),
+        );
     }
 }
 
-#[derive(Default, Resource)]
-pub struct BlockStates(HashMap<BlockPos, BlockState>);
-
-#[derive(Default, Resource)]
-pub struct PlayerProfiles(HashMap<u32, GameProfile>);
-
 fn handle_add_entity_packet(
     mut packet_events: EventReader<PacketEvent>,
-    mut player_profiles: ResMut<PlayerProfiles>,
     discord: Res<DiscordHttpResource>,
     settings: Res<Settings>,
     query: Query<&TabList>,
@@ -65,11 +54,8 @@ fn handle_add_entity_packet(
             continue;
         };
 
-        let profile = info.profile.clone();
-        let username = profile.name.clone();
-        player_profiles.0.insert(packet.data, profile);
-
         let client = discord.client();
+        let username = info.profile.name.clone();
         let channel_id = settings.discord_channel;
         tokio_runtime().spawn(async move {
             let map = json!({
@@ -118,7 +104,6 @@ fn handle_block_break_packet(
 
 fn handle_block_update_packet(
     mut packet_events: EventReader<PacketEvent>,
-    mut block_states: ResMut<BlockStates>,
     discord: Res<DiscordHttpResource>,
     settings: Res<Settings>,
 ) {
@@ -126,8 +111,6 @@ fn handle_block_update_packet(
         let ClientboundGamePacket::BlockUpdate(packet) = event.packet.as_ref() else {
             continue;
         };
-
-        block_states.0.insert(packet.pos, packet.block_state);
 
         let block = Box::<dyn Block>::from(packet.block_state);
         let block_id = block.id();
