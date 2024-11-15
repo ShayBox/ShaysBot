@@ -67,7 +67,7 @@ pub fn handle_chat_received_event(
             continue;
         };
 
-        if !settings.whitelist.is_empty() && !settings.whitelist.contains_key(uuid) {
+        if !settings.whitelisted.is_empty() && !settings.whitelisted.contains_key(uuid) {
             continue;
         }
 

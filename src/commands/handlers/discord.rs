@@ -42,9 +42,9 @@ pub fn handle_message_event(
             continue; /* Command Invalid */
         };
 
-        if !settings.whitelist.is_empty()
+        if !settings.whitelisted.is_empty()
             && !settings
-                .whitelist
+                .whitelisted
                 .iter()
                 .filter_map(|(uuid, user_id)| user_id.as_ref().map(|user_id| (*uuid, user_id)))
                 .any(|(_, user_id)| user_id == &message.author.id.to_string())

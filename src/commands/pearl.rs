@@ -80,8 +80,8 @@ pub fn handle_pearl_command_event(
                     continue;
                 };
 
-                if !settings.whitelist.is_empty() {
-                    let Some(whitelist) = settings.whitelist.get(uuid) else {
+                if !settings.whitelisted.is_empty() {
+                    let Some(whitelist) = settings.whitelisted.get(uuid) else {
                         continue;
                     };
 

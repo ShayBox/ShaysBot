@@ -31,10 +31,6 @@ strike! {
         #[default(64)]
         pub pearl_view_distance: i32,
 
-        /// Disable in-game command responses globally.
-        #[default(false)]
-        pub disable_responses: bool,
-
         /// Minecraft online-mode auth.
         #[default(true)]
         pub online_mode: bool,
@@ -82,10 +78,21 @@ strike! {
             pub mode: EncryptionMode,
         },
 
+        /// Disable in-game command responses globally.
+        #[default(false)]
+        pub disable_responses: bool,
+
+        /// Automatically disconnect and exit when an un-whitelisted player enters visual range.
+        #[default(false)]
+        pub unknown_player_auto_exit: bool,
+
+        // Disable in-game commands for non-whitelisted players.
+        // pub whitelist: bool, /* TODO: 0.8.0 */
+
         /// Minecraft and Discord users allowed to use the bot.
-        /// The whitelist is disabled if it's empty.
         #[serde_as(as = "HashMap<_, NoneAsEmptyString>")]
-        pub whitelist: HashMap<Uuid, Option<String>>,
+        #[serde(alias = "whitelist")] /* Deprecated: 0.7.2 */
+        pub whitelisted: HashMap<Uuid, Option<String>>,
     }
 }
 

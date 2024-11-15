@@ -23,8 +23,10 @@ No Chat Reports (NCR) encryption to ensure secure and private communication.
 - [**AutoLook**](src/plugins/auto_look.rs) - Automatically looks at specific targets
 - [**AutoPearl**](src/plugins/auto_pearl.rs) - Handles automatic ender pearl throwing
 - [**AutoTotem**](src/plugins/auto_totem.rs) - Automatically equips totems for survival
-- [**DiscordTracker**](src/plugins/ender_pearl_tracker) - Tracks visual range events like players and shulkers
-- [**PearlTracker**](src/plugins/ender_pearl_tracker) - Tracks and manages ender pearl cooldowns and usage
+- [**BlockStateTracker**](src/plugins/block_state_tracker.rs) - Tracks block states
+- [**DiscordEventLogger**](src/plugins/discord_event_logger.rs) - Logs visual range events to Discord
+- [**EnderPearlTracker**](src/plugins/ender_pearl_tracker.rs) - Tracks and manages ender pearl cooldowns and usage
+- [**PlayerProfileTracker**](src/plugins/player_profile_tracker.rs) - Tracks player profiles
 
 ### Commands
 

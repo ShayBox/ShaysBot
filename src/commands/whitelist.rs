@@ -89,10 +89,10 @@ fn handle_add(settings: &mut ResMut<Settings>, user: Option<String>, tab_list: &
         return String::from("[404] Player not found");
     };
 
-    if settings.whitelist.contains_key(uuid) {
+    if settings.whitelisted.contains_key(uuid) {
         String::from("[409] Already whitelisted.")
     } else {
-        settings.whitelist.insert(*uuid, None);
+        settings.whitelisted.insert(*uuid, None);
         settings.save().expect("Failed to save settings");
 
         String::from("[200] Successfully added")
@@ -112,8 +112,8 @@ fn handle_remove(
         return String::from("[404] Player not found");
     };
 
-    if settings.whitelist.contains_key(uuid) {
-        settings.whitelist.remove(uuid);
+    if settings.whitelisted.contains_key(uuid) {
+        settings.whitelisted.remove(uuid);
         settings.save().expect("Failed to save settings");
 
         String::from("[200] Successfully removed")
@@ -145,7 +145,7 @@ fn handle_link(
                 return format!("[{code}] Authentication {}: {}", json.status, json.message);
             };
 
-            settings.whitelist.insert(uuid, Some(auth_code));
+            settings.whitelisted.insert(uuid, Some(auth_code));
             settings.save().expect("Failed to save settings");
 
             String::from("[200] Successfully linked")
@@ -155,7 +155,7 @@ fn handle_link(
                 return String::from("[400] Missing Discord user id");
             };
 
-            settings.whitelist.insert(*uuid, Some(user_id));
+            settings.whitelisted.insert(*uuid, Some(user_id));
             settings.save().expect("Failed to save settings");
 
             String::from("[200] Successfully linked")

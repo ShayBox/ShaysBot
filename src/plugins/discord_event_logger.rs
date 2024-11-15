@@ -1,13 +1,10 @@
 use azalea::{
     app::{App, Plugin, Update},
-    auth::game_profile::GameProfile,
     blocks::Block,
     ecs::prelude::*,
     packet_handling::game::PacketEvent,
-    prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
-    BlockPos,
     TabList,
 };
 use bevy_discord::{http::DiscordHttpResource, runtime::tokio_runtime};
