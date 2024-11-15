@@ -58,7 +58,7 @@ pub fn handle_whitelist_command_event(
         let mut whisper_event = WhisperEvent {
             entity:  event.entity,
             source:  event.source,
-            sender:  event.sender.clone(),
+            sender:  event.sender,
             content: String::new(),
         };
 

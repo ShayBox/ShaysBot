@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.7.2"
+version = "0.7.3"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2021"
 description = "My personal Minecraft bot using Azalea"
@@ -13,10 +13,11 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1"
-#azalea = { path = "../azalea/azalea" }
-azalea = { git = "https://github.com/Shays-Forks/azalea.git" }
+#azalea = { path = "../azalea/azalea", default-features = false }
+azalea = { git = "https://github.com/Shays-Forks/azalea.git", default-features = false }
 bevy-discord = { version = "0.3", features = ["full"] }
 chrono = "0.4"
+#derive-config = { path = "../Derive-Config/derive-config", features = ["toml", "yaml"] }
 derive-config = { version = "2", features = ["toml", "yaml"] }
 lazy-regex = "3"
 #ncr = { path = "../ncr-rs", features = ["cfb8", "ecb", "gcm"] }
@@ -32,6 +33,7 @@ strum = { version = "0.26", features = ["derive"] }
 terminal-link = "0.1"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
+tracing-subscriber = "0.3"
 ureq = { version = "2", features = ["json"] }
 url = "2"
 uuid = "1"

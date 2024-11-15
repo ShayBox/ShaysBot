@@ -120,7 +120,7 @@ pub fn try_encrypt(
     }
 
     let key = AesKey::decode_base64(&chat_encryption.key).unwrap_or_else(|_| KEY.clone());
-    let plaintext = prepend_header(&content);
+    let plaintext = prepend_header(content);
 
     if let Some(encryption) = type_encryption {
         if let Ok(ciphertext) = encryption.encrypt(&plaintext, &key) {

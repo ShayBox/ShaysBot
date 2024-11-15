@@ -20,16 +20,19 @@ pub struct ShaysPluginGroup;
 impl PluginGroup for ShaysPluginGroup {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
+            /* Commands */
             .add(PearlCommandPlugin)
             .add(PlaytimeCommandPlugin)
             .add(SeenCommandPlugin)
             .add(WhitelistCommandPlugin)
+            /* Plugins */
             .add(AntiAfkPlugin)
             .add(AutoEatPlugin)
             .add(AutoExitPlugin)
             .add(AutoLookPlugin)
             .add(AutoPearlPlugin)
             .add(AutoTotemPlugin)
+            /* Trackers */
             .add(BlockStateTrackerPlugin)
             .add(EnderPearlTrackerPlugin)
             .add(PlayerProfileTrackerPlugin)

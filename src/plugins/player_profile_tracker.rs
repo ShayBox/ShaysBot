@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use azalea::{
-    app::{App, Plugin, PostUpdate, PreUpdate},
+    app::{App, Plugin, PostUpdate, Update},
     auth::game_profile::GameProfile,
     ecs::prelude::*,
     packet_handling::game::PacketEvent,
@@ -16,15 +16,15 @@ pub struct PlayerProfileTrackerPlugin;
 impl Plugin for PlayerProfileTrackerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerProfiles::default())
-            .add_systems(PreUpdate, handle_add_entity_packet)
-            .add_systems(PostUpdate, handle_remove_entities_packet);
+            .add_systems(Update, handle_add_player_profiles)
+            .add_systems(PostUpdate, handle_remove_player_profiles);
     }
 }
 
 #[derive(Default, Resource)]
 pub struct PlayerProfiles(pub HashMap<u32, GameProfile>);
 
-fn handle_add_entity_packet(
+pub fn handle_add_player_profiles(
     mut packet_events: EventReader<PacketEvent>,
     mut player_profiles: ResMut<PlayerProfiles>,
     query: Query<&TabList>,
@@ -46,11 +46,11 @@ fn handle_add_entity_packet(
             continue;
         };
 
-        player_profiles.0.insert(packet.data, info.profile.clone());
+        player_profiles.0.insert(packet.id, info.profile.clone());
     }
 }
 
-fn handle_remove_entities_packet(
+pub fn handle_remove_player_profiles(
     mut packet_events: EventReader<PacketEvent>,
     mut player_profiles: ResMut<PlayerProfiles>,
 ) {

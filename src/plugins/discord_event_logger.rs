@@ -10,7 +10,12 @@ use azalea::{
 use bevy_discord::{http::DiscordHttpResource, runtime::tokio_runtime};
 use serenity::json::json;
 
-use crate::{plugins::block_state_tracker::BlockStates, PlayerProfiles, Settings};
+use crate::{
+    handle_add_player_profiles,
+    plugins::block_state_tracker::BlockStates,
+    PlayerProfiles,
+    Settings,
+};
 
 pub struct DiscordEventLoggerPlugin;
 
@@ -23,6 +28,8 @@ impl Plugin for DiscordEventLoggerPlugin {
                 handle_block_break_packet,
                 handle_block_update_packet,
                 handle_remove_entities_packet,
+                handle_player_info_remove_packet,
+                handle_player_info_update_packet.after(handle_add_player_profiles),
             ),
         );
     }
@@ -129,7 +136,7 @@ fn handle_block_update_packet(
 
 fn handle_remove_entities_packet(
     mut packet_events: EventReader<PacketEvent>,
-    mut player_profiles: ResMut<PlayerProfiles>,
+    player_profiles: Res<PlayerProfiles>,
     discord: Res<DiscordHttpResource>,
     settings: Res<Settings>,
 ) {
@@ -139,7 +146,7 @@ fn handle_remove_entities_packet(
         };
 
         for entity_id in &packet.entity_ids {
-            let Some(profile) = player_profiles.0.remove(entity_id) else {
+            let Some(profile) = player_profiles.0.get(entity_id) else {
                 continue;
             };
 
@@ -149,6 +156,74 @@ fn handle_remove_entities_packet(
             tokio_runtime().spawn(async move {
                 let map = json!({
                     "content": format!("{username} has exited visual range"),
+                });
+
+                if let Err(error) = client.send_message(channel_id, vec![], &map).await {
+                    error!("{error}");
+                };
+            });
+        }
+    }
+}
+fn handle_player_info_remove_packet(
+    mut packet_events: EventReader<PacketEvent>,
+    player_profiles: Res<PlayerProfiles>,
+    discord: Res<DiscordHttpResource>,
+    settings: Res<Settings>,
+) {
+    for event in packet_events.read() {
+        let ClientboundGamePacket::PlayerInfoRemove(packet) = event.packet.as_ref() else {
+            continue;
+        };
+
+        for profile_uuid in &packet.profile_ids {
+            let Some((_, profile)) = player_profiles
+                .0
+                .iter()
+                .find(|(_, profile)| &profile.uuid == profile_uuid)
+            else {
+                continue;
+            };
+
+            let client = discord.client();
+            let username = profile.name.clone();
+            let channel_id = settings.discord_channel;
+            tokio_runtime().spawn(async move {
+                let map = json!({
+                    "content": format!("{username} logged out in visual range"),
+                });
+
+                if let Err(error) = client.send_message(channel_id, vec![], &map).await {
+                    error!("{error}");
+                };
+            });
+        }
+    }
+}
+fn handle_player_info_update_packet(
+    mut packet_events: EventReader<PacketEvent>,
+    player_profiles: Res<PlayerProfiles>,
+    discord: Res<DiscordHttpResource>,
+    settings: Res<Settings>,
+) {
+    for event in packet_events.read().cloned() {
+        let ClientboundGamePacket::PlayerInfoUpdate(packet) = event.packet.as_ref() else {
+            continue;
+        };
+
+        let profiles = packet.entries.clone().into_iter().filter_map(|info| {
+            player_profiles.0.iter().find(|(_, profile)| {
+                profile.uuid == info.profile.uuid && info.display_name.is_some()
+            })
+        });
+
+        for (_, profile) in profiles {
+            let client = discord.client();
+            let username = profile.name.clone();
+            let channel_id = settings.discord_channel;
+            tokio_runtime().spawn(async move {
+                let map = json!({
+                    "content": format!("{username} joined in visual range"),
                 });
 
                 if let Err(error) = client.send_message(channel_id, vec![], &map).await {

@@ -10,5 +10,6 @@ async fn main() -> anyhow::Result<()> {
         println!("{link}");
     }
 
+    tracing_subscriber::fmt().with_target(false).init();
     shaysbot::start().await
 }

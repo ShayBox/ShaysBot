@@ -22,6 +22,7 @@ pub enum EncryptionMode {
 
 strike! {
     #[strikethrough[serde_as]]
+    #[strikethrough[allow(clippy::derive_partial_eq_without_eq)]]
     #[strikethrough[derive(Clone, PartialEq, Deserialize, Serialize, SmartDefault)]]
     #[strikethrough[serde(default)]]
     #[derive(DeriveTomlConfig, Resource)]

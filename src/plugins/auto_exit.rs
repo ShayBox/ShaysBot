@@ -2,6 +2,7 @@ use azalea::{
     app::{App, Plugin, Update},
     disconnect::DisconnectEvent,
     ecs::prelude::*,
+    events::disconnect_listener,
     packet_handling::game::PacketEvent,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
@@ -16,7 +17,14 @@ pub struct AutoExitPlugin;
 
 impl Plugin for AutoExitPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (handle_disconnect_event, handle_add_entity_packet));
+        app.add_systems(
+            Update,
+            (
+                handle_add_entity_packet.before(disconnect_listener),
+                handle_disconnect_event,
+            )
+                .chain(),
+        );
     }
 }
 

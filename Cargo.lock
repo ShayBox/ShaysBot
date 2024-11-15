@@ -214,7 +214,6 @@ dependencies = [
  "parking_lot",
  "priority-queue",
  "rustc-hash 2.0.0",
- "serde",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -333,7 +332,6 @@ dependencies = [
  "azalea-world",
  "bevy_app",
  "bevy_ecs",
- "bevy_log",
  "bevy_tasks",
  "bevy_time",
  "derive_more",
@@ -3088,9 +3086,9 @@ dependencies = [
 
 [[package]]
 name = "serenity"
-version = "0.12.3"
+version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8f0088eeaf12d92d0a7b6cbbde5c14a2ca9016f51f71c4b54ebcf66c69dc472"
+checksum = "3d72ec4323681bf9a3cabe40fd080abc2435859b502a1b5aa9bf693f125bfa76"
 dependencies = [
  "arrayvec",
  "async-trait",
@@ -3167,7 +3165,7 @@ dependencies = [
 
 [[package]]
 name = "shaysbot"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "azalea",
@@ -3187,6 +3185,7 @@ dependencies = [
  "terminal-link",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "ureq",
  "url",
  "uuid",

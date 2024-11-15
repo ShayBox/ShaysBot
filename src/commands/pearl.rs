@@ -58,7 +58,7 @@ pub fn handle_pearl_command_event(
         let mut whisper_event = WhisperEvent {
             entity:  event.entity,
             source:  event.source,
-            sender:  event.sender.clone(),
+            sender:  event.sender,
             content: String::new(),
         };
 
@@ -98,7 +98,7 @@ pub fn handle_pearl_command_event(
                     }
                 }
 
-                uuid.clone()
+                *uuid
             }
         };
 
