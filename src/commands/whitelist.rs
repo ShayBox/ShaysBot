@@ -85,17 +85,17 @@ fn handle_add(settings: &mut ResMut<Settings>, user: Option<String>, tab_list: &
         return String::from("[400] Missing Minecraft player name");
     };
 
-    let Some((uuid, _info)) = try_find_player(tab_list, &player_name) else {
+    let Some((uuid, info)) = try_find_player(tab_list, &player_name) else {
         return String::from("[404] Player not found");
     };
 
     if settings.whitelisted.contains_key(uuid) {
-        String::from("[409] Already whitelisted.")
+        String::from("[409] Already whitelisted")
     } else {
         settings.whitelisted.insert(*uuid, None);
         settings.save().expect("Failed to save settings");
 
-        String::from("[200] Successfully added")
+        format!("[200] Successfully added: {}", info.profile.name)
     }
 }
 
@@ -108,7 +108,7 @@ fn handle_remove(
         return String::from("[400] Missing Minecraft player name");
     };
 
-    let Some((uuid, _info)) = try_find_player(tab_list, &player_name) else {
+    let Some((uuid, info)) = try_find_player(tab_list, &player_name) else {
         return String::from("[404] Player not found");
     };
 
@@ -116,7 +116,7 @@ fn handle_remove(
         settings.whitelisted.remove(uuid);
         settings.save().expect("Failed to save settings");
 
-        String::from("[200] Successfully removed")
+        format!("[200] Successfully removed: {}", info.profile.name)
     } else {
         String::from("[409] Already not whitelisted")
     }

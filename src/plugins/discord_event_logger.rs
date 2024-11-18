@@ -2,7 +2,9 @@ use azalea::{
     app::{App, Plugin, Update},
     blocks::Block,
     ecs::prelude::*,
+    entity::{metadata::Player, LocalEntity},
     packet_handling::game::PacketEvent,
+    prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
     TabList,
@@ -10,28 +12,74 @@ use azalea::{
 use bevy_discord::{http::DiscordHttpResource, runtime::tokio_runtime};
 use serenity::json::json;
 
-use crate::{
-    handle_add_player_profiles,
-    plugins::block_state_tracker::BlockStates,
-    PlayerProfiles,
-    Settings,
-};
+use crate::{plugins::prelude::*, BoundedCounter, Settings, CARGO_PKG_REPOSITORY};
 
 pub struct DiscordEventLoggerPlugin;
 
 impl Plugin for DiscordEventLoggerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                handle_add_entity_packet,
-                handle_block_break_packet,
-                handle_block_update_packet,
-                handle_remove_entities_packet,
-                handle_player_info_remove_packet,
-                handle_player_info_update_packet.after(handle_add_player_profiles),
-            ),
-        );
+        app.add_systems(GameTick, handle_check_for_updates)
+            .add_systems(
+                Update,
+                (
+                    handle_add_entity_packet,
+                    handle_block_break_packet,
+                    handle_block_update_packet,
+                    handle_remove_entities_packet,
+                    handle_player_info_remove_packet,
+                    handle_player_info_update_packet,
+                )
+                    .after(handle_add_block_states)
+                    .after(handle_add_player_profiles),
+            );
+    }
+}
+
+#[derive(Component, Default)]
+pub struct UpdateCounter(BoundedCounter<u64>);
+
+type InitQueryData = Entity;
+type InitQueryFilter = (With<Player>, With<LocalEntity>, Without<UpdateCounter>);
+
+type RunQueryData<'a> = (Entity, &'a mut UpdateCounter);
+type RunQueryFilter = (With<Player>, With<LocalEntity>, With<UpdateCounter>);
+
+/// # Panics
+/// Will panic if `shaysbot::check_for_updates` or `shaysbot::get_remote_version` fails.
+pub fn handle_check_for_updates(
+    mut init_query: Query<InitQueryData, InitQueryFilter>,
+    mut commands: Commands,
+
+    mut run_query: Query<RunQueryData, RunQueryFilter>,
+    discord: Res<DiscordHttpResource>,
+    settings: Res<Settings>,
+) {
+    const DAY: u64 = 20 * 60 * 60 * 24;
+
+    for entity in &mut init_query {
+        commands.entity(entity).insert(UpdateCounter::default());
+    }
+
+    for (_entity, mut counter) in &mut run_query {
+        let Some(ticks) = counter.0.next() else {
+            return;
+        };
+
+        if ticks % DAY == 0 && crate::check_for_updates().expect("Failed to check for updates") {
+            let version = crate::get_remote_version().expect("Failed to check for updates");
+
+            let client = discord.client();
+            let channel_id = settings.discord_channel;
+            tokio_runtime().spawn(async move {
+                let map = json!({
+                    "content": format!("An update is available: {CARGO_PKG_REPOSITORY}/releases/tag/{version}"),
+                });
+
+                if let Err(error) = client.send_message(channel_id, vec![], &map).await {
+                    error!("{error}");
+                };
+            });
+        }
     }
 }
 

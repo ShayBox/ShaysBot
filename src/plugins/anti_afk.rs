@@ -24,15 +24,13 @@ impl Plugin for AntiAfkPlugin {
 }
 
 #[derive(Component, Default)]
-pub struct AntiAfk {
-    pub ticks: BoundedCounter<u8>,
-}
+pub struct AntiAfkCounter(BoundedCounter<u8>);
 
 type InitQueryData = Entity;
-type InitQueryFilter = (With<Player>, With<LocalEntity>, Without<AntiAfk>);
+type InitQueryFilter = (With<Player>, With<LocalEntity>, Without<AntiAfkCounter>);
 
-type RunQueryData<'a> = (Entity, &'a mut AntiAfk);
-type RunQueryFilter = (With<Player>, With<LocalEntity>, With<AntiAfk>);
+type RunQueryData<'a> = (Entity, &'a mut AntiAfkCounter);
+type RunQueryFilter = (With<Player>, With<LocalEntity>, With<AntiAfkCounter>);
 
 pub fn handle_anti_afk(
     mut init_query: Query<InitQueryData, InitQueryFilter>,
@@ -42,11 +40,11 @@ pub fn handle_anti_afk(
     mut swing_arm_events: EventWriter<SwingArmEvent>,
 ) {
     for entity in &mut init_query {
-        commands.entity(entity).insert(AntiAfk::default());
+        commands.entity(entity).insert(AntiAfkCounter::default());
     }
 
-    for (entity, mut afk) in &mut run_query {
-        let Some(ticks) = afk.ticks.next() else {
+    for (entity, mut counter) in &mut run_query {
+        let Some(ticks) = counter.0.next() else {
             return;
         };
 

@@ -5,7 +5,12 @@ use azalea::{
     ecs::prelude::*,
     entity::{metadata::Player, LocalEntity},
 };
-use bevy_discord::{bot::events::BMessage, http::DiscordHttpResource, runtime::tokio_runtime};
+use bevy_discord::{
+    bot::events::BMessage,
+    http::DiscordHttpResource,
+    runtime::tokio_runtime,
+    DiscordSet,
+};
 use serenity::json::json;
 
 use crate::{
@@ -17,7 +22,13 @@ pub struct DiscordCommandsPlugin;
 
 impl Plugin for DiscordCommandsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (handle_message_event, handle_discord_whisper_event));
+        app.add_systems(
+            Update,
+            (
+                handle_message_event.after(DiscordSet),
+                handle_discord_whisper_event.before(DiscordSet),
+            ),
+        );
     }
 }
 

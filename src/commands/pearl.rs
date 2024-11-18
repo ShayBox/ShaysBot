@@ -102,34 +102,38 @@ pub fn handle_pearl_command_event(
             }
         };
 
-        let Some(trapdoor) = trapdoors
+        let player_trapdoors = trapdoors
             .0
-            .clone()
-            .into_values()
+            .values()
             .filter(|trapdoor| trapdoor.owner_uuid == uuid)
-            .min_by_key(|trapdoor| {
-                let shared_count = trapdoors
-                    .0
-                    .values()
-                    .filter(|td| td.block_pos == trapdoor.block_pos)
-                    .filter(|td| td.owner_uuid != trapdoor.owner_uuid)
-                    .count();
+            .copied()
+            .collect::<Vec<_>>();
 
-                let client_pos = BlockPos::from(position);
-                let distance = (client_pos.x - trapdoor.block_pos.x).abs()
-                    + (client_pos.y - trapdoor.block_pos.y).abs()
-                    + (client_pos.z - trapdoor.block_pos.z).abs();
+        let Some(trapdoor) = player_trapdoors.clone().into_iter().min_by_key(|trapdoor| {
+            let shared_count = trapdoors
+                .0
+                .values()
+                .filter(|td| td.block_pos == trapdoor.block_pos)
+                .filter(|td| td.owner_uuid != trapdoor.owner_uuid)
+                .count();
 
-                // First compare by shared count, then by distance
-                (shared_count, distance)
-            })
-        else {
+            let client_pos = BlockPos::from(position);
+            let distance = (client_pos.x - trapdoor.block_pos.x).abs()
+                + (client_pos.y - trapdoor.block_pos.y).abs()
+                + (client_pos.z - trapdoor.block_pos.z).abs();
+
+            // First compare by shared count, then by distance
+            (shared_count, distance)
+        }) else {
             whisper_event.content = String::from("[404] Pearl not found");
             whisper_events.send(whisper_event);
             continue;
         };
 
-        whisper_event.content = String::from("[202] I'm on my way");
+        whisper_event.content = format!(
+            "[202] I'm on my way, you have {} left",
+            player_trapdoors.len() - 1
+        );
         whisper_events.send(whisper_event);
 
         pearl_events.send(PearlGotoEvent {

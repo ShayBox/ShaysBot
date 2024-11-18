@@ -9,9 +9,9 @@
 
 # ShaysBot
 
-A feature-rich Minecraft bot built using [Azalea](https://github.com/azalea-rs/azalea), designed to enhance gameplay
-with automated features and useful commands. Written in Rust for high performance and reliability. Includes support for
-No Chat Reports (NCR) encryption to ensure secure and private communication.
+A feature-rich Minecraft bot built using [Azalea](https://github.com/azalea-rs/azalea), designed to enhance gameplay  
+with automated features and useful commands. Written in Rust for high performance and reliability.  
+Includes support for No Chat Reports (NCR) encryption to ensure secure and private communication.
 
 ## Features
 

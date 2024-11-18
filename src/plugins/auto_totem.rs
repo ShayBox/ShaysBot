@@ -13,7 +13,7 @@ use azalea::{
     registry::Item,
 };
 
-use crate::plugins::prelude::*;
+use crate::{plugins::prelude::*, BoundedCounter};
 
 /// Automatically equip totems in the offhand slot
 pub struct AutoTotemPlugin;
@@ -29,14 +29,35 @@ impl Plugin for AutoTotemPlugin {
     }
 }
 
-type QueryData<'a> = (Entity, &'a Inventory);
-type QueryFilter = (With<Player>, With<LocalEntity>);
+#[derive(Component, Default)]
+pub struct AutoTotemCounter(BoundedCounter<u8>);
+
+type InitQueryData = Entity;
+type InitQueryFilter = (With<Player>, With<LocalEntity>, Without<AutoTotemCounter>);
+
+type RunQueryData<'a> = (Entity, &'a Inventory, &'a mut AutoTotemCounter);
+type RunQueryFilter = (With<Player>, With<LocalEntity>, With<AutoTotemCounter>);
 
 pub fn handle_auto_totem(
-    mut query: Query<QueryData, QueryFilter>,
+    mut init_query: Query<InitQueryData, InitQueryFilter>,
+    mut commands: Commands,
+
+    mut run_query: Query<RunQueryData, RunQueryFilter>,
     mut container_click_events: EventWriter<ContainerClickEvent>,
 ) {
-    for (entity, inventory) in &mut query {
+    for entity in &mut init_query {
+        commands.entity(entity).insert(AutoTotemCounter::default());
+    }
+
+    for (entity, inventory, mut counter) in &mut run_query {
+        let Some(ticks) = counter.0.next() else {
+            return;
+        };
+
+        if ticks % 2 == 0 {
+            continue;
+        }
+
         let Menu::Player(player) = &inventory.inventory_menu else {
             continue;
         };

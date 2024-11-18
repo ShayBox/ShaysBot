@@ -15,15 +15,15 @@ pub struct BlockStateTrackerPlugin;
 impl Plugin for BlockStateTrackerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(BlockStates::default())
-            .add_systems(Update, handle_add_block_state)
-            .add_systems(PostUpdate, handle_remove_block_state);
+            .add_systems(Update, handle_add_block_states)
+            .add_systems(PostUpdate, handle_remove_block_states);
     }
 }
 
 #[derive(Default, Resource)]
 pub struct BlockStates(pub HashMap<BlockPos, BlockState>);
 
-fn handle_add_block_state(
+pub fn handle_add_block_states(
     mut packet_events: EventReader<PacketEvent>,
     mut block_states: ResMut<BlockStates>,
 ) {
@@ -36,7 +36,7 @@ fn handle_add_block_state(
     }
 }
 
-fn handle_remove_block_state(
+pub fn handle_remove_block_states(
     mut packet_events: EventReader<PacketEvent>,
     mut block_states: ResMut<BlockStates>,
 ) {
