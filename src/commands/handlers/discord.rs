@@ -33,62 +33,63 @@ impl Plugin for DiscordCommandsPlugin {
 }
 
 pub fn handle_message_event(
-    mut command_events: EventWriter<CommandEvent>,
     mut message_events: EventReader<BMessage>,
+    mut command_events: EventWriter<CommandEvent>,
     mut query: Query<Entity, (With<Player>, With<LocalEntity>)>,
     settings: Res<Settings>,
 ) {
     for event in message_events.read() {
-        let Ok(entity) = query.get_single_mut() else {
-            continue;
-        };
+        let mut events = Vec::new();
+        for entity in &mut query {
+            let message = event.new_message.clone();
+            let mut args = message.content.split(' ').collect::<VecDeque<_>>();
+            let Some(alias) = args.pop_front() else {
+                continue; /* Command Missing */
+            };
 
-        let message = event.new_message.clone();
-        let mut args = message.content.split(' ').collect::<VecDeque<_>>();
-        let Some(alias) = args.pop_front() else {
-            continue; /* Command Missing */
-        };
+            let Some(command) = Commands::find(&alias.replace(&settings.command_prefix, "")) else {
+                continue; /* Command Invalid */
+            };
 
-        let Some(command) = Commands::find(&alias.replace(&settings.command_prefix, "")) else {
-            continue; /* Command Invalid */
-        };
+            if !settings.whitelisted.is_empty()
+                && !settings
+                    .whitelisted
+                    .iter()
+                    .filter_map(|(uuid, user_id)| user_id.as_ref().map(|user_id| (*uuid, user_id)))
+                    .any(|(_, user_id)| user_id == &message.author.id.to_string())
+            {
+                let http = event.ctx.http.clone();
+                let prefix = settings.command_prefix.clone();
+                let user_id = message.author.id.to_string();
+                tokio_runtime().spawn(async move {
+                    let content = [
+                        str!("Your Discord and Minecraft accounts are not currently linked."),
+                        format!("To link via in-game, message the bot the following command: `{prefix}whitelist link {user_id}`"),
+                        format!("To link via Discord, run the following command with your `auth.aristois.net` code `{prefix}whitelist link <code>`"),
+                    ];
 
-        if !settings.whitelisted.is_empty()
-            && !settings
-                .whitelisted
-                .iter()
-                .filter_map(|(uuid, user_id)| user_id.as_ref().map(|user_id| (*uuid, user_id)))
-                .any(|(_, user_id)| user_id == &message.author.id.to_string())
-        {
-            let http = event.ctx.http.clone();
-            let prefix = settings.command_prefix.clone();
-            let user_id = message.author.id.to_string();
-            tokio_runtime().spawn(async move {
-                let content = [
-                    String::from("[404] Your Discord and Minecraft accounts aren't linked,"),
-                    format!("In Game: `{prefix}whitelist link {user_id}`"),
-                    format!("Discord: `{prefix}whitelist link (auth.aristois.net)`"),
-                ];
+                    let map = json!({
+                        "content": content.join("\n"),
+                    });
 
-                let map = json!({
-                    "content": content.join("\n"),
+                    if let Err(error) = http.send_message(message.channel_id, vec![], &map).await {
+                        error!("{error}");
+                    };
                 });
 
-                if let Err(error) = http.send_message(message.channel_id, vec![], &map).await {
-                    error!("{error}");
-                };
-            });
+                continue;
+            }
 
-            continue;
+            events.push(CommandEvent {
+                entity,
+                args: args.into_iter().map(String::from).collect(),
+                command,
+                source: CommandSource::Discord(message.channel_id),
+                sender: CommandSender::Discord(message.author.id),
+            });
         }
 
-        command_events.send(CommandEvent {
-            entity,
-            args: args.into_iter().map(String::from).collect(),
-            command,
-            source: CommandSource::Discord(message.channel_id),
-            sender: CommandSender::Discord(message.author.id),
-        });
+        command_events.send_batch(events);
     }
 }
 

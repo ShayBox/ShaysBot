@@ -45,13 +45,13 @@ pub fn handle_whitelist_command_event(
     mut settings: ResMut<Settings>,
     query: Query<&TabList>,
 ) {
-    for event in command_events.read() {
+    if let Some(event) = command_events.read().next() {
         let Commands::Whitelist(_plugin) = event.command else {
-            continue;
+            return;
         };
 
-        let Ok(tab_list) = query.get_single() else {
-            continue;
+        let Ok(tab_list) = query.get(event.entity) else {
+            return;
         };
 
         let mut args = event.args.clone();
@@ -63,9 +63,9 @@ pub fn handle_whitelist_command_event(
         };
 
         let Some(action) = args.pop_front() else {
-            whisper_event.content = String::from("[400] Missing Action: 'add', 'remove', 'link'");
+            whisper_event.content = str!("[400] Missing Action: 'add', 'remove', 'link'");
             whisper_events.send(whisper_event);
-            continue;
+            return;
         };
 
         let user = args.pop_front();
@@ -73,24 +73,26 @@ pub fn handle_whitelist_command_event(
             "add" => handle_add(&mut settings, user, tab_list),
             "remove" => handle_remove(&mut settings, user, tab_list),
             "link" => handle_link(&mut settings, user, &event.sender),
-            _ => String::from("[400] Invalid Action: 'add', 'remove', or 'link'"),
+            _ => str!("[400] Invalid Action: 'add', 'remove', or 'link'"),
         };
 
         whisper_events.send(whisper_event);
     }
+
+    command_events.clear();
 }
 
 fn handle_add(settings: &mut ResMut<Settings>, user: Option<String>, tab_list: &TabList) -> String {
     let Some(player_name) = user else {
-        return String::from("[400] Missing Minecraft player name");
+        return str!("[400] Missing Minecraft player name");
     };
 
     let Some((uuid, info)) = try_find_player(tab_list, &player_name) else {
-        return String::from("[404] Player not found");
+        return str!("[404] Player not found");
     };
 
     if settings.whitelisted.contains_key(uuid) {
-        String::from("[409] Already whitelisted")
+        str!("[409] Already whitelisted")
     } else {
         settings.whitelisted.insert(*uuid, None);
         settings.save().expect("Failed to save settings");
@@ -105,11 +107,11 @@ fn handle_remove(
     tab_list: &TabList,
 ) -> String {
     let Some(player_name) = user else {
-        return String::from("[400] Missing Minecraft player name");
+        return str!("[400] Missing Minecraft player name");
     };
 
     let Some((uuid, info)) = try_find_player(tab_list, &player_name) else {
-        return String::from("[404] Player not found");
+        return str!("[404] Player not found");
     };
 
     if settings.whitelisted.contains_key(uuid) {
@@ -118,7 +120,7 @@ fn handle_remove(
 
         format!("[200] Successfully removed: {}", info.profile.name)
     } else {
-        String::from("[409] Already not whitelisted")
+        str!("[409] Already not whitelisted")
     }
 }
 
@@ -130,15 +132,17 @@ fn handle_link(
     match sender {
         CommandSender::Discord(_) => {
             let Some(auth_code) = user else {
-                return String::from("[400] Missing auth code (Join: auth.aristois.net)");
+                return str!("[400] Missing auth code (Join: auth.aristois.net)");
             };
 
             let path = format!("https://auth.aristois.net/token/{auth_code}");
-            let response = ureq::get(&path).call().expect("Failed to authenticate");
+            let Ok(response) = ureq::get(&path).call() else {
+                return str!("[500] Invalid auth code (Join: auth.aristois.net)");
+            };
 
             let code = response.status();
             let Ok(json) = response.into_json::<Json>() else {
-                return String::from("[500] Failed to parse JSON");
+                return str!("[500] Failed to parse JSON");
             };
 
             let Some(uuid) = json.uuid else {
@@ -148,17 +152,17 @@ fn handle_link(
             settings.whitelisted.insert(uuid, Some(auth_code));
             settings.save().expect("Failed to save settings");
 
-            String::from("[200] Successfully linked")
+            str!("[200] Successfully linked")
         }
         CommandSender::Minecraft(uuid) => {
             let Some(user_id) = user else {
-                return String::from("[400] Missing Discord user id");
+                return str!("[400] Missing Discord user id");
             };
 
             settings.whitelisted.insert(*uuid, Some(user_id));
             settings.save().expect("Failed to save settings");
 
-            String::from("[200] Successfully linked")
+            str!("[200] Successfully linked")
         }
     }
 }

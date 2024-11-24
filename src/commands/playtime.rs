@@ -36,9 +36,9 @@ pub fn handle_playtime_command_event(
     mut command_events: EventReader<CommandEvent>,
     mut whisper_events: EventWriter<WhisperEvent>,
 ) {
-    for event in command_events.read() {
-        let Commands::Seen(_plugin) = event.command else {
-            continue;
+    if let Some(event) = command_events.read().next() {
+        let Commands::Playtime(_plugin) = event.command else {
+            return;
         };
 
         let mut whisper_event = WhisperEvent {
@@ -49,9 +49,9 @@ pub fn handle_playtime_command_event(
         };
 
         let Some(player_name) = event.args.iter().next() else {
-            whisper_event.content = String::from("[400] Missing player name");
+            whisper_event.content = str!("[400] Missing player name");
             whisper_events.send(whisper_event);
-            continue;
+            return;
         };
 
         let response = match ureq::get("https://api.2b2t.vc/playtime")
@@ -64,20 +64,20 @@ pub fn handle_playtime_command_event(
                 whisper_event.content = format!("[404] Player not found: {player_name}");
                 whisper_events.send(whisper_event);
                 error!("{error}");
-                continue;
+                return;
             }
         };
 
         if response.status() == 204 {
-            whisper_event.content = String::from("[204] Invalid player?");
+            whisper_event.content = str!("[204] Invalid player?");
             whisper_events.send(whisper_event);
-            continue;
+            return;
         }
 
         let Ok(json) = response.into_json::<Json>() else {
-            whisper_event.content = String::from("[500] Failed to parse JSON");
+            whisper_event.content = str!("[500] Failed to parse JSON");
             whisper_events.send(whisper_event);
-            continue;
+            return;
         };
 
         let duration = Duration::new(json.playtime_seconds, 0);
@@ -89,6 +89,8 @@ pub fn handle_playtime_command_event(
         );
         whisper_events.send(whisper_event);
     }
+
+    command_events.clear();
 }
 
 #[derive(Debug, Deserialize)]

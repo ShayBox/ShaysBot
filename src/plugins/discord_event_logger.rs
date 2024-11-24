@@ -10,9 +10,9 @@ use azalea::{
     TabList,
 };
 use bevy_discord::{http::DiscordHttpResource, runtime::tokio_runtime};
-use serenity::json::json;
+use serenity::{all::ChannelId, json::json};
 
-use crate::{plugins::prelude::*, BoundedCounter, Settings, CARGO_PKG_REPOSITORY};
+use crate::{plugins::prelude::*, settings::BotSettings, BoundedCounter, CARGO_PKG_REPOSITORY};
 
 pub struct DiscordEventLoggerPlugin;
 
@@ -41,35 +41,40 @@ pub struct UpdateCounter(BoundedCounter<u64>);
 type InitQueryData = Entity;
 type InitQueryFilter = (With<Player>, With<LocalEntity>, Without<UpdateCounter>);
 
-type RunQueryData<'a> = (Entity, &'a mut UpdateCounter);
+type RunQueryData<'a> = (&'a mut UpdateCounter, &'a BotSettings);
 type RunQueryFilter = (With<Player>, With<LocalEntity>, With<UpdateCounter>);
 
 /// # Panics
 /// Will panic if `shaysbot::check_for_updates` or `shaysbot::get_remote_version` fails.
 pub fn handle_check_for_updates(
+    /* Insert the update counter component */
     mut init_query: Query<InitQueryData, InitQueryFilter>,
     mut commands: Commands,
-
+    /* Check for updates once a day */
     mut run_query: Query<RunQueryData, RunQueryFilter>,
     discord: Res<DiscordHttpResource>,
-    settings: Res<Settings>,
 ) {
     const DAY: u64 = 20 * 60 * 60 * 24;
 
+    /* Insert the update counter component */
     for entity in &mut init_query {
         commands.entity(entity).insert(UpdateCounter::default());
     }
 
-    for (_entity, mut counter) in &mut run_query {
+    /* Check for updates once a day */
+    for (mut counter, bot_settings) in &mut run_query {
         let Some(ticks) = counter.0.next() else {
             return;
         };
 
+        let channel_id = bot_settings.discord_channel;
+        if channel_id == ChannelId::default() {
+            return; /* Missing Channel ID */
+        }
+
         if ticks % DAY == 0 && crate::check_for_updates().expect("Failed to check for updates") {
             let version = crate::get_remote_version().expect("Failed to check for updates");
-
             let client = discord.client();
-            let channel_id = settings.discord_channel;
             tokio_runtime().spawn(async move {
                 let map = json!({
                     "content": format!("An update is available: {CARGO_PKG_REPOSITORY}/releases/tag/{version}"),
@@ -85,9 +90,8 @@ pub fn handle_check_for_updates(
 
 fn handle_add_entity_packet(
     mut packet_events: EventReader<PacketEvent>,
+    query: Query<(&TabList, &BotSettings)>,
     discord: Res<DiscordHttpResource>,
-    settings: Res<Settings>,
-    query: Query<&TabList>,
 ) {
     for event in packet_events.read() {
         let ClientboundGamePacket::AddEntity(packet) = event.packet.as_ref() else {
@@ -98,20 +102,25 @@ fn handle_add_entity_packet(
             continue;
         }
 
-        let Ok(tab_list) = query.get(event.entity) else {
+        let Ok((tab_list, bot_settings)) = query.get(event.entity) else {
             continue;
         };
 
-        let Some((_, info)) = tab_list.iter().find(|(uuid, _)| uuid == &&packet.uuid) else {
+        let Some((_, player_info)) = tab_list.iter().find(|(uuid, _)| uuid == &&packet.uuid) else {
             continue;
         };
 
+        let channel_id = bot_settings.discord_channel;
+        if channel_id == ChannelId::default() {
+            return; /* Missing Channel ID */
+        }
+
+        let bot_name = bot_settings.account_username.clone();
+        let player_name = player_info.profile.name.clone();
         let client = discord.client();
-        let username = info.profile.name.clone();
-        let channel_id = settings.discord_channel;
         tokio_runtime().spawn(async move {
             let map = json!({
-                "content": format!("{username} has entered visual range"),
+                "content": format!("{player_name} has entered visual range of {bot_name}"),
             });
 
             if let Err(error) = client.send_message(channel_id, vec![], &map).await {
@@ -123,12 +132,15 @@ fn handle_add_entity_packet(
 
 fn handle_block_break_packet(
     mut packet_events: EventReader<PacketEvent>,
-    block_states: Res<BlockStates>,
+    query: Query<(&BlockStates, &BotSettings)>,
     discord: Res<DiscordHttpResource>,
-    settings: Res<Settings>,
 ) {
     for event in packet_events.read() {
         let ClientboundGamePacket::BlockDestruction(packet) = event.packet.as_ref() else {
+            continue;
+        };
+
+        let Ok((block_states, bot_settings)) = query.get(event.entity) else {
             continue;
         };
 
@@ -136,14 +148,19 @@ fn handle_block_break_packet(
             continue;
         };
 
+        let channel_id = bot_settings.discord_channel;
+        if channel_id == ChannelId::default() {
+            return; /* Missing Channel ID */
+        }
+
         let block = Box::<dyn Block>::from(*block_state);
-        let block_id = block.id();
-        if block_id.ends_with("shulker_box") {
+        if block.id().ends_with("shulker_box") {
+            let block_name = block.as_registry_block();
+            let bot_name = bot_settings.account_username.clone();
             let client = discord.client();
-            let channel_id = settings.discord_channel;
             tokio_runtime().spawn(async move {
                 let map = json!({
-                    "content": format!("{block_id} was mined in visual range"),
+                    "content": format!("{block_name:?} was mined in visual range of {bot_name}"),
                 });
 
                 if let Err(error) = client.send_message(channel_id, vec![], &map).await {
@@ -156,22 +173,31 @@ fn handle_block_break_packet(
 
 fn handle_block_update_packet(
     mut packet_events: EventReader<PacketEvent>,
+    query: Query<&BotSettings>,
     discord: Res<DiscordHttpResource>,
-    settings: Res<Settings>,
 ) {
     for event in packet_events.read() {
         let ClientboundGamePacket::BlockUpdate(packet) = event.packet.as_ref() else {
             continue;
         };
 
+        let Ok(bot_settings) = query.get(event.entity) else {
+            continue;
+        };
+
+        let channel_id = bot_settings.discord_channel;
+        if channel_id == ChannelId::default() {
+            return; /* Missing Channel ID */
+        }
+
         let block = Box::<dyn Block>::from(packet.block_state);
-        let block_id = block.id();
-        if block_id.ends_with("shulker_box") {
+        if block.id().ends_with("shulker_box") {
+            let block_name = block.as_registry_block();
+            let bot_name = bot_settings.account_username.clone();
             let client = discord.client();
-            let channel_id = settings.discord_channel;
             tokio_runtime().spawn(async move {
                 let map = json!({
-                    "content": format!("{block_id} was placed in visual range"),
+                    "content": format!("{block_name:?} was placed in visual range of {bot_name}"),
                 });
 
                 if let Err(error) = client.send_message(channel_id, vec![], &map).await {
@@ -184,9 +210,8 @@ fn handle_block_update_packet(
 
 fn handle_remove_entities_packet(
     mut packet_events: EventReader<PacketEvent>,
-    player_profiles: Res<PlayerProfiles>,
+    query: Query<(&PlayerProfiles, &BotSettings)>,
     discord: Res<DiscordHttpResource>,
-    settings: Res<Settings>,
 ) {
     for event in packet_events.read() {
         let ClientboundGamePacket::RemoveEntities(packet) = event.packet.as_ref() else {
@@ -194,16 +219,25 @@ fn handle_remove_entities_packet(
         };
 
         for entity_id in &packet.entity_ids {
-            let Some(profile) = player_profiles.0.get(entity_id) else {
+            let Ok((player_profiles, bot_settings)) = query.get(event.entity) else {
                 continue;
             };
 
+            let Some(player_profile) = player_profiles.0.get(entity_id) else {
+                continue;
+            };
+
+            let channel_id = bot_settings.discord_channel;
+            if channel_id == ChannelId::default() {
+                return; /* Missing Channel ID */
+            }
+
+            let bot_name = bot_settings.account_username.clone();
+            let player_name = player_profile.name.clone();
             let client = discord.client();
-            let username = profile.name.clone();
-            let channel_id = settings.discord_channel;
             tokio_runtime().spawn(async move {
                 let map = json!({
-                    "content": format!("{username} has exited visual range"),
+                    "content": format!("{player_name} has exited visual range of {bot_name}"),
                 });
 
                 if let Err(error) = client.send_message(channel_id, vec![], &map).await {
@@ -215,17 +249,20 @@ fn handle_remove_entities_packet(
 }
 fn handle_player_info_remove_packet(
     mut packet_events: EventReader<PacketEvent>,
-    player_profiles: Res<PlayerProfiles>,
+    query: Query<(&PlayerProfiles, &BotSettings)>,
     discord: Res<DiscordHttpResource>,
-    settings: Res<Settings>,
 ) {
     for event in packet_events.read() {
         let ClientboundGamePacket::PlayerInfoRemove(packet) = event.packet.as_ref() else {
             continue;
         };
 
+        let Ok((player_profiles, bot_settings)) = query.get(event.entity) else {
+            continue;
+        };
+
         for profile_uuid in &packet.profile_ids {
-            let Some((_, profile)) = player_profiles
+            let Some((_, player_profile)) = player_profiles
                 .0
                 .iter()
                 .find(|(_, profile)| &profile.uuid == profile_uuid)
@@ -233,12 +270,17 @@ fn handle_player_info_remove_packet(
                 continue;
             };
 
+            let channel_id = bot_settings.discord_channel;
+            if channel_id == ChannelId::default() {
+                return; /* Missing Channel ID */
+            }
+
+            let bot_name = bot_settings.account_username.clone();
+            let player_name = player_profile.name.clone();
             let client = discord.client();
-            let username = profile.name.clone();
-            let channel_id = settings.discord_channel;
             tokio_runtime().spawn(async move {
                 let map = json!({
-                    "content": format!("{username} logged out in visual range"),
+                    "content": format!("{player_name} logged out in visual range of {bot_name}"),
                 });
 
                 if let Err(error) = client.send_message(channel_id, vec![], &map).await {
@@ -248,14 +290,22 @@ fn handle_player_info_remove_packet(
         }
     }
 }
+
 fn handle_player_info_update_packet(
     mut packet_events: EventReader<PacketEvent>,
-    player_profiles: Res<PlayerProfiles>,
+    query: Query<(&PlayerProfiles, &BotSettings)>,
     discord: Res<DiscordHttpResource>,
-    settings: Res<Settings>,
 ) {
     for event in packet_events.read().cloned() {
         let ClientboundGamePacket::PlayerInfoUpdate(packet) = event.packet.as_ref() else {
+            continue;
+        };
+
+        if !packet.actions.add_player {
+            continue;
+        }
+
+        let Ok((player_profiles, bot_settings)) = query.get(event.entity) else {
             continue;
         };
 
@@ -265,13 +315,18 @@ fn handle_player_info_update_packet(
             })
         });
 
-        for (_, profile) in profiles {
+        let channel_id = bot_settings.discord_channel;
+        if channel_id == ChannelId::default() {
+            return; /* Missing Channel ID */
+        }
+
+        for (_, player_profile) in profiles {
+            let bot_name = bot_settings.account_username.clone();
+            let player_name = player_profile.name.clone();
             let client = discord.client();
-            let username = profile.name.clone();
-            let channel_id = settings.discord_channel;
             tokio_runtime().spawn(async move {
                 let map = json!({
-                    "content": format!("{username} joined in visual range"),
+                    "content": format!("{player_name} joined in visual range of {bot_name}"),
                 });
 
                 if let Err(error) = client.send_message(channel_id, vec![], &map).await {

@@ -3,6 +3,7 @@ use azalea::{
     ecs::prelude::*,
     entity::Position,
     BlockPos,
+    GameProfileComponent,
     TabList,
 };
 use handlers::prelude::*;
@@ -38,11 +39,12 @@ impl Plugin for PearlCommandPlugin {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn handle_pearl_command_event(
     mut command_events: EventReader<CommandEvent>,
     mut pearl_events: EventWriter<PearlGotoEvent>,
     mut whisper_events: EventWriter<WhisperEvent>,
-    query: Query<(&TabList, &Position)>,
+    query: Query<(&TabList, &Position, &GameProfileComponent)>,
     settings: Res<Settings>,
     trapdoors: Res<Trapdoors>,
 ) {
@@ -51,7 +53,7 @@ pub fn handle_pearl_command_event(
             continue;
         };
 
-        let Ok((tab_list, position)) = query.get(event.entity) else {
+        let Ok((tab_list, position, profile)) = query.get(event.entity) else {
             continue;
         };
 
@@ -62,13 +64,24 @@ pub fn handle_pearl_command_event(
             content: String::new(),
         };
 
+        whisper_event.content = format!(
+            "[404] Invalid or Missing location, Available location(s): {}",
+            settings
+                .locations
+                .keys()
+                .cloned()
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+
         let uuid = match event.sender {
             CommandSender::Minecraft(username) => username,
             CommandSender::Discord(user_id) => {
                 let Some(username) = event.args.pop_front() else {
-                    whisper_event.content = String::from("[404] Missing username");
+                    whisper_event.content = str!("[404] Missing username");
                     whisper_events.send(whisper_event);
-                    continue;
+                    command_events.clear();
+                    return;
                 };
 
                 let Some((uuid, _info)) = tab_list
@@ -77,24 +90,28 @@ pub fn handle_pearl_command_event(
                 else {
                     whisper_event.content = format!("[404] {username} is not online");
                     whisper_events.send(whisper_event);
-                    continue;
+                    command_events.clear();
+                    return;
                 };
 
-                if !settings.whitelisted.is_empty() {
+                if settings.whitelist {
                     let Some(whitelist) = settings.whitelisted.get(uuid) else {
-                        continue;
+                        command_events.clear();
+                        return; /* Not Whitelisted */
                     };
 
                     let Some(discord_id) = whitelist else {
-                        whisper_event.content = String::from("[404] Link not found");
+                        whisper_event.content = str!("[404] Link not found");
                         whisper_events.send(whisper_event);
-                        continue;
+                        command_events.clear();
+                        return;
                     };
 
                     if discord_id != &user_id.to_string() {
-                        whisper_event.content = String::from("[403] Not your account");
+                        whisper_event.content = str!("[403] Not your account");
                         whisper_events.send(whisper_event);
-                        continue;
+                        command_events.clear();
+                        return;
                     }
                 }
 
@@ -102,14 +119,62 @@ pub fn handle_pearl_command_event(
             }
         };
 
+        let (alias, bot) = match event.args.pop_front() {
+            Some(alias) => match settings.locations.get_key_value(&alias) {
+                Some((alias, bot_settings)) if bot_settings.account_username == profile.name => {
+                    (alias, bot_settings)
+                }
+                Some(_) => {
+                    whisper_event.content = str!("[500] I'm not at that location");
+                    whisper_events.send(whisper_event);
+                    continue;
+                }
+                _ => {
+                    whisper_events.send(whisper_event);
+                    command_events.clear();
+                    return;
+                }
+            },
+            None => match event.source {
+                CommandSource::Discord(_) => match settings.locations.iter().next() {
+                    Some(location) if settings.locations.len() == 1 => location,
+                    _ => {
+                        whisper_events.send(whisper_event);
+                        command_events.clear();
+                        return;
+                    }
+                },
+                CommandSource::Minecraft(_) => match settings
+                    .locations
+                    .iter()
+                    .find(|l| l.1.account_username == profile.name)
+                {
+                    Some((alias, bot)) if bot.account_username == profile.name => (alias, bot),
+                    _ => {
+                        continue;
+                    }
+                },
+            },
+        };
+
+        let client_pos = BlockPos::from(position);
         let player_trapdoors = trapdoors
             .0
             .values()
-            .filter(|trapdoor| trapdoor.owner_uuid == uuid)
             .copied()
-            .collect::<Vec<_>>();
+            .filter(|trapdoor| trapdoor.owner_uuid == uuid)
+            .map(|trapdoor| {
+                let distance = 1
+                    + (client_pos.x - trapdoor.block_pos.x).abs()
+                    + (client_pos.y - trapdoor.block_pos.y).abs()
+                    + (client_pos.z - trapdoor.block_pos.z).abs();
 
-        let Some(trapdoor) = player_trapdoors.clone().into_iter().min_by_key(|trapdoor| {
+                (trapdoor, distance)
+            })
+            .filter(|(_, distance)| *distance < settings.pearl_view_distance * 5);
+
+        let count = player_trapdoors.clone().count().saturating_sub(1);
+        let Some((trapdoor, _)) = player_trapdoors.min_by_key(|(trapdoor, distance)| {
             let shared_count = trapdoors
                 .0
                 .values()
@@ -117,29 +182,30 @@ pub fn handle_pearl_command_event(
                 .filter(|td| td.owner_uuid != trapdoor.owner_uuid)
                 .count();
 
-            let client_pos = BlockPos::from(position);
-            let distance = (client_pos.x - trapdoor.block_pos.x).abs()
-                + (client_pos.y - trapdoor.block_pos.y).abs()
-                + (client_pos.z - trapdoor.block_pos.z).abs();
-
             // First compare by shared count, then by distance
-            (shared_count, distance)
+            (shared_count, *distance)
         }) else {
-            whisper_event.content = String::from("[404] Pearl not found");
+            whisper_event.content = format!("[404] Pearl not found at {alias}");
             whisper_events.send(whisper_event);
-            continue;
+            command_events.clear();
+            return;
         };
 
-        whisper_event.content = format!(
-            "[202] I'm on my way, you have {} left",
-            player_trapdoors.len() - 1
-        );
+        whisper_event.content = match count {
+            0 => str!("[200] I'm on my way, this was your last pearl!"),
+            1 => str!("[200] I'm on my way, you have one more pearl!"),
+            c => format!("[200] I'm on my way, you have {c} more pearls."),
+        };
         whisper_events.send(whisper_event);
 
         pearl_events.send(PearlGotoEvent {
             entity:     event.entity,
+            idle_goal:  bot.idle_goal.clone(),
             block_pos:  trapdoor.block_pos,
             owner_uuid: trapdoor.owner_uuid,
         });
+
+        command_events.clear();
+        return;
     }
 }

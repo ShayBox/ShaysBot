@@ -5,7 +5,7 @@ extern crate lazy_regex;
 #[macro_use]
 extern crate serde_with;
 #[macro_use]
-extern crate structstruck;
+extern crate str_macro;
 #[macro_use]
 extern crate strum;
 #[macro_use]
@@ -17,21 +17,33 @@ pub mod plugins;
 pub mod settings;
 pub mod trapdoors;
 
-use std::ops::{AddAssign, RemAssign};
+use std::{
+    collections::HashMap,
+    io::ErrorKind,
+    ops::{AddAssign, RemAssign},
+    sync::Arc,
+    time::Duration,
+};
 
 use anyhow::{bail, Result};
 use azalea::{
     ecs::prelude::*,
     prelude::*,
-    swarm::{Swarm, SwarmBuilder, SwarmEvent},
+    protocol::resolver,
+    swarm::prelude::*,
     Account,
+    JoinOpts,
 };
 use bevy_discord::bot::{DiscordBotConfig, DiscordBotPlugin};
-use derive_config::{DeriveTomlConfig, DeriveYamlConfig};
+use derive_config::{ConfigError, DeriveTomlConfig, DeriveYamlConfig};
 use num_traits::{Bounded, One};
+use parking_lot::RwLock;
 use semver::Version;
-use serenity::{all::ChannelId, prelude::*};
+use serenity::prelude::*;
+use smart_default::SmartDefault;
+use terminal_link::Link;
 use url::Url;
+use uuid::Uuid;
 
 pub use crate::{
     commands::handlers::prelude::*,
@@ -73,8 +85,26 @@ pub fn check_for_updates() -> Result<bool> {
     Ok(remote_version > local_version)
 }
 
-#[derive(Clone, Component, Default, Resource)]
-pub struct SwarmState;
+/// # Load the Config or default if missing
+///
+/// # Errors
+/// Will return `Err` if there's an error other than the file missing.
+pub fn unwrap_or_else_default_if_not_found<C, D, L>(
+    load_fn: L,
+    default_fn: D,
+) -> Result<C, ConfigError>
+where
+    D: FnOnce() -> C,
+    L: FnOnce() -> Result<C, ConfigError>,
+{
+    match load_fn() {
+        Ok(config) => Ok(config),
+        Err(error) => match error {
+            ConfigError::Io(error) if error.kind() == ErrorKind::NotFound => Ok(default_fn()),
+            error => Err(error),
+        },
+    }
+}
 
 /// # Create and start the Minecraft bot client
 ///
@@ -82,59 +112,93 @@ pub struct SwarmState;
 /// Will return `Err` if `ClientBuilder::start` fails.
 #[allow(clippy::future_not_send)]
 pub async fn start() -> Result<()> {
-    let settings = Settings::load().unwrap_or_else(|error| {
-        error!("Error loading settings: {error}");
-        Settings::default()
-    });
+    let settings = unwrap_or_else_default_if_not_found(Settings::load, Settings::default)?;
+    let trapdoors = unwrap_or_else_default_if_not_found(Trapdoors::load, Trapdoors::default)?;
+    let mut client = SwarmBuilder::new().add_plugins((ShaysPluginGroup, MinecraftCommandsPlugin));
 
-    let trapdoors = Trapdoors::load().unwrap_or_else(|error| {
-        error!("Error loading trapdoors: {error}");
-        Trapdoors::default()
-    });
+    /* Check for updates after loading files to reduce web request spam */
+    if check_for_updates()? {
+        let version = get_remote_version()?;
+        let text = format!("An update is available: {CARGO_PKG_REPOSITORY}/releases/tag/{version}");
+        let link = Link::new(&text, CARGO_PKG_HOMEPAGE);
+        info!("{link}");
+    }
 
-    let token = settings.discord_token.clone();
-    let channel = settings.discord_channel;
-    let address = settings.server_address.clone();
-    let account = if settings.online_mode {
-        Account::microsoft(&settings.account_username).await?
-    } else {
-        Account::offline(&settings.account_username)
-    };
-
-    settings.save()?;
-    let mut client = SwarmBuilder::new()
-        .set_swarm_handler(swarm_handler)
-        .add_account(account)
-        .add_plugins((settings, trapdoors))
-        .add_plugins((ShaysPluginGroup, MinecraftCommandsPlugin));
-
-    if !token.is_empty() {
+    /* Enable the Discord plugin if a token was provided */
+    if !settings.discord_token.is_empty() {
         let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
         let config = DiscordBotConfig::default()
             .gateway_intents(intents)
-            .token(token);
+            .token(settings.discord_token.clone());
 
-        client = client
-            .add_plugins(DiscordBotPlugin::new(config))
-            .add_plugins(DiscordCommandsPlugin);
-
-        if channel != ChannelId::default() {
-            client = client.add_plugins(DiscordEventLoggerPlugin);
-        }
+        client = client.add_plugins((
+            DiscordBotPlugin::new(config),
+            DiscordCommandsPlugin,
+            DiscordEventLoggerPlugin,
+        ));
     }
 
-    client.start(address.as_str()).await?
+    /* Add each account, possibly with its own proxy server address */
+    for bot_settings in settings.locations.values() {
+        let account = if bot_settings.online_mode {
+            Account::microsoft(&bot_settings.account_username).await?
+        } else {
+            Account::offline(&bot_settings.account_username)
+        };
+
+        client = if let Some(server_address) = bot_settings.server_address.clone() {
+            let Ok(resolved_address) = resolver::resolve_address(&server_address).await else {
+                bail!("Failed to resolve server address")
+            };
+
+            let opts = JoinOpts::new()
+                .custom_address(server_address)
+                .custom_resolved_address(resolved_address);
+
+            client.add_account_with_opts(account, opts)
+        } else {
+            client.add_account(account) /* Use the default server address */
+        };
+    }
+
+    /* Clone the address and save before giving ownership of the settings */
+    let address = settings.server_address.clone();
+    settings.save()?;
+
+    client
+        .add_plugins((settings, trapdoors))
+        .join_delay(Duration::from_secs(5))
+        .set_swarm_handler(swarm_handler)
+        .start(address)
+        .await?
+}
+
+#[derive(Clone, Component, Resource, SmartDefault)]
+pub struct SwarmState {
+    auto_reconnect: Arc<RwLock<HashMap<Uuid, bool>>>,
 }
 
 /// # Errors
 /// Will return `Err` if `Swarm::add_with_opts` fails.
 pub async fn swarm_handler(mut swarm: Swarm, event: SwarmEvent, state: SwarmState) -> Result<()> {
     match event {
+        SwarmEvent::Login => {}
+        SwarmEvent::Init => swarm.ecs_lock.lock().insert_resource(state),
         SwarmEvent::Chat(chat_packet) => info!("{}", chat_packet.message().to_ansi()),
-        SwarmEvent::Disconnect(account, options) => {
-            swarm.add_with_opts(&account, state, &options).await?;
-        }
-        _ => {}
+        SwarmEvent::Disconnect(ref account, ref join_opts) => loop {
+            let uuid = account.uuid_or_offline();
+            let auto_reconnect = state.auto_reconnect.read().clone();
+            if !auto_reconnect.get(&uuid).unwrap_or(&true) {
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                continue;
+            }
+
+            info!("[AutoReconnect] Reconnecting...");
+            match swarm.add_with_opts(account, state.clone(), join_opts).await {
+                Err(error) => error!("Error: {error}"),
+                Ok(_) => break,
+            }
+        },
     }
 
     Ok(())

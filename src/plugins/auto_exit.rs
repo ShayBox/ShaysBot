@@ -7,17 +7,18 @@ use azalea::{
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
     FormattedText,
+    GameProfileComponent,
     TabList,
 };
 
-use crate::Settings;
+use crate::{Settings, SwarmState};
 
 /// Automatically exit the process conditions are met.
 pub struct AutoExitPlugin;
 
 impl Plugin for AutoExitPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        app.insert_resource(SwarmState::default()).add_systems(
             Update,
             (
                 handle_add_entity_packet.before(disconnect_listener),
@@ -30,16 +31,28 @@ impl Plugin for AutoExitPlugin {
 
 const ZENITH_REASON: &str = "AutoDisconnect";
 
-pub fn handle_disconnect_event(mut events: EventReader<DisconnectEvent>) {
+pub fn handle_disconnect_event(
+    mut events: EventReader<DisconnectEvent>,
+    mut query: Query<&GameProfileComponent>,
+    swarm_state: Res<SwarmState>,
+) {
     for event in events.read() {
+        let Ok(profile) = query.get_mut(event.entity) else {
+            continue;
+        };
+
         let Some(reason) = &event.reason else {
             continue;
         };
 
-        info!("Disconnect Reason: {}", reason.to_ansi());
         if reason.to_string().starts_with(ZENITH_REASON) {
-            info!("Exiting to stay disconnected...");
-            std::process::exit(1);
+            info!("[AutoReconnect] Disabled for {}", profile.name);
+            swarm_state
+                .auto_reconnect
+                .write()
+                .insert(profile.uuid, false);
+        } else {
+            info!("[AutoReconnect] Disconnect Reason: {}", reason.to_ansi());
         }
     }
 }

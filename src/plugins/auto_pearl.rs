@@ -30,7 +30,7 @@ use azalea::{
 };
 use uuid::Uuid;
 
-use crate::{settings::IdleGoal, Settings};
+use crate::settings::IdleGoal;
 
 /// Automatically pull stasis chamber pearls
 pub struct AutoPearlPlugin;
@@ -62,6 +62,7 @@ impl Plugin for AutoPearlPlugin {
 #[derive(Clone, Event)]
 pub struct PearlGotoEvent {
     pub entity:     Entity,
+    pub idle_goal:  IdleGoal,
     pub block_pos:  BlockPos,
     pub owner_uuid: Uuid,
 }
@@ -102,6 +103,7 @@ pub fn handle_pearl_goto_event(
 #[derive(Clone, Event)]
 pub struct PearlPullEvent {
     pub entity:     Entity,
+    pub idle_goal:  IdleGoal,
     pub block_pos:  BlockPos,
     pub owner_uuid: Uuid,
 }
@@ -112,7 +114,6 @@ pub fn handle_pearl_pull_event(
     mut pearl_pull_events: EventReader<PearlPullEvent>,
     mut send_packet_events: EventWriter<SendPacketEvent>,
     mut query: Query<(&Pathfinder, &TabList)>,
-    settings: Res<Settings>,
 ) {
     for event in pearl_pull_events.read() {
         let Ok((pathfinder, tab_list)) = query.get_mut(event.entity) else {
@@ -149,14 +150,14 @@ pub fn handle_pearl_pull_event(
             packet,
         });
 
-        if settings.idle != IdleGoal::default() {
+        if event.idle_goal != IdleGoal::default() {
             goto_events.send(GotoEvent {
                 entity:        event.entity,
                 allow_mining:  false,
                 successors_fn: default_move,
                 goal:          Arc::new(RadiusGoal {
-                    pos:    settings.idle.pos,
-                    radius: settings.idle.radius + 1.0,
+                    pos:    event.idle_goal.coords,
+                    radius: event.idle_goal.radius + 1.0,
                 }),
             });
         }
@@ -194,6 +195,7 @@ impl From<&PearlGotoEvent> for PearlPullEvent {
     fn from(event: &PearlGotoEvent) -> Self {
         Self {
             entity:     event.entity,
+            idle_goal:  event.idle_goal.clone(),
             block_pos:  event.block_pos,
             owner_uuid: event.owner_uuid,
         }
@@ -204,6 +206,7 @@ impl From<&PearlPullEvent> for PearlGotoEvent {
     fn from(event: &PearlPullEvent) -> Self {
         Self {
             entity:     event.entity,
+            idle_goal:  event.idle_goal.clone(),
             block_pos:  event.block_pos,
             owner_uuid: event.owner_uuid,
         }

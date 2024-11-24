@@ -18,7 +18,7 @@ use crate::{
         WhisperEvent,
     },
     encryption::{find_encryption, try_encrypt, KEY},
-    settings::Settings,
+    settings::{BotSettings, Settings},
 };
 
 pub struct MinecraftCommandsPlugin;
@@ -40,35 +40,36 @@ impl Plugin for MinecraftCommandsPlugin {
 }
 
 pub fn handle_chat_received_event(
-    mut events: EventReader<ChatReceivedEvent>,
+    mut chat_received_events: EventReader<ChatReceivedEvent>,
     mut command_events: EventWriter<CommandEvent>,
     mut cooldown: ResMut<Cooldown>,
     query: Query<&TabList>,
     settings: Res<Settings>,
 ) {
-    let Ok(tab_list) = query.get_single() else {
-        return;
-    };
-
-    for event in events.read() {
+    let mut events = Vec::new();
+    for event in chat_received_events.read() {
         let (username, content) = event.packet.split_sender_and_content();
         let (username, content) = if let Some(username) = username {
             (username, content) /* Vanilla Server Format */
         } else if let Some((_whole, username, content)) = regex_captures!(
             r"^(?:\[.+\] )?([a-zA-Z_0-9]{1,16}) (?:> )?(?:whispers: |-> )?(.+)$",
-            &content
+            &content /* Custom Server Formats */
         ) {
             (username.to_string(), content.to_string())
         } else {
             continue;
         };
 
-        let Some((uuid, _)) = tab_list.iter().find(|(_, i)| i.profile.name == username) else {
-            continue;
+        let Ok(tab_list) = query.get(event.entity) else {
+            return; /* Not Connected */
         };
 
-        if !settings.whitelisted.is_empty() && !settings.whitelisted.contains_key(uuid) {
-            continue;
+        let Some((uuid, _)) = tab_list.iter().find(|(_, i)| i.profile.name == username) else {
+            continue; /* Not Online */
+        };
+
+        if settings.whitelist && !settings.whitelisted.contains_key(uuid) {
+            continue; /* Not Whitelisted */
         }
 
         let key = AesKey::decode_base64(&settings.encryption.key).unwrap_or_else(|_| KEY.clone());
@@ -84,10 +85,11 @@ pub fn handle_chat_received_event(
         };
 
         if cooldown.check(&username, settings.command_cooldown) {
+            info!("Command on cooldown");
             continue; /* Command Cooldown */
         }
 
-        command_events.send(CommandEvent {
+        events.push(CommandEvent {
             entity: event.entity,
             args: args.into_iter().map(String::from).collect(),
             command,
@@ -95,22 +97,16 @@ pub fn handle_chat_received_event(
             source: CommandSource::Minecraft(encryption),
         });
     }
+
+    command_events.send_batch(events);
 }
 
 pub fn handle_minecraft_whisper_event(
     mut chat_kind_events: EventWriter<SendChatKindEvent>,
     mut whisper_events: EventReader<WhisperEvent>,
-    query: Query<&TabList>,
+    query: Query<(&TabList, &BotSettings)>,
     settings: Res<Settings>,
 ) {
-    let Ok(tab_list) = query.get_single() else {
-        return;
-    };
-
-    if settings.disable_responses {
-        return;
-    }
-
     for mut event in whisper_events.read().cloned() {
         #[rustfmt::skip]
         let (
@@ -119,6 +115,14 @@ pub fn handle_minecraft_whisper_event(
         ) = (event.source, event.sender) else {
             continue;
         };
+
+        let Ok((tab_list, bot_settings)) = query.get(event.entity) else {
+            return;
+        };
+
+        if bot_settings.disable_responses {
+            continue; /* Responses Disabled */
+        }
 
         let Some(username) = tab_list
             .iter()
