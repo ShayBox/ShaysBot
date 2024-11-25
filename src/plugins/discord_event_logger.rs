@@ -2,7 +2,6 @@ use azalea::{
     app::{App, Plugin, Update},
     blocks::Block,
     ecs::prelude::*,
-    entity::{metadata::Player, LocalEntity},
     packet_handling::game::PacketEvent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
@@ -12,7 +11,7 @@ use azalea::{
 use bevy_discord::{http::DiscordHttpResource, runtime::tokio_runtime};
 use serenity::{all::ChannelId, json::json};
 
-use crate::{plugins::prelude::*, settings::BotSettings, BoundedCounter, CARGO_PKG_REPOSITORY};
+use crate::{plugins::prelude::*, settings::BotSettings, CARGO_PKG_REPOSITORY};
 
 pub struct DiscordEventLoggerPlugin;
 
@@ -35,44 +34,25 @@ impl Plugin for DiscordEventLoggerPlugin {
     }
 }
 
-#[derive(Component, Default)]
-pub struct UpdateCounter(BoundedCounter<u64>);
-
-type InitQueryData = Entity;
-type InitQueryFilter = (With<Player>, With<LocalEntity>, Without<UpdateCounter>);
-
-type RunQueryData<'a> = (&'a mut UpdateCounter, &'a BotSettings);
-type RunQueryFilter = (With<Player>, With<LocalEntity>, With<UpdateCounter>);
-
 /// # Panics
 /// Will panic if `shaysbot::check_for_updates` or `shaysbot::get_remote_version` fails.
 pub fn handle_check_for_updates(
-    /* Insert the update counter component */
-    mut init_query: Query<InitQueryData, InitQueryFilter>,
-    mut commands: Commands,
-    /* Check for updates once a day */
-    mut run_query: Query<RunQueryData, RunQueryFilter>,
+    mut query: Query<(&GameTicks, &BotSettings)>,
     discord: Res<DiscordHttpResource>,
 ) {
-    const DAY: u64 = 20 * 60 * 60 * 24;
+    const DAY_DELAY: u128 = 20 * 60 * 60 * 24;
 
-    /* Insert the update counter component */
-    for entity in &mut init_query {
-        commands.entity(entity).insert(UpdateCounter::default());
-    }
-
-    /* Check for updates once a day */
-    for (mut counter, bot_settings) in &mut run_query {
-        let Some(ticks) = counter.0.next() else {
-            return;
-        };
-
+    for (game_ticks, bot_settings) in &mut query {
         let channel_id = bot_settings.discord_channel;
         if channel_id == ChannelId::default() {
             return; /* Missing Channel ID */
         }
 
-        if ticks % DAY == 0 && crate::check_for_updates().expect("Failed to check for updates") {
+        if game_ticks.0 % DAY_DELAY != 0 {
+            continue;
+        }
+
+        if crate::check_for_updates().expect("Failed to check for updates") {
             let version = crate::get_remote_version().expect("Failed to check for updates");
             let client = discord.client();
             tokio_runtime().spawn(async move {

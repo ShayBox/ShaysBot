@@ -21,6 +21,8 @@ use azalea::{
     Hunger,
 };
 
+use crate::{handle_game_tick, GameTicks};
+
 /// Automatically eat any food item when below 18 hunger
 pub struct AutoEatPlugin;
 
@@ -29,6 +31,7 @@ impl Plugin for AutoEatPlugin {
         app.add_systems(
             GameTick,
             handle_auto_eat
+                .after(handle_game_tick)
                 .before(handle_send_packet_event)
                 .before(continue_mining_block)
                 .before(InventorySet)
@@ -37,7 +40,13 @@ impl Plugin for AutoEatPlugin {
     }
 }
 
-type QueryData<'a> = (Entity, &'a Hunger, &'a Inventory, &'a LookDirection);
+type QueryData<'a> = (
+    Entity,
+    &'a GameTicks,
+    &'a Hunger,
+    &'a Inventory,
+    &'a LookDirection,
+);
 type QueryFilter = (With<Player>, With<LocalEntity>);
 
 pub fn handle_auto_eat(
@@ -45,34 +54,45 @@ pub fn handle_auto_eat(
     mut packet_events: EventWriter<SendPacketEvent>,
     mut container_click_events: EventWriter<ContainerClickEvent>,
 ) {
-    for (entity, hunger, inventory, direction) in &mut query {
+    const EAT_DELAY: u128 = 32 + 2; /* Extra Delay: Fix de-sync */
+
+    for (entity, game_ticks, hunger, inventory, direction) in &mut query {
         if hunger.food >= 18 {
             continue;
         }
 
+        if game_ticks.0 % EAT_DELAY != 0 {
+            continue;
+        }
+
         if !FOOD_ITEMS.contains(&inventory.held_item().kind()) {
-            inventory
+            /* Try to find food in the inventory and swap to it */
+            let mut slots = inventory
                 .inventory_menu
                 .slots()
                 .into_iter()
                 .enumerate()
                 .filter_map(|(index, slot)| {
                     if FOOD_ITEMS.contains(&slot.kind()) {
-                        Some(ContainerClickEvent {
-                            entity,
-                            window_id: inventory.id,
-                            operation: ClickOperation::Swap(SwapClick {
-                                source_slot: u16::try_from(index).ok()?,
-                                target_slot: inventory.selected_hotbar_slot,
-                            }),
-                        })
+                        Some(u16::try_from(index).ok()?)
                     } else {
                         None
                     }
-                })
-                .for_each(|event| {
-                    container_click_events.send(event);
                 });
+
+            if let Some(slot) = slots.next() {
+                container_click_events.send(ContainerClickEvent {
+                    entity,
+                    window_id: inventory.id,
+                    operation: ClickOperation::Swap(SwapClick {
+                        source_slot: slot,
+                        target_slot: inventory.selected_hotbar_slot,
+                    }),
+                });
+            } else {
+                info!("[AutoEat] Missing Food!");
+                continue;
+            }
         }
 
         let packet = ServerboundGamePacket::UseItem(ServerboundUseItemPacket {

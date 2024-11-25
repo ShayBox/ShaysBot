@@ -1,6 +1,8 @@
 #![feature(trivial_bounds)]
 
 #[macro_use]
+extern crate derive_more;
+#[macro_use]
 extern crate lazy_regex;
 #[macro_use]
 extern crate serde_with;
@@ -17,13 +19,7 @@ pub mod plugins;
 pub mod settings;
 pub mod trapdoors;
 
-use std::{
-    collections::HashMap,
-    io::ErrorKind,
-    ops::{AddAssign, RemAssign},
-    sync::Arc,
-    time::Duration,
-};
+use std::{collections::HashMap, io::ErrorKind, sync::Arc, time::Duration};
 
 use anyhow::{bail, Result};
 use azalea::{
@@ -36,7 +32,6 @@ use azalea::{
 };
 use bevy_discord::bot::{DiscordBotConfig, DiscordBotPlugin};
 use derive_config::{ConfigError, DeriveTomlConfig, DeriveYamlConfig};
-use num_traits::{Bounded, One};
 use parking_lot::RwLock;
 use semver::Version;
 use serenity::prelude::*;
@@ -202,23 +197,4 @@ pub async fn swarm_handler(mut swarm: Swarm, event: SwarmEvent, state: SwarmStat
     }
 
     Ok(())
-}
-
-#[derive(Default)]
-pub struct BoundedCounter<I>(I);
-
-impl<I> Iterator for BoundedCounter<I>
-where
-    I: Copy + Bounded + One + AddAssign<I> + RemAssign<I>,
-{
-    type Item = I;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let i = self.0;
-
-        self.0 %= I::max_value();
-        self.0 += I::one();
-
-        Some(i)
-    }
 }

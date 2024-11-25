@@ -13,6 +13,7 @@ mod auto_totem;
 mod block_state_tracker;
 mod discord_event_logger;
 mod ender_pearl_tracker;
+mod game_tick_tracker;
 mod player_profile_tracker;
 
 pub struct ShaysPluginGroup;
@@ -35,6 +36,7 @@ impl PluginGroup for ShaysPluginGroup {
             /* Trackers */
             .add(BlockStateTrackerPlugin)
             .add(EnderPearlTrackerPlugin)
+            .add(GameTickTrackerPlugin)
             .add(PlayerProfileTrackerPlugin)
     }
 }

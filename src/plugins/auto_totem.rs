@@ -1,7 +1,6 @@
 use azalea::{
     app::{App, Plugin},
     ecs::prelude::*,
-    entity::{metadata::Player, LocalEntity},
     inventory::{
         handle_container_click_event,
         operations::{ClickOperation, SwapClick},
@@ -13,7 +12,7 @@ use azalea::{
     registry::Item,
 };
 
-use crate::{plugins::prelude::*, BoundedCounter};
+use crate::plugins::prelude::*;
 
 /// Automatically equip totems in the offhand slot
 pub struct AutoTotemPlugin;
@@ -23,38 +22,19 @@ impl Plugin for AutoTotemPlugin {
         app.add_systems(
             GameTick,
             handle_auto_totem
-                .before(handle_container_click_event)
-                .after(handle_auto_eat),
+                .after(handle_auto_eat)
+                .after(handle_game_tick)
+                .before(handle_container_click_event),
         );
     }
 }
 
-#[derive(Component, Default)]
-pub struct AutoTotemCounter(BoundedCounter<u8>);
-
-type InitQueryData = Entity;
-type InitQueryFilter = (With<Player>, With<LocalEntity>, Without<AutoTotemCounter>);
-
-type RunQueryData<'a> = (Entity, &'a Inventory, &'a mut AutoTotemCounter);
-type RunQueryFilter = (With<Player>, With<LocalEntity>, With<AutoTotemCounter>);
-
 pub fn handle_auto_totem(
-    mut init_query: Query<InitQueryData, InitQueryFilter>,
-    mut commands: Commands,
-
-    mut run_query: Query<RunQueryData, RunQueryFilter>,
+    mut query: Query<(Entity, &Inventory, &GameTicks)>,
     mut container_click_events: EventWriter<ContainerClickEvent>,
 ) {
-    for entity in &mut init_query {
-        commands.entity(entity).insert(AutoTotemCounter::default());
-    }
-
-    for (entity, inventory, mut counter) in &mut run_query {
-        let Some(ticks) = counter.0.next() else {
-            return;
-        };
-
-        if ticks % 2 == 0 {
+    for (entity, inventory, game_ticks) in &mut query {
+        if game_ticks.0 % 2 == 0 {
             continue;
         }
 
