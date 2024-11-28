@@ -59,7 +59,7 @@ pub struct Settings {
 
     /// Minecraft bot accounts
     #[default(HashMap::from([
-        (str!("primary"), BotSettings::new(str!("ShaysBot"))),
+        (str!("primary"), BotSettings::new(str!("Test"))),
         #[cfg(debug_assertions)]
         (str!("secondary"), BotSettings::new(str!("Fishdar"))),
     ]))]

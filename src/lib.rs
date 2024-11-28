@@ -110,6 +110,7 @@ pub async fn start() -> Result<()> {
     let settings = unwrap_or_else_default_if_not_found(Settings::load, Settings::default)?;
     let trapdoors = unwrap_or_else_default_if_not_found(Trapdoors::load, Trapdoors::default)?;
     let mut client = SwarmBuilder::new().add_plugins((ShaysPluginGroup, MinecraftCommandsPlugin));
+    settings.save()?; /* Save the settings before anything else */
 
     /* Check for updates after loading files to reduce web request spam */
     if check_for_updates()? {
@@ -156,9 +157,8 @@ pub async fn start() -> Result<()> {
         };
     }
 
-    /* Clone the address and save before giving ownership of the settings */
+    /* Clone the address before giving ownership of the settings */
     let address = settings.server_address.clone();
-    settings.save()?;
 
     client
         .add_plugins((settings, trapdoors))

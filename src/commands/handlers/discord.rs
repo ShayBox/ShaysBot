@@ -51,7 +51,7 @@ pub fn handle_message_event(
                 continue; /* Command Invalid */
             };
 
-            if !settings.whitelisted.is_empty()
+            if settings.whitelist
                 && !settings
                     .whitelisted
                     .iter()

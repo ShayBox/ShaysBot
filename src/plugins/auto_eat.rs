@@ -1,3 +1,5 @@
+use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
+
 use azalea::{
     app::{App, Plugin},
     ecs::prelude::*,
@@ -49,6 +51,8 @@ type QueryData<'a> = (
 );
 type QueryFilter = (With<Player>, With<LocalEntity>);
 
+/// # Panics
+/// Will panic if the slot is larger than u16 (impossible?)
 pub fn handle_auto_eat(
     mut query: Query<QueryData, QueryFilter>,
     mut packet_events: EventWriter<SendPacketEvent>,
@@ -65,33 +69,34 @@ pub fn handle_auto_eat(
             continue;
         }
 
-        if !FOOD_ITEMS.contains(&inventory.held_item().kind()) {
-            /* Try to find food in the inventory and swap to it */
-            let mut slots = inventory
-                .inventory_menu
-                .slots()
-                .into_iter()
-                .enumerate()
-                .filter_map(|(index, slot)| {
-                    if FOOD_ITEMS.contains(&slot.kind()) {
-                        Some(u16::try_from(index).ok()?)
-                    } else {
-                        None
-                    }
-                });
+        if !FOOD_ITEMS.contains_key(&inventory.held_item().kind()) {
+            let mut food_slots = Vec::new();
 
-            if let Some(slot) = slots.next() {
+            for slot in inventory.inventory_menu.player_slots_range() {
+                let Some(item) = inventory.inventory_menu.slot(slot) else {
+                    continue;
+                };
+
+                if let Some((nutrition, saturation)) = FOOD_ITEMS.get(&item.kind()) {
+                    food_slots.push((slot, *nutrition, *saturation));
+                }
+            }
+
+            food_slots.sort_by(|a, b| {
+                b.2.partial_cmp(&a.2)
+                    .unwrap_or(Ordering::Equal)
+                    .then_with(|| b.1.cmp(&a.1))
+            });
+
+            if let Some((slot, _, _)) = food_slots.first() {
                 container_click_events.send(ContainerClickEvent {
                     entity,
                     window_id: inventory.id,
                     operation: ClickOperation::Swap(SwapClick {
-                        source_slot: slot,
+                        source_slot: u16::try_from(*slot).expect("TODO"),
                         target_slot: inventory.selected_hotbar_slot,
                     }),
                 });
-            } else {
-                info!("[AutoEat] Missing Food!");
-                continue;
             }
         }
 
@@ -106,37 +111,41 @@ pub fn handle_auto_eat(
     }
 }
 
-pub const FOOD_ITEMS: [Item; 32] = [
-    Item::Apple,
-    Item::BakedPotato,
-    Item::Beef,
-    Item::Beetroot,
-    Item::BeetrootSoup,
-    Item::Bread,
-    Item::Carrot,
-    Item::Chicken,
-    Item::Cod,
-    Item::CookedBeef,
-    Item::CookedCod,
-    Item::CookedMutton,
-    Item::CookedPorkchop,
-    Item::CookedSalmon,
-    Item::Cookie,
-    Item::DriedKelp,
-    Item::EnchantedGoldenApple,
-    Item::GlowBerries,
-    Item::GoldenApple,
-    Item::GoldenCarrot,
-    Item::HoneyBottle,
-    Item::MelonSlice,
-    Item::MushroomStem,
-    Item::Mutton,
-    Item::Porkchop,
-    Item::Potato,
-    Item::PumpkinPie,
-    Item::Rabbit,
-    Item::RabbitStew,
-    Item::Salmon,
-    Item::SweetBerries,
-    Item::TropicalFish,
-];
+static FOOD_ITEMS: LazyLock<HashMap<Item, (i32, f32)>> = LazyLock::new(|| {
+    HashMap::from([
+        (Item::Apple, (4, 2.4)),
+        (Item::BakedPotato, (5, 6.0)),
+        (Item::Beef, (3, 1.8)),
+        (Item::Beetroot, (1, 1.2)),
+        (Item::BeetrootSoup, (6, 7.2)),
+        (Item::Bread, (5, 6.0)),
+        (Item::Carrot, (3, 3.6)),
+        (Item::Chicken, (2, 1.2)),
+        (Item::Cod, (2, 0.4)),
+        (Item::CookedBeef, (8, 12.8)),
+        (Item::CookedChicken, (6, 7.2)),
+        (Item::CookedCod, (5, 6.0)),
+        (Item::CookedMutton, (6, 9.6)),
+        (Item::CookedPorkchop, (8, 12.8)),
+        (Item::CookedRabbit, (5, 6.0)),
+        (Item::CookedSalmon, (6, 9.6)),
+        (Item::Cookie, (2, 0.4)),
+        (Item::DriedKelp, (1, 0.6)),
+        (Item::EnchantedGoldenApple, (4, 9.6)),
+        (Item::GlowBerries, (2, 0.4)),
+        (Item::GoldenApple, (4, 9.6)),
+        (Item::GoldenCarrot, (6, 14.4)),
+        (Item::HoneyBottle, (6, 1.2)),
+        (Item::MelonSlice, (2, 1.2)),
+        (Item::MushroomStew, (6, 7.2)),
+        (Item::Mutton, (2, 1.2)),
+        (Item::Porkchop, (3, 1.8)),
+        (Item::Potato, (1, 0.6)),
+        (Item::PumpkinPie, (8, 4.8)),
+        (Item::Rabbit, (3, 1.8)),
+        (Item::RabbitStew, (10, 12.0)),
+        (Item::Salmon, (2, 0.4)),
+        (Item::SweetBerries, (2, 0.4)),
+        (Item::TropicalFish, (1, 0.2)),
+    ])
+});

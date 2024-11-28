@@ -21,23 +21,21 @@ impl Plugin for AutoExitPlugin {
         app.insert_resource(SwarmState::default()).add_systems(
             Update,
             (
-                handle_add_entity_packet.before(disconnect_listener),
-                handle_disconnect_event,
+                handle_auto_exit_add_entity_packet.before(disconnect_listener),
+                handle_auto_exit_disconnect_event,
             )
                 .chain(),
         );
     }
 }
 
-const ZENITH_REASON: &str = "AutoDisconnect";
-
-pub fn handle_disconnect_event(
+pub fn handle_auto_exit_disconnect_event(
     mut events: EventReader<DisconnectEvent>,
     mut query: Query<&GameProfileComponent>,
     swarm_state: Res<SwarmState>,
 ) {
     for event in events.read() {
-        let Ok(profile) = query.get_mut(event.entity) else {
+        let Ok(game_profile) = query.get_mut(event.entity) else {
             continue;
         };
 
@@ -45,19 +43,19 @@ pub fn handle_disconnect_event(
             continue;
         };
 
-        if reason.to_string().starts_with(ZENITH_REASON) {
-            info!("[AutoReconnect] Disabled for {}", profile.name);
+        if reason.to_string().starts_with("AutoDisconnect") {
+            info!("[AutoReconnect] Disabled for {}", game_profile.name);
             swarm_state
                 .auto_reconnect
                 .write()
-                .insert(profile.uuid, false);
+                .insert(game_profile.uuid, false);
         } else {
             info!("[AutoReconnect] Disconnect Reason: {}", reason.to_ansi());
         }
     }
 }
 
-fn handle_add_entity_packet(
+fn handle_auto_exit_add_entity_packet(
     mut packet_events: EventReader<PacketEvent>,
     mut disconnect_events: EventWriter<DisconnectEvent>,
     settings: Res<Settings>,
@@ -80,12 +78,12 @@ fn handle_add_entity_packet(
             continue;
         };
 
-        if !settings.whitelisted.is_empty()
-            && !settings.whitelisted.contains_key(uuid)
+        if settings.whitelist
             && settings.unknown_player_auto_exit
+            && !settings.whitelisted.contains_key(uuid)
         {
             let name = &info.profile.name;
-            let reason = format!("{ZENITH_REASON} - Unknown player in visual range: {name}");
+            let reason = format!("AutoDisconnect - Unknown player in visual range: {name}");
             disconnect_events.send(DisconnectEvent {
                 entity: event.entity,
                 reason: Some(FormattedText::from(reason)),

@@ -1,6 +1,7 @@
 use azalea::{
     app::{App, Plugin, Update},
     blocks::Block,
+    disconnect::DisconnectEvent,
     ecs::prelude::*,
     packet_handling::game::PacketEvent,
     prelude::*,
@@ -24,9 +25,10 @@ impl Plugin for DiscordEventLoggerPlugin {
                     handle_add_entity_packet,
                     handle_block_break_packet,
                     handle_block_update_packet,
-                    handle_remove_entities_packet,
+                    handle_disconnect_event,
                     handle_player_info_remove_packet,
                     handle_player_info_update_packet,
+                    handle_remove_entities_packet,
                 )
                     .after(handle_add_block_states)
                     .after(handle_add_player_profiles),
@@ -188,45 +190,43 @@ fn handle_block_update_packet(
     }
 }
 
-fn handle_remove_entities_packet(
-    mut packet_events: EventReader<PacketEvent>,
-    query: Query<(&PlayerProfiles, &BotSettings)>,
+pub fn handle_disconnect_event(
+    mut events: EventReader<DisconnectEvent>,
+    query: Query<&BotSettings>,
     discord: Res<DiscordHttpResource>,
 ) {
-    for event in packet_events.read() {
-        let ClientboundGamePacket::RemoveEntities(packet) = event.packet.as_ref() else {
+    for event in events.read() {
+        let Ok(bot_settings) = query.get(event.entity) else {
             continue;
         };
 
-        for entity_id in &packet.entity_ids {
-            let Ok((player_profiles, bot_settings)) = query.get(event.entity) else {
-                continue;
-            };
-
-            let Some(player_profile) = player_profiles.0.get(entity_id) else {
-                continue;
-            };
-
-            let channel_id = bot_settings.discord_channel;
-            if channel_id == ChannelId::default() {
-                return; /* Missing Channel ID */
-            }
-
-            let bot_name = bot_settings.account_username.clone();
-            let player_name = player_profile.name.clone();
-            let client = discord.client();
-            tokio_runtime().spawn(async move {
-                let map = json!({
-                    "content": format!("{player_name} has exited visual range of {bot_name}"),
-                });
-
-                if let Err(error) = client.send_message(channel_id, vec![], &map).await {
-                    error!("{error}");
-                };
-            });
+        let channel_id = bot_settings.discord_channel;
+        if channel_id == ChannelId::default() {
+            continue; /* Missing Channel ID */
         }
+
+        let Some(reason) = event.reason.clone() else {
+            continue; /* Missing Reason */
+        };
+
+        let bot_name = bot_settings.account_username.clone();
+        let client = discord.client();
+        tokio_runtime().spawn(async move {
+            let map = json!({
+                "content": if reason.to_string().starts_with("AutoDisconnect") {
+                    format!("[AutoReconnect] Disabled for {bot_name}")
+                } else {
+                    format!("[AutoReconnect] Disconnect Reason: {}", reason.to_ansi())
+                },
+            });
+
+            if let Err(error) = client.send_message(channel_id, vec![], &map).await {
+                error!("{error}");
+            };
+        });
     }
 }
+
 fn handle_player_info_remove_packet(
     mut packet_events: EventReader<PacketEvent>,
     query: Query<(&PlayerProfiles, &BotSettings)>,
@@ -307,6 +307,46 @@ fn handle_player_info_update_packet(
             tokio_runtime().spawn(async move {
                 let map = json!({
                     "content": format!("{player_name} joined in visual range of {bot_name}"),
+                });
+
+                if let Err(error) = client.send_message(channel_id, vec![], &map).await {
+                    error!("{error}");
+                };
+            });
+        }
+    }
+}
+
+fn handle_remove_entities_packet(
+    mut packet_events: EventReader<PacketEvent>,
+    query: Query<(&PlayerProfiles, &BotSettings)>,
+    discord: Res<DiscordHttpResource>,
+) {
+    for event in packet_events.read() {
+        let ClientboundGamePacket::RemoveEntities(packet) = event.packet.as_ref() else {
+            continue;
+        };
+
+        for entity_id in &packet.entity_ids {
+            let Ok((player_profiles, bot_settings)) = query.get(event.entity) else {
+                continue;
+            };
+
+            let Some(player_profile) = player_profiles.0.get(entity_id) else {
+                continue;
+            };
+
+            let channel_id = bot_settings.discord_channel;
+            if channel_id == ChannelId::default() {
+                return; /* Missing Channel ID */
+            }
+
+            let bot_name = bot_settings.account_username.clone();
+            let player_name = player_profile.name.clone();
+            let client = discord.client();
+            tokio_runtime().spawn(async move {
+                let map = json!({
+                    "content": format!("{player_name} has exited visual range of {bot_name}"),
                 });
 
                 if let Err(error) = client.send_message(channel_id, vec![], &map).await {
