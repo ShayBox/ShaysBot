@@ -33,6 +33,7 @@ pub fn handle_auto_exit_disconnect_event(
     mut events: EventReader<DisconnectEvent>,
     mut query: Query<&GameProfileComponent>,
     swarm_state: Res<SwarmState>,
+    settings: Res<Settings>,
 ) {
     for event in events.read() {
         let Ok(game_profile) = query.get_mut(event.entity) else {
@@ -43,7 +44,7 @@ pub fn handle_auto_exit_disconnect_event(
             continue;
         };
 
-        if reason.to_string().starts_with("AutoDisconnect") {
+        if settings.zenith_auto_disconnect && reason.to_string().starts_with("AutoDisconnect") {
             info!("[AutoReconnect] Disabled for {}", game_profile.name);
             swarm_state
                 .auto_reconnect

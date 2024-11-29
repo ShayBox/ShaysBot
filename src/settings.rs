@@ -50,6 +50,10 @@ pub struct Settings {
     #[default(false)]
     pub unknown_player_auto_exit: bool,
 
+    /// Automatically disconnect and exit Zenith Proxy disconnects the bot.
+    #[default(false)]
+    pub zenith_auto_disconnect: bool,
+
     /// Disable in-game commands for non-whitelisted players.
     #[default(false)]
     pub whitelist: bool,
