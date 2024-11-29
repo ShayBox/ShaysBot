@@ -65,7 +65,7 @@ pub fn handle_pearl_command_event(
         };
 
         whisper_event.content = format!(
-            "[404] Invalid or Missing location, Available location(s): {}",
+            "[404] Invalid location, Available locations: {}",
             settings
                 .locations
                 .keys()
@@ -121,19 +121,22 @@ pub fn handle_pearl_command_event(
 
         let (alias, bot) = match event.args.pop_front() {
             Some(alias) => match settings.locations.get_key_value(&alias) {
-                Some((alias, bot_settings)) if bot_settings.account_username == profile.name => {
-                    (alias, bot_settings)
-                }
+                Some(l) if l.1.account_username == profile.name => l,
                 Some(_) => {
                     whisper_event.content = str!("[500] I'm not at that location");
                     whisper_events.send(whisper_event);
                     continue;
                 }
-                _ => {
-                    whisper_events.send(whisper_event);
-                    command_events.clear();
-                    return;
-                }
+                _ => match event.source {
+                    CommandSource::Minecraft(_) if settings.locations.len() == 1 => {
+                        settings.locations.iter().next().unwrap()
+                    }
+                    _ => {
+                        whisper_events.send(whisper_event);
+                        command_events.clear();
+                        return;
+                    }
+                },
             },
             None => match event.source {
                 CommandSource::Discord(_) => match settings.locations.iter().next() {

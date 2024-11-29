@@ -59,7 +59,7 @@ pub struct Settings {
 
     /// Minecraft bot accounts
     #[default(HashMap::from([
-        (str!("primary"), BotSettings::new(str!("Test"))),
+        (str!("primary"), BotSettings::new(str!("ShaysBot"))),
         #[cfg(debug_assertions)]
         (str!("secondary"), BotSettings::new(str!("Fishdar"))),
     ]))]
@@ -91,7 +91,7 @@ pub enum EncryptionMode {
 }
 
 #[serde_as]
-#[derive(Clone, Component, Deserialize, Serialize, SmartDefault, New)]
+#[derive(Clone, Component, Debug, Deserialize, Serialize, SmartDefault, New)]
 #[serde(default)]
 pub struct BotSettings {
     /// Minecraft Online Mode.
@@ -124,7 +124,7 @@ pub struct BotSettings {
 }
 
 #[serde_as]
-#[derive(Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize)]
 pub struct IdleGoal {
     #[serde_as(as = "DisplayFromStr")]
     pub coords: Vec3,
