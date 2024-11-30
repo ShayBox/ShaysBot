@@ -134,14 +134,15 @@ pub fn handle_pearl_pull_event(
         let packet = ServerboundGamePacket::UseItemOn(ServerboundUseItemOn {
             hand:      InteractionHand::MainHand,
             block_hit: BlockHit {
-                block_pos: event.block_pos,
-                direction: Direction::Down,
-                location:  Vec3 {
+                block_pos:    event.block_pos,
+                direction:    Direction::Down,
+                location:     Vec3 {
                     x: f64::from(event.block_pos.x) + 0.5,
                     y: f64::from(event.block_pos.y) + 0.5,
                     z: f64::from(event.block_pos.z) + 0.5,
                 },
-                inside:    false,
+                inside:       false,
+                world_border: false,
             },
             sequence:  0,
         });

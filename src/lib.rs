@@ -182,13 +182,12 @@ pub async fn swarm_handler(mut swarm: Swarm, event: SwarmEvent, state: SwarmStat
         SwarmEvent::Chat(chat_packet) => info!("{}", chat_packet.message().to_ansi()),
         SwarmEvent::Disconnect(ref account, ref join_opts) => loop {
             let uuid = account.uuid_or_offline();
-            let auto_reconnect = state.auto_reconnect.read().clone();
-            if !auto_reconnect.get(&uuid).unwrap_or(&true) {
-                tokio::time::sleep(Duration::from_secs(5)).await;
+            if !state.auto_reconnect.read().get(&uuid).unwrap_or(&true) {
                 continue;
             }
 
-            info!("[AutoReconnect] Reconnecting...");
+            info!("[AutoReconnect] Reconnecting in 5 seconds...");
+            tokio::time::sleep(Duration::from_secs(5)).await;
             match swarm.add_with_opts(account, state.clone(), join_opts).await {
                 Err(error) => error!("Error: {error}"),
                 Ok(_) => break,
