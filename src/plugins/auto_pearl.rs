@@ -19,9 +19,10 @@ use azalea::{
     physics::PhysicsSet,
     prelude::*,
     protocol::packets::game::{
-        serverbound_interact_packet::InteractionHand,
-        serverbound_use_item_on_packet::{BlockHit, ServerboundUseItemOnPacket},
+        s_interact::InteractionHand,
+        s_use_item_on::BlockHit,
         ServerboundGamePacket,
+        ServerboundUseItemOn,
     },
     BlockPos,
     InstanceHolder,
@@ -130,7 +131,7 @@ pub fn handle_pearl_pull_event(
             continue;
         }
 
-        let packet = ServerboundGamePacket::UseItemOn(ServerboundUseItemOnPacket {
+        let packet = ServerboundGamePacket::UseItemOn(ServerboundUseItemOn {
             hand:      InteractionHand::MainHand,
             block_hit: BlockHit {
                 block_pos: event.block_pos,
@@ -146,7 +147,7 @@ pub fn handle_pearl_pull_event(
         });
 
         send_packet_events.send(SendPacketEvent {
-            entity: event.entity,
+            sent_by: event.entity,
             packet,
         });
 

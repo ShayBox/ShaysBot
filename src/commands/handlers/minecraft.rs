@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use azalea::{
     app::{App, Plugin, Update},
-    chat::{handle_send_chat_event, ChatPacketKind, ChatReceivedEvent, SendChatKindEvent},
+    chat::{handle_send_chat_event, ChatKind, ChatReceivedEvent, SendChatKindEvent},
     ecs::prelude::*,
     TabList,
 };
@@ -136,7 +136,7 @@ pub fn handle_minecraft_whisper_event(
 
         chat_kind_events.send(SendChatKindEvent {
             entity:  event.entity,
-            kind:    ChatPacketKind::Command,
+            kind:    ChatKind::Command,
             content: format!("w {username} {}", event.content),
         });
     }

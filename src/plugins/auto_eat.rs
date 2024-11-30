@@ -15,9 +15,9 @@ use azalea::{
     physics::PhysicsSet,
     prelude::*,
     protocol::packets::game::{
-        serverbound_interact_packet::InteractionHand,
-        serverbound_use_item_packet::ServerboundUseItemPacket,
+        s_interact::InteractionHand,
         ServerboundGamePacket,
+        ServerboundUseItem,
     },
     registry::Item,
     Hunger,
@@ -100,14 +100,17 @@ pub fn handle_auto_eat(
             }
         }
 
-        let packet = ServerboundGamePacket::UseItem(ServerboundUseItemPacket {
+        let packet = ServerboundGamePacket::UseItem(ServerboundUseItem {
             hand:     InteractionHand::MainHand,
             pitch:    direction.x_rot,
             yaw:      direction.y_rot,
             sequence: 0,
         });
 
-        packet_events.send(SendPacketEvent { entity, packet });
+        packet_events.send(SendPacketEvent {
+            sent_by: entity,
+            packet,
+        });
     }
 }
 

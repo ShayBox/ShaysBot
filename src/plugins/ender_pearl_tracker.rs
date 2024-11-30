@@ -155,7 +155,7 @@ pub fn handle_remove_entities_packet(
 
         trapdoors.0.retain(|_, trapdoor| {
             let trapdoor_pos = trapdoor.block_pos.to_vec3_floored();
-            let distance_sqr = trapdoor_pos.distance_to_sqr(position);
+            let distance_sqr = trapdoor_pos.distance_squared_to(position);
 
             !(packet.entity_ids.contains(&trapdoor.entity_id) && distance_sqr <= view_distance_sqr)
         });

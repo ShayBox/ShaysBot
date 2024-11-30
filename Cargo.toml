@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.8.4"
+version = "0.9.0"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2021"
 description = "My personal Minecraft bot using Azalea"
@@ -13,8 +13,8 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1"
-#azalea = { path = "../azalea/azalea", default-features = false }
-azalea = { git = "https://github.com/Shays-Forks/azalea.git", default-features = false }
+#azalea = { path = "../azalea/azalea", default-features = false, features = ["serde"] }
+azalea = { git = "https://github.com/Shays-Forks/azalea.git", default-features = false, features = ["serde"] }
 bevy-discord = { version = "0.3", features = ["full"] }
 bounded-counter = { version = "0.1", features = ["deref", "deref_mut"] }
 chrono = "0.4"

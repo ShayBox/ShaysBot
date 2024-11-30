@@ -8,7 +8,7 @@ use azalea::{
 
 use crate::{handle_game_tick, plugins::game_tick_tracker::GameTicks};
 
-/// Automatically send swing arm packets every 25k ticks
+/// Automatically send swing arm packets every minute
 pub struct AntiAfkPlugin;
 
 impl Plugin for AntiAfkPlugin {
@@ -28,7 +28,7 @@ pub fn handle_anti_afk(
     mut swing_arm_events: EventWriter<SwingArmEvent>,
 ) {
     for (entity, game_ticks) in query.iter() {
-        if game_ticks.0 % 25_000 == 0 {
+        if game_ticks.0 % (20 * 60) == 0 {
             debug!("Anti-Afk Swing Arm Event");
             swing_arm_events.send(SwingArmEvent { entity });
         }
