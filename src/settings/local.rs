@@ -35,6 +35,9 @@ pub struct LocalSettings {
     /// Auto kill module settings.
     pub auto_kill: AutoKill,
 
+    /// Auto look module settings.
+    pub auto_look: AutoLook,
+
     /// Auto pearl module settings.
     pub auto_pearl: AutoPearl,
 
@@ -70,7 +73,22 @@ pub struct AutoExit {
 #[derive(Clone, Deserialize, Serialize, SmartDefault)]
 #[serde(default)]
 pub struct AutoKill {
+    #[default(false)]
+    pub enabled: bool,
+
     #[default(25)]
+    #[serde_as(as = "DisplayFromStr")]
+    pub delay_ticks: u128,
+}
+
+#[serde_as]
+#[derive(Clone, Deserialize, Serialize, SmartDefault)]
+#[serde(default)]
+pub struct AutoLook {
+    #[default(true)]
+    pub enabled: bool,
+
+    #[default(2)]
     #[serde_as(as = "DisplayFromStr")]
     pub delay_ticks: u128,
 }

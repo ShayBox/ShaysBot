@@ -1,12 +1,14 @@
 use azalea::{
     app::{App, Plugin},
     ecs::prelude::*,
-    entity::{metadata::Player, EyeHeight, LocalEntity, Position},
+    entity::{metadata::Player, EyeHeight, Position},
     nearest_entity::EntityFinder,
     physics::PhysicsSet,
     prelude::*,
     LookAtEvent,
 };
+
+use crate::prelude::{GameTicks, LocalSettings};
 
 /// Automatically stare at the closest player
 pub struct AutoLookPlugin;
@@ -19,12 +21,20 @@ impl Plugin for AutoLookPlugin {
 
 impl AutoLookPlugin {
     pub fn handle_auto_look(
-        mut query: Query<Entity, (With<LocalEntity>, With<Player>)>,
+        mut query: Query<(Entity, &GameTicks, &LocalSettings)>,
         entities: EntityFinder<With<Player>>,
         targets: Query<(&Position, Option<&EyeHeight>)>,
         mut look_at_events: EventWriter<LookAtEvent>,
     ) {
-        for entity in &mut query {
+        for (entity, game_ticks, local_settings) in &mut query {
+            if !local_settings.auto_look.enabled {
+                continue;
+            }
+
+            if game_ticks.0 % local_settings.auto_look.delay_ticks != 0 {
+                continue;
+            }
+
             let Some(target) = entities.nearest_to_entity(entity, f64::MAX) else {
                 continue;
             };
