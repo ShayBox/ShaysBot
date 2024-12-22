@@ -76,6 +76,9 @@ pub struct AutoKill {
     #[default(false)]
     pub enabled: bool,
 
+    #[default(true)]
+    pub auto_weapon: bool,
+
     #[default(25)]
     #[serde_as(as = "DisplayFromStr")]
     pub delay_ticks: u128,
