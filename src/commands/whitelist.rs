@@ -4,21 +4,16 @@ use azalea::{
     PlayerInfo,
     TabList,
 };
-use derive_config::DeriveTomlConfig;
-use handlers::prelude::*;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::{
-    commands::{prelude::*, Commands},
-    Settings,
-};
+use crate::prelude::*;
 
 /// Whitelist command
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WhitelistCommandPlugin;
 
-impl Command for WhitelistCommandPlugin {
+impl ChatCmd for WhitelistCommandPlugin {
     fn aliases(&self) -> Vec<&'static str> {
         vec!["whitelist"]
     }
@@ -28,61 +23,67 @@ impl Plugin for WhitelistCommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            handle_whitelist_command_event
+            Self::handle_whitelist_command_events
                 .ambiguous_with_all()
-                .before(handle_discord_whisper_event)
-                .before(handle_minecraft_whisper_event)
-                .after(handle_chat_received_event),
+                .before(DiscordChatPlugin::handle_whisper_events)
+                .before(MinecraftChatPlugin::handle_whisper_events)
+                .after(MinecraftChatPlugin::handle_chat_received_events),
         );
     }
 }
 
-/// # Panics
-/// Will panic if `DeriveTomlConfig::save` fails.
-pub fn handle_whitelist_command_event(
-    mut command_events: EventReader<CommandEvent>,
-    mut whisper_events: EventWriter<WhisperEvent>,
-    mut settings: ResMut<Settings>,
-    query: Query<&TabList>,
-) {
-    if let Some(event) = command_events.read().next() {
-        let Commands::Whitelist(_plugin) = event.command else {
-            return;
-        };
+impl WhitelistCommandPlugin {
+    /// # Panics
+    /// Will panic if `DeriveTomlConfig::save` fails.
+    pub fn handle_whitelist_command_events(
+        mut command_events: EventReader<CommandEvent>,
+        mut whisper_events: EventWriter<WhisperEvent>,
+        mut settings: ResMut<GlobalSettings>,
+        query: Query<&TabList>,
+    ) {
+        if let Some(event) = command_events.read().next() {
+            let ChatCmds::Whitelist(_plugin) = event.command else {
+                return;
+            };
 
-        let Ok(tab_list) = query.get(event.entity) else {
-            return;
-        };
+            let Ok(tab_list) = query.get(event.entity) else {
+                return;
+            };
 
-        let mut args = event.args.clone();
-        let mut whisper_event = WhisperEvent {
-            entity:  event.entity,
-            source:  event.source,
-            sender:  event.sender,
-            content: String::new(),
-        };
+            let mut args = event.args.clone();
+            let mut whisper_event = WhisperEvent {
+                entity:  event.entity,
+                source:  event.source,
+                sender:  event.sender,
+                content: String::new(),
+            };
 
-        let Some(action) = args.pop_front() else {
-            whisper_event.content = str!("[400] Missing Action: 'add', 'remove', 'link'");
+            let Some(action) = args.pop_front() else {
+                whisper_event.content = str!("[400] Missing Action: 'add', 'remove', 'link'");
+                whisper_events.send(whisper_event);
+                return;
+            };
+
+            let user = args.pop_front();
+            whisper_event.content = match action.as_ref() {
+                "add" => handle_add(&mut settings, user, tab_list),
+                "remove" => handle_remove(&mut settings, user, tab_list),
+                "link" => handle_link(&mut settings, user, &event.sender),
+                _ => str!("[400] Invalid Action: 'add', 'remove', or 'link'"),
+            };
+
             whisper_events.send(whisper_event);
-            return;
-        };
+        }
 
-        let user = args.pop_front();
-        whisper_event.content = match action.as_ref() {
-            "add" => handle_add(&mut settings, user, tab_list),
-            "remove" => handle_remove(&mut settings, user, tab_list),
-            "link" => handle_link(&mut settings, user, &event.sender),
-            _ => str!("[400] Invalid Action: 'add', 'remove', or 'link'"),
-        };
-
-        whisper_events.send(whisper_event);
+        command_events.clear();
     }
-
-    command_events.clear();
 }
 
-fn handle_add(settings: &mut ResMut<Settings>, user: Option<String>, tab_list: &TabList) -> String {
+fn handle_add(
+    settings: &mut ResMut<GlobalSettings>,
+    user: Option<String>,
+    tab_list: &TabList,
+) -> String {
     let Some(player_name) = user else {
         return str!("[400] Missing Minecraft player name");
     };
@@ -95,14 +96,14 @@ fn handle_add(settings: &mut ResMut<Settings>, user: Option<String>, tab_list: &
         str!("[409] Already whitelisted")
     } else {
         settings.whitelisted.insert(*uuid, None);
-        settings.save().expect("Failed to save settings");
+        settings.save().expect("Failed to save global settings");
 
         format!("[200] Successfully added: {}", info.profile.name)
     }
 }
 
 fn handle_remove(
-    settings: &mut ResMut<Settings>,
+    settings: &mut ResMut<GlobalSettings>,
     user: Option<String>,
     tab_list: &TabList,
 ) -> String {
@@ -116,7 +117,7 @@ fn handle_remove(
 
     if settings.whitelisted.contains_key(uuid) {
         settings.whitelisted.remove(uuid);
-        settings.save().expect("Failed to save settings");
+        settings.save().expect("Failed to save global settings");
 
         format!("[200] Successfully removed: {}", info.profile.name)
     } else {
@@ -125,7 +126,7 @@ fn handle_remove(
 }
 
 fn handle_link(
-    settings: &mut ResMut<Settings>,
+    settings: &mut ResMut<GlobalSettings>,
     user: Option<String>,
     sender: &CommandSender,
 ) -> String {
@@ -150,7 +151,7 @@ fn handle_link(
             };
 
             settings.whitelisted.insert(uuid, Some(auth_code));
-            settings.save().expect("Failed to save settings");
+            settings.save().expect("Failed to save global settings");
 
             str!("[200] Successfully linked")
         }
@@ -160,7 +161,7 @@ fn handle_link(
             };
 
             settings.whitelisted.insert(*uuid, Some(user_id));
-            settings.save().expect("Failed to save settings");
+            settings.save().expect("Failed to save global settings");
 
             str!("[200] Successfully linked")
         }

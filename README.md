@@ -15,22 +15,33 @@ Includes support for No Chat Reports (NCR) encryption to ensure secure and priva
 
 ## Features
 
-### Plugins
-
-- [**AntiAFK**](src/plugins/anti_afk.rs) - Prevents being kicked for AFK by simulating activity
-- [**AutoEat**](src/plugins/auto_eat.rs) - Automatically eats food when hunger is low
-- [**AutoExit**](src/plugins/auto_exit.rs) - Automatically exits in dangerous situations
-- [**AutoLook**](src/plugins/auto_look.rs) - Automatically looks at specific targets
-- [**AutoPearl**](src/plugins/auto_pearl.rs) - Handles automatic ender pearl throwing
-- [**AutoTotem**](src/plugins/auto_totem.rs) - Automatically equips totems for survival
-- [**BlockStateTracker**](src/plugins/block_state_tracker.rs) - Tracks block states
-- [**DiscordEventLogger**](src/plugins/discord_event_logger.rs) - Logs visual range events to Discord
-- [**EnderPearlTracker**](src/plugins/ender_pearl_tracker.rs) - Tracks and manages ender pearl cooldowns and usage
-- [**PlayerProfileTracker**](src/plugins/player_profile_tracker.rs) - Tracks player profiles
-
 ### Commands
 
 - [**Pearl**](src/commands/pearl.rs) - Manages ender pearl-related commands and tracking
 - [**Playtime**](src/commands/playtime.rs) - Tracks and displays player playtime statistics (2b2t.vc)
 - [**Seen**](src/commands/seen.rs) - Shows when players were last seen online (2b2t.vc)
 - [**Whitelist**](src/commands/whitelist.rs) - Whitelist and link Minecraft and Discord accounts
+
+### Modules
+
+- [**AntiAfk**](src/modules/anti_afk.rs) - Prevents being kicked for AFK by simulating activity
+- [**AutoEat**](src/modules/auto_eat.rs) - Automatically eats food when hunger is low
+- [**AutoExit**](src/modules/auto_exit.rs) - Automatically exits in dangerous situations
+- [**AutoLook**](src/modules/auto_look.rs) - Automatically looks at specific targets
+- [**AutoPearl**](src/modules/auto_pearl.rs) - Handles automatic ender pearl throwing
+- [**AutoTotem**](src/modules/auto_totem.rs) - Automatically equips totems for survival
+- [**DiscordLogger**](src/modules/discord_logger.rs) - Logs visual range events to Discord
+
+### Settings
+
+- [**GlobalSettings**](src/settings/global.rs) - Global swarm settings.
+- [**LocalSettings**](src/settings/local.rs) - Local account settings.
+- [**StasisChambers**](src/settings/stasis.rs) - Stasis Chambers.
+
+### Trackers
+
+- [**BlockStates**](src/trackers/block_state.rs) - Tracks block states
+- [**EnderPearls**](src/trackers/ender_pearl.rs) - Tracks ender pearls for stasis chambers
+- [**GameTicks**](src/trackers/game_tick.rs) - Tracks game tick counts.
+- [**PlayerProfiles**](src/trackers/player_profile.rs) - Tracks player profiles for events
+

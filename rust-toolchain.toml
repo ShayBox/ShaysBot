@@ -1,2 +1,2 @@
-[toolchain] # Failing to build
-channel = "nightly-2024-11-11"
+[toolchain]
+channel = "nightly"

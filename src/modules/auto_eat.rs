@@ -23,7 +23,7 @@ use azalea::{
     Hunger,
 };
 
-use crate::{handle_game_tick, GameTicks};
+use crate::prelude::*;
 
 /// Automatically eat any food item when below 18 hunger
 pub struct AutoEatPlugin;
@@ -32,8 +32,8 @@ impl Plugin for AutoEatPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             GameTick,
-            handle_auto_eat
-                .after(handle_game_tick)
+            Self::handle_auto_eat
+                .after(GameTickPlugin::handle_game_ticks)
                 .before(handle_send_packet_event)
                 .before(continue_mining_block)
                 .before(InventorySet)
@@ -51,70 +51,72 @@ type QueryData<'a> = (
 );
 type QueryFilter = (With<Player>, With<LocalEntity>);
 
-/// # Panics
-/// Will panic if the slot is larger than u16 (impossible?)
-pub fn handle_auto_eat(
-    mut query: Query<QueryData, QueryFilter>,
-    mut packet_events: EventWriter<SendPacketEvent>,
-    mut container_click_events: EventWriter<ContainerClickEvent>,
-) {
-    const EAT_DELAY: u128 = 32 + 2; /* Extra Delay: Fix de-sync */
+impl AutoEatPlugin {
+    /// # Panics
+    /// Will panic if the slot is larger than u16 (impossible?)
+    pub fn handle_auto_eat(
+        mut query: Query<QueryData, QueryFilter>,
+        mut packet_events: EventWriter<SendPacketEvent>,
+        mut container_click_events: EventWriter<ContainerClickEvent>,
+    ) {
+        const EAT_DELAY: u128 = 32 + 2; /* Extra Delay: Fix de-sync */
 
-    for (entity, game_ticks, hunger, inventory, direction) in &mut query {
-        if hunger.food >= 18 {
-            continue;
-        }
+        for (entity, game_ticks, hunger, inventory, direction) in &mut query {
+            if hunger.food >= 18 {
+                continue;
+            }
 
-        if game_ticks.0 % EAT_DELAY != 0 {
-            continue;
-        }
+            if game_ticks.0 % EAT_DELAY != 0 {
+                continue;
+            }
 
-        if !FOOD_ITEMS.contains_key(&inventory.held_item().kind()) {
-            let mut food_slots = Vec::new();
+            if !FOOD_ITEMS.contains_key(&inventory.held_item().kind()) {
+                let mut food_slots = Vec::new();
 
-            for slot in inventory.inventory_menu.player_slots_range() {
-                let Some(item) = inventory.inventory_menu.slot(slot) else {
-                    continue;
-                };
+                for slot in inventory.inventory_menu.player_slots_range() {
+                    let Some(item) = inventory.inventory_menu.slot(slot) else {
+                        continue;
+                    };
 
-                if let Some((nutrition, saturation)) = FOOD_ITEMS.get(&item.kind()) {
-                    food_slots.push((slot, *nutrition, *saturation));
+                    if let Some((nutrition, saturation)) = FOOD_ITEMS.get(&item.kind()) {
+                        food_slots.push((slot, *nutrition, *saturation));
+                    }
+                }
+
+                food_slots.sort_by(|a, b| {
+                    b.2.partial_cmp(&a.2)
+                        .unwrap_or(Ordering::Equal)
+                        .then_with(|| b.1.cmp(&a.1))
+                });
+
+                if let Some((slot, _, _)) = food_slots.first() {
+                    container_click_events.send(ContainerClickEvent {
+                        entity,
+                        window_id: inventory.id,
+                        operation: ClickOperation::Swap(SwapClick {
+                            source_slot: u16::try_from(*slot).unwrap(),
+                            target_slot: inventory.selected_hotbar_slot,
+                        }),
+                    });
                 }
             }
 
-            food_slots.sort_by(|a, b| {
-                b.2.partial_cmp(&a.2)
-                    .unwrap_or(Ordering::Equal)
-                    .then_with(|| b.1.cmp(&a.1))
+            let packet = ServerboundGamePacket::UseItem(ServerboundUseItem {
+                hand:     InteractionHand::MainHand,
+                pitch:    direction.x_rot,
+                yaw:      direction.y_rot,
+                sequence: 0,
             });
 
-            if let Some((slot, _, _)) = food_slots.first() {
-                container_click_events.send(ContainerClickEvent {
-                    entity,
-                    window_id: inventory.id,
-                    operation: ClickOperation::Swap(SwapClick {
-                        source_slot: u16::try_from(*slot).expect("TODO"),
-                        target_slot: inventory.selected_hotbar_slot,
-                    }),
-                });
-            }
+            packet_events.send(SendPacketEvent {
+                sent_by: entity,
+                packet,
+            });
         }
-
-        let packet = ServerboundGamePacket::UseItem(ServerboundUseItem {
-            hand:     InteractionHand::MainHand,
-            pitch:    direction.x_rot,
-            yaw:      direction.y_rot,
-            sequence: 0,
-        });
-
-        packet_events.send(SendPacketEvent {
-            sent_by: entity,
-            packet,
-        });
     }
 }
 
-static FOOD_ITEMS: LazyLock<HashMap<Item, (i32, f32)>> = LazyLock::new(|| {
+pub static FOOD_ITEMS: LazyLock<HashMap<Item, (i32, f32)>> = LazyLock::new(|| {
     HashMap::from([
         (Item::Apple, (4, 2.4)),
         (Item::BakedPotato, (5, 6.0)),

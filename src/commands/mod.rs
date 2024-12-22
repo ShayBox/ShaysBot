@@ -1,35 +1,41 @@
-pub mod handlers;
-pub mod prelude;
+pub mod pearl;
+pub mod playtime;
+pub mod seen;
+pub mod whitelist;
 
-mod pearl;
-mod playtime;
-mod seen;
-mod whitelist;
-
-use std::collections::VecDeque;
-
-use azalea::{ecs::prelude::*, prelude::*};
-use serenity::all::{ChannelId, UserId};
+use azalea::app::{PluginGroup, PluginGroupBuilder};
 use strum::IntoEnumIterator;
-use uuid::Uuid;
 
-use crate::{commands::prelude::*, encryption::EncryptionType};
+use crate::prelude::*;
 
-pub trait Command {
+pub struct CommandsPluginGroup;
+
+impl PluginGroup for CommandsPluginGroup {
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(PearlCommandPlugin)
+            .add(PlaytimeCommandPlugin)
+            .add(SeenCommandPlugin)
+            .add(WhitelistCommandPlugin)
+    }
+}
+
+pub trait ChatCmd {
     fn aliases(&self) -> Vec<&'static str>;
 }
 
 /// Compile time checked list of commands
 #[derive(Clone, Copy, Debug, Eq, PartialEq, EnumIter)]
-pub enum Commands {
+pub enum ChatCmds {
     Pearl(PearlCommandPlugin),
     Playtime(PlaytimeCommandPlugin),
     Seen(SeenCommandPlugin),
     Whitelist(WhitelistCommandPlugin),
 }
 
-impl Commands {
-    fn find(alias: &str) -> Option<Self> {
+impl ChatCmds {
+    #[must_use]
+    pub fn find(alias: &str) -> Option<Self> {
         Self::iter().find(|cmds| match cmds {
             Self::Pearl(cmd) => cmd.aliases().contains(&alias),
             Self::Playtime(cmd) => cmd.aliases().contains(&alias),
@@ -37,33 +43,4 @@ impl Commands {
             Self::Whitelist(cmd) => cmd.aliases().contains(&alias),
         })
     }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum CommandSender {
-    Discord(UserId),
-    Minecraft(Uuid),
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum CommandSource {
-    Discord(ChannelId),
-    Minecraft(Option<EncryptionType>),
-}
-
-#[derive(Clone, Debug, Event)]
-pub struct CommandEvent {
-    pub entity:  Entity,
-    pub args:    VecDeque<String>,
-    pub command: Commands,
-    pub sender:  CommandSender,
-    pub source:  CommandSource,
-}
-
-#[derive(Clone, Debug, Event)]
-pub struct WhisperEvent {
-    pub entity:  Entity,
-    pub content: String,
-    pub sender:  CommandSender,
-    pub source:  CommandSource,
 }
