@@ -1,11 +1,19 @@
+use std::{cmp::Ordering, sync::LazyLock};
+
 use azalea::{
     app::{App, Plugin},
     attack::AttackEvent,
     ecs::prelude::*,
     entity::{metadata::AbstractMonster, EyeHeight, Position},
+    inventory::{
+        operations::{ClickOperation, SwapClick},
+        ContainerClickEvent,
+        Inventory,
+    },
     nearest_entity::EntityFinder,
     physics::PhysicsSet,
     prelude::*,
+    registry::Item,
     world::MinecraftEntityId,
     LookAtEvent,
 };
@@ -28,14 +36,17 @@ impl Plugin for AutoKillPlugin {
 }
 
 impl AutoKillPlugin {
+    /// # Panics
+    /// Will panic if ?
     pub fn handle_auto_kill(
-        mut query: Query<(Entity, &GameTicks, &LocalSettings)>,
+        mut query: Query<(Entity, &GameTicks, &LocalSettings, &Inventory)>,
         entities: EntityFinder<With<AbstractMonster>>,
         targets: Query<(&MinecraftEntityId, &Position, Option<&EyeHeight>)>,
+        mut container_click_events: EventWriter<ContainerClickEvent>,
         mut look_at_events: EventWriter<LookAtEvent>,
         mut attack_events: EventWriter<AttackEvent>,
     ) {
-        for (entity, game_ticks, local_settings) in &mut query {
+        for (entity, game_ticks, local_settings, inventory) in &mut query {
             if !local_settings.auto_kill.enabled {
                 continue;
             }
@@ -52,6 +63,34 @@ impl AutoKillPlugin {
                 continue;
             };
 
+            let held_kind = inventory.held_item().kind();
+            if local_settings.auto_kill.auto_weapon && !WEAPON_ITEMS.contains_key(&held_kind) {
+                let mut weapon_slots = Vec::new();
+
+                for slot in inventory.inventory_menu.player_slots_range() {
+                    let Some(item) = inventory.inventory_menu.slot(slot) else {
+                        continue;
+                    };
+
+                    if let Some(damage) = WEAPON_ITEMS.get(&item.kind()) {
+                        weapon_slots.push((slot, *damage));
+                    }
+                }
+
+                weapon_slots.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(Ordering::Equal));
+
+                if let Some((slot, _)) = weapon_slots.first() {
+                    container_click_events.send(ContainerClickEvent {
+                        entity,
+                        window_id: inventory.id,
+                        operation: ClickOperation::Swap(SwapClick {
+                            source_slot: u16::try_from(*slot).unwrap(),
+                            target_slot: inventory.selected_hotbar_slot,
+                        }),
+                    });
+                }
+            }
+
             let mut position = **target_pos;
             if let Some(eye_height) = target_eye_height {
                 position.y += f64::from(**eye_height);
@@ -65,3 +104,20 @@ impl AutoKillPlugin {
         }
     }
 }
+
+pub static WEAPON_ITEMS: LazyLock<HashMap<Item, i32>> = LazyLock::new(|| {
+    HashMap::from([
+        (Item::DiamondAxe, 9),
+        (Item::DiamondSword, 7),
+        (Item::GoldenAxe, 7),
+        (Item::GoldenSword, 4),
+        (Item::IronAxe, 9),
+        (Item::IronSword, 6),
+        (Item::NetheriteAxe, 10),
+        (Item::NetheriteSword, 8),
+        (Item::StoneAxe, 9),
+        (Item::StoneSword, 5),
+        (Item::WoodenAxe, 7),
+        (Item::WoodenSword, 4),
+    ])
+});
