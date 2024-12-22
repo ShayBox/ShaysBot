@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.10.0"
+version = "0.10.1"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2021"
 description = "My personal Minecraft bot using Azalea"
@@ -13,6 +13,7 @@ license = "MIT"
 
 [patch.'https://github.com/azalea-rs/azalea']
 azalea = { git = "https://github.com/Shays-Forks/azalea" }
+#azalea = { path = "../azalea/azalea" }
 
 [dependencies]
 azalea = { git = "https://github.com/azalea-rs/azalea", default-features = false, features = ["serde"] }

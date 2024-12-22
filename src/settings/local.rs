@@ -32,6 +32,9 @@ pub struct LocalSettings {
     /// Auto exit module settings.
     pub auto_exit: AutoExit,
 
+    /// Auto kill module settings.
+    pub auto_kill: AutoKill,
+
     /// Auto pearl module settings.
     pub auto_pearl: AutoPearl,
 
@@ -63,14 +66,13 @@ pub struct AutoExit {
     pub zenith_proxy: bool,
 }
 
+#[serde_as]
 #[derive(Clone, Deserialize, Serialize, SmartDefault)]
 #[serde(default)]
 pub struct AutoKill {
-    #[default(false)]
-    pub monsters: bool,
-
-    #[default(true)]
-    pub players: bool,
+    #[default(25)]
+    #[serde_as(as = "DisplayFromStr")]
+    pub delay_ticks: u128,
 }
 
 #[derive(Clone, Deserialize, Serialize, SmartDefault)]
@@ -117,19 +119,20 @@ impl LocalSettings {
     /// # Errors
     /// Will return `Err` if `File::open`, `toml::to_string_pretty`, or `File::write_all` fails.
     pub fn load(self) -> Result<Self> {
-        let mut file = match File::open(&self.path) {
-            Ok(file) => file,
-            Err(error) if error.kind() == ErrorKind::NotFound => {
-                return Self::from(self.path).save()
-            }
+        match File::open(&self.path) {
+            Err(error) if error.kind() == ErrorKind::NotFound => Self::from(self.path).save(),
             Err(error) => bail!(error),
-        };
+            Ok(mut file) => {
+                let mut text = String::new();
+                file.read_to_string(&mut text)?;
+                file.rewind()?;
 
-        let mut text = String::new();
-        file.read_to_string(&mut text)?;
-        file.rewind()?;
+                let mut local_settings = toml::from_str::<Self>(&text)?;
+                local_settings.path = self.path; /* Fix serde replacing path */
 
-        Ok(toml::from_str::<Self>(&text)?)
+                Ok(local_settings)
+            }
+        }
     }
 
     /// # Errors
@@ -201,7 +204,7 @@ pub async fn load_settings(mut swarm: Swarm) -> Result<()> {
     }
 
     for username in usernames {
-        let settings = LocalSettings::new(&username).load()?;
+        let settings = LocalSettings::new(&username).load()?.save()?;
         let account = match settings.auth_mode {
             AuthMode::Offline => Account::offline(&username),
             AuthMode::Online => Account::microsoft(&username).await?,

@@ -96,7 +96,7 @@ fn handle_add(
         str!("[409] Already whitelisted")
     } else {
         settings.whitelisted.insert(*uuid, None);
-        settings.save().expect("Failed to save global settings");
+        settings.clone().save().expect("Failed to save settings");
 
         format!("[200] Successfully added: {}", info.profile.name)
     }
@@ -117,7 +117,7 @@ fn handle_remove(
 
     if settings.whitelisted.contains_key(uuid) {
         settings.whitelisted.remove(uuid);
-        settings.save().expect("Failed to save global settings");
+        settings.clone().save().expect("Failed to save settings");
 
         format!("[200] Successfully removed: {}", info.profile.name)
     } else {
@@ -151,7 +151,7 @@ fn handle_link(
             };
 
             settings.whitelisted.insert(uuid, Some(auth_code));
-            settings.save().expect("Failed to save global settings");
+            settings.clone().save().expect("Failed to save settings");
 
             str!("[200] Successfully linked")
         }
@@ -161,7 +161,7 @@ fn handle_link(
             };
 
             settings.whitelisted.insert(*uuid, Some(user_id));
-            settings.save().expect("Failed to save global settings");
+            settings.clone().save().expect("Failed to save settings");
 
             str!("[200] Successfully linked")
         }

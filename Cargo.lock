@@ -526,7 +526,7 @@ dependencies = [
 [[package]]
 name = "azalea-viaversion"
 version = "0.1.0"
-source = "git+https://github.com/azalea-rs/azalea-viaversion#12f63cb64666307392539bf9babf1e1b8172823a"
+source = "git+https://github.com/azalea-rs/azalea-viaversion#3c21552cec003743f100aed6b27eea504314fff1"
 dependencies = [
  "anyhow",
  "azalea",
@@ -3338,7 +3338,7 @@ dependencies = [
 
 [[package]]
 name = "shaysbot"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "anyhow",
  "azalea",
@@ -4404,7 +4404,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
