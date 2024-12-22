@@ -98,25 +98,22 @@ impl GlobalSettings {
     /// Will return `Err` if `File::open`, `toml::to_string_pretty`, or `File::write_all` fails.
     pub fn load() -> Result<Self> {
         let path = Self::path()?;
-        let mut file = match File::open(&path) {
-            Ok(file) => file,
-            Err(error) if error.kind() == ErrorKind::NotFound => {
-                Self::default().save()?;
-                File::open(&path)?
-            }
+        match File::open(&path) {
+            Err(error) if error.kind() == ErrorKind::NotFound => Self::default().save(),
             Err(error) => bail!(error),
-        };
+            Ok(mut file) => {
+                let mut text = String::new();
+                file.read_to_string(&mut text)?;
+                file.rewind()?;
 
-        let mut text = String::new();
-        file.read_to_string(&mut text)?;
-        file.rewind()?;
-
-        Ok(toml::from_str(&text)?)
+                Ok(toml::from_str(&text)?)
+            }
+        }
     }
 
     /// # Errors
     /// Will return `Err` if `File::open`, `File::read_to_string`, `File::rewind`, or `toml::from_str` fails.
-    pub fn save(&self) -> Result<()> {
+    pub fn save(self) -> Result<Self> {
         let path = Self::path()?;
         let mut file = File::options()
             .write(true)
@@ -128,7 +125,7 @@ impl GlobalSettings {
         let buf = text.as_bytes();
         file.write_all(buf)?;
 
-        Ok(())
+        Ok(self)
     }
 }
 
