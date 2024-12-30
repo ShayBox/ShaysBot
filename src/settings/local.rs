@@ -29,11 +29,14 @@ pub struct LocalSettings {
     /// Minecraft account authentication mode.
     pub auth_mode: AuthMode,
 
-    /// Auto exit module settings.
-    pub auto_exit: AutoExit,
+    /// Anti Afk module settings.
+    pub anti_afk: AntiAfk,
 
     /// Auto kill module settings.
     pub auto_kill: AutoKill,
+
+    /// Auto leave module settings.
+    pub auto_leave: AutoLeave,
 
     /// Auto look module settings.
     pub auto_look: AutoLook,
@@ -59,12 +62,27 @@ pub enum AuthMode {
     Online,
 }
 
+#[serde_as]
 #[derive(Clone, Deserialize, Serialize, SmartDefault)]
 #[serde(default)]
-pub struct AutoExit {
+pub struct AntiAfk {
+    #[default(false)]
+    pub enabled: bool,
+
+    #[default(20 * 60)]
+    #[serde_as(as = "DisplayFromStr")]
+    pub delay_ticks: u128,
+}
+
+#[derive(Clone, Deserialize, Serialize, SmartDefault)]
+#[serde(rename = "auto_exit")] /* Deprecated: 0.11 */
+#[serde(default)]
+pub struct AutoLeave {
+    /// Requires whitelist
     #[default(true)]
     pub unknown_player: bool,
 
+    /// Requires zenith proxy
     #[default(true)]
     pub zenith_proxy: bool,
 }
@@ -221,7 +239,9 @@ pub async fn load_settings(mut swarm: Swarm) -> Result<()> {
     }
 
     if usernames.is_empty() {
-        usernames.push(str!("ExampleBot"));
+        let number = fastrand::u8(u8::MIN..u8::MAX);
+        let username = format!("ExampleBot{number}");
+        usernames.push(username);
     }
 
     for username in usernames {

@@ -10,6 +10,7 @@ use azalea::{
     mining::MiningSet,
     packet_handling::game::{handle_send_packet_event, SendPacketEvent},
     pathfinder::{
+        astar::PathfinderTimeout,
         goals::{RadiusGoal, ReachBlockPosGoal},
         goto_listener,
         moves::default_move,
@@ -129,6 +130,8 @@ impl AutoPearlPlugin {
                 goal:          Arc::new(goal),
                 successors_fn: default_move,
                 allow_mining:  false,
+                min_timeout:   PathfinderTimeout::Time(Duration::from_secs(10)),
+                max_timeout:   PathfinderTimeout::Time(Duration::from_secs(10)),
             });
 
             pearl_pull_events.send(PearlPullEvent(event.0));
@@ -181,12 +184,14 @@ impl AutoPearlPlugin {
             if event.idle_goal != IdleGoal::default() {
                 goto_events.send(GotoEvent {
                     entity:        event.entity,
-                    allow_mining:  false,
-                    successors_fn: default_move,
                     goal:          Arc::new(RadiusGoal {
                         pos:    event.idle_goal.coords,
                         radius: event.idle_goal.radius + 1.0,
                     }),
+                    successors_fn: default_move,
+                    allow_mining:  false,
+                    min_timeout:   PathfinderTimeout::Time(Duration::from_secs(10)),
+                    max_timeout:   PathfinderTimeout::Time(Duration::from_secs(10)),
                 });
             }
         }

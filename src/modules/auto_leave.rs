@@ -46,14 +46,17 @@ impl AutoExitPlugin {
                 continue;
             };
 
-            if local_settings.auto_exit.zenith_proxy && str!(reason).starts_with(ZENITH_PREFIX) {
-                info!("[AutoExit] Reconnect disabled for {}", game_profile.name);
+            let name = &game_profile.name;
+            if local_settings.auto_leave.zenith_proxy && str!(reason).starts_with(ZENITH_PREFIX) {
+                info!("[{name}] ZenithProxy Reason: {reason}");
+                info!("[{name}] Disabling AutoReconnect");
                 swarm_state
                     .auto_reconnect
                     .write()
                     .insert(game_profile.uuid, false);
             } else {
-                info!("[AutoExit] Disconnect Reason: {}", reason.to_ansi());
+                info!("[{name}] Disconnect Reason: {reason}");
+                info!("[{name}] AutoReconnect in 5s");
             }
         }
     }
@@ -61,7 +64,7 @@ impl AutoExitPlugin {
     fn handle_add_entity_packets(
         mut packet_events: EventReader<PacketEvent>,
         mut disconnect_events: EventWriter<DisconnectEvent>,
-        query: Query<(&TabList, &LocalSettings)>,
+        query: Query<(&TabList, &GameProfileComponent, &LocalSettings)>,
         global_settings: Res<GlobalSettings>,
     ) {
         for event in packet_events.read() {
@@ -73,7 +76,7 @@ impl AutoExitPlugin {
                 continue;
             }
 
-            let Ok((tab_list, local_settings)) = query.get(event.entity) else {
+            let Ok((tab_list, game_profile, local_settings)) = query.get(event.entity) else {
                 continue;
             };
 
@@ -81,12 +84,16 @@ impl AutoExitPlugin {
                 continue;
             };
 
-            if local_settings.auto_exit.unknown_player
-                && global_settings.whitelist
+            if global_settings.whitelist
+                && local_settings.auto_leave.unknown_player
                 && !global_settings.whitelisted.contains_key(uuid)
             {
                 let name = &info.profile.name;
-                let reason = format!("[AutoExit] Unknown player in visual range: {name}");
+                let username = &game_profile.name;
+                let reason = format!("Unknown player in visual range: {name}");
+                info!("[{username}] {reason}");
+                info!("[{username}] Disabling AutoReconnect");
+
                 disconnect_events.send(DisconnectEvent {
                     entity: event.entity,
                     reason: Some(FormattedText::from(reason)),

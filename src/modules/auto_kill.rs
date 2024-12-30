@@ -39,14 +39,14 @@ impl AutoKillPlugin {
     /// # Panics
     /// Will panic if ?
     pub fn handle_auto_kill(
-        mut query: Query<(Entity, &GameTicks, &LocalSettings, &Inventory)>,
+        mut query: Query<(Entity, &LocalSettings, &GameTicks, &Inventory)>,
         entities: EntityFinder<With<AbstractMonster>>,
         targets: Query<(&MinecraftEntityId, &Position, Option<&EyeHeight>)>,
         mut container_click_events: EventWriter<ContainerClickEvent>,
         mut look_at_events: EventWriter<LookAtEvent>,
         mut attack_events: EventWriter<AttackEvent>,
     ) {
-        for (entity, game_ticks, local_settings, inventory) in &mut query {
+        for (entity, local_settings, game_ticks, inventory) in &mut query {
             if !local_settings.auto_kill.enabled {
                 continue;
             }
@@ -80,6 +80,10 @@ impl AutoKillPlugin {
                 weapon_slots.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(Ordering::Equal));
 
                 if let Some((slot, _)) = weapon_slots.first() {
+                    debug!(
+                        "Swapping Weapon from {slot} to {}",
+                        inventory.selected_hotbar_slot
+                    );
                     container_click_events.send(ContainerClickEvent {
                         entity,
                         window_id: inventory.id,

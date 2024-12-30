@@ -1,7 +1,7 @@
 pub mod anti_afk;
 pub mod auto_eat;
-pub mod auto_exit;
 pub mod auto_kill;
+pub mod auto_leave;
 pub mod auto_look;
 pub mod auto_pearl;
 pub mod auto_totem;
