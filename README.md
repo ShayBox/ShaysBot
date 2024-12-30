@@ -26,7 +26,8 @@ Includes support for No Chat Reports (NCR) encryption to ensure secure and priva
 
 - [**AntiAfk**](src/modules/anti_afk.rs) - Prevents being kicked for AFK by simulating activity
 - [**AutoEat**](src/modules/auto_eat.rs) - Automatically eats food when hunger is low
-- [**AutoExit**](src/modules/auto_exit.rs) - Automatically exits in dangerous situations
+- [**AutoKill**](src/modules/auto_kill.rs) - Automatically kill monsters nearby
+- [**AutoLeave**](src/modules/auto_leave.rs) - Automatically leaves in dangerous situations
 - [**AutoLook**](src/modules/auto_look.rs) - Automatically looks at specific targets
 - [**AutoPearl**](src/modules/auto_pearl.rs) - Handles automatic ender pearl throwing
 - [**AutoTotem**](src/modules/auto_totem.rs) - Automatically equips totems for survival
