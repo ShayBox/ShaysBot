@@ -15,6 +15,9 @@ Includes support for No Chat Reports (NCR) encryption to ensure secure and priva
 
 ## Features
 
+To enable debug logging you must set the environment variable:  
+`RUST_LOG=shaysbot=debug` (error, warn, info, debug, trace)
+
 ### Commands
 
 - [**Pearl**](src/commands/pearl.rs) - Manages ender pearl-related commands and tracking

@@ -129,7 +129,7 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -
     match event {
         SwarmEvent::Login => {}
         SwarmEvent::Init => swarm.ecs_lock.lock().insert_resource(state),
-        SwarmEvent::Chat(chat_packet) => info!("{}", chat_packet.message().to_ansi()),
+        SwarmEvent::Chat(chat_packet) => println!("{}", chat_packet.message().to_ansi()),
         SwarmEvent::Disconnect(ref account, ref join_opts) => loop {
             tokio::time::sleep(Duration::from_secs(5)).await;
 

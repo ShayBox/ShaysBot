@@ -3,7 +3,7 @@ use azalea::{
     blocks::Block,
     disconnect::DisconnectEvent,
     ecs::prelude::*,
-    packet_handling::game::PacketEvent,
+    packet_handling::{game::PacketEvent, login::LoginPacketEvent},
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
@@ -30,6 +30,7 @@ impl Plugin for DiscordLoggerPlugin {
                     Self::handle_block_break_packets,
                     Self::handle_block_update_packets,
                     Self::handle_disconnect_events,
+                    Self::handle_login_packets,
                     Self::handle_player_info_remove_packets,
                     Self::handle_player_info_update_packets,
                     Self::handle_remove_entities_packets,
@@ -97,7 +98,7 @@ impl DiscordLoggerPlugin {
 
             let player_name = player_info.profile.name.clone();
             let username = game_profile.name.clone();
-            let content = format!("{player_name} has entered visual range of {username}");
+            let content = format!("[{username}] {player_name} has entered visual range.");
             tokio::spawn(send_message(content, channel_id, discord.client()));
         }
     }
@@ -129,7 +130,7 @@ impl DiscordLoggerPlugin {
             if block.id().ends_with("shulker_box") {
                 let block_name = block.as_registry_block();
                 let username = game_profile.name.clone();
-                let content = format!("{block_name:?} was mined in visual range of {username}");
+                let content = format!("[{username}] {block_name:?} was mined in visual range.");
                 tokio::spawn(send_message(content, channel_id, discord.client()));
             }
         }
@@ -158,7 +159,7 @@ impl DiscordLoggerPlugin {
             if block.id().ends_with("shulker_box") {
                 let block_name = block.as_registry_block();
                 let username = game_profile.name.clone();
-                let content = format!("{block_name:?} was placed in visual range of {username}");
+                let content = format!("[{username}] {block_name:?} was placed in visual range.");
                 tokio::spawn(send_message(content, channel_id, discord.client()));
             }
         }
@@ -185,10 +186,31 @@ impl DiscordLoggerPlugin {
 
             let username = game_profile.name.clone();
             let content = if str!(reason).starts_with(ZENITH_PREFIX) {
-                format!("[AutoReconnect] Disabled for {username}")
+                format!("[{username}] Disabling AutoReconnect")
             } else {
-                format!("[AutoReconnect] Disconnect Reason: {}", reason.to_ansi())
+                format!("[{username}] left the game. | {reason}")
             };
+            tokio::spawn(send_message(content, channel_id, discord.client()));
+        }
+    }
+
+    fn handle_login_packets(
+        mut events: EventReader<LoginPacketEvent>,
+        query: Query<(&LocalSettings, &GameProfileComponent)>,
+        discord: Res<DiscordHttpResource>,
+    ) {
+        for event in events.read() {
+            let Ok((local_settings, game_profile)) = query.get(event.entity) else {
+                continue;
+            };
+
+            let channel_id = local_settings.discord_channel;
+            if channel_id == ChannelId::default() {
+                continue; /* Missing Channel ID */
+            }
+
+            let username = &game_profile.name;
+            let content = format!("[{username}] joined the game.");
             tokio::spawn(send_message(content, channel_id, discord.client()));
         }
     }
@@ -224,7 +246,7 @@ impl DiscordLoggerPlugin {
 
                 let player_name = player_profile.name.clone();
                 let username = game_profile.name.clone();
-                let content = format!("{player_name} logged out in visual range of {username}");
+                let content = format!("[{username}] {player_name} logged out in visual range.");
                 tokio::spawn(send_message(content, channel_id, discord.client()));
             }
         }
@@ -263,7 +285,7 @@ impl DiscordLoggerPlugin {
             for (_, player_profile) in profiles {
                 let player_name = player_profile.name.clone();
                 let username = game_profile.name.clone();
-                let content = format!("{player_name} joined in visual range of {username}");
+                let content = format!("[{username}] {player_name} joined in visual range.");
                 tokio::spawn(send_message(content, channel_id, discord.client()));
             }
         }
@@ -296,7 +318,7 @@ impl DiscordLoggerPlugin {
 
                 let player_name = player_profile.name.clone();
                 let username = game_profile.name.clone();
-                let content = format!("{player_name} has exited visual range of {username}");
+                let content = format!("[{username}] {player_name} has exited visual range.");
                 tokio::spawn(send_message(content, channel_id, discord.client()));
             }
         }
