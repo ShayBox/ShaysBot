@@ -10,8 +10,9 @@ use azalea::{
     app::{App, Plugin, Startup},
     ecs::prelude::*,
     prelude::*,
-    protocol::ServerAddress,
+    protocol::{resolver, ServerAddress},
     swarm::Swarm,
+    JoinOpts,
     NoState,
     Vec3,
 };
@@ -252,7 +253,17 @@ pub async fn load_settings(mut swarm: Swarm) -> Result<()> {
         };
 
         tokio::time::sleep(Duration::from_secs(5)).await;
-        let client = swarm.add(&account, NoState).await?;
+        let client = if let Some(server_address) = settings.server_address.clone() {
+            let Ok(resolved_address) = resolver::resolve_address(&server_address).await else {
+                bail!("Failed to resolve server address")
+            };
+            let opts = JoinOpts::new()
+                .custom_address(server_address)
+                .custom_resolved_address(resolved_address);
+            swarm.add_with_opts(&account, NoState, &opts).await?
+        } else {
+            swarm.add(&account, NoState).await? /* Use the default server address */
+        };
 
         let mut world = client.ecs.lock();
         world.commands().entity(client.entity).insert(settings);
