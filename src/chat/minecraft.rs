@@ -55,7 +55,7 @@ impl MinecraftChatPlugin {
             let (username, content) = if let Some(username) = username {
                 (username, content) /* Vanilla Server Format */
             } else if let Some((_whole, username, content)) = regex_captures!(
-                r"^(?:\[.+\] )?([a-zA-Z_0-9]{1,16}) (?:> )?(?:whispers: |-> )?(.+)$",
+                r"^(?:\[.+\] )?([a-zA-Z_0-9]{1,16}) (?:> )?(?:whispers: |-> me] )?(.+)$",
                 &content /* Custom Server Formats */
             ) {
                 (str!(username), str!(content))
@@ -83,6 +83,10 @@ impl MinecraftChatPlugin {
             let Some(alias) = args.pop_front() else {
                 continue; /* Command Missing */
             };
+
+            if !alias.starts_with(&settings.command_prefix) {
+                continue;
+            }
 
             let Some(command) = ChatCmds::find(&alias.replace(&settings.command_prefix, "")) else {
                 continue; /* Command Invalid */
