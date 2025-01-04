@@ -11,6 +11,7 @@ use azalea::{
     TabList,
 };
 
+/// Tracks player profiles.
 pub struct PlayerProfilePlugin;
 
 impl Plugin for PlayerProfilePlugin {

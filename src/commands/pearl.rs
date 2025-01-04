@@ -8,7 +8,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Pearl Stasis Command
+/// Automatically pull pearls remotely.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct PearlCommandPlugin;
 

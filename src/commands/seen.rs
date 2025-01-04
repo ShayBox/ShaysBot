@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 use crate::prelude::*;
 
-/// 2B2T Seen Command <https://2b2t.vc>
+/// View players first and last seen. <https://2b2t.vc>
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct SeenCommandPlugin;
 

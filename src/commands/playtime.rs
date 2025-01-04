@@ -8,7 +8,7 @@ use serde::Deserialize;
 
 use crate::prelude::*;
 
-/// 2B2T Playtime Command <https://2b2t.vc>
+/// View players play time. <https://2b2t.vc>
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct PlaytimeCommandPlugin;
 

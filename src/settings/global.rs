@@ -129,6 +129,7 @@ impl GlobalSettings {
     }
 }
 
+/// Handle global swarm settings.
 pub struct GlobalSettingsPlugin;
 
 impl Plugin for GlobalSettingsPlugin {

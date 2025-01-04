@@ -18,6 +18,7 @@ use serenity::{
 
 use crate::prelude::*;
 
+/// Log various events to Discord.
 pub struct DiscordLoggerPlugin;
 
 impl Plugin for DiscordLoggerPlugin {

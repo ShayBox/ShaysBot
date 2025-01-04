@@ -80,6 +80,7 @@ impl StasisChambers {
     }
 }
 
+/// Handle global stasis chambers.
 pub struct StasisChambersPlugin;
 
 impl Plugin for StasisChambersPlugin {

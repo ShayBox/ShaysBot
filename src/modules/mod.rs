@@ -18,7 +18,7 @@ impl PluginGroup for ModulesPluginGroup {
         PluginGroupBuilder::start::<Self>()
             .add(AntiAfkPlugin)
             .add(AutoEatPlugin)
-            .add(AutoExitPlugin)
+            .add(AutoLeavePlugin)
             .add(AutoKillPlugin)
             .add(AutoLookPlugin)
             .add(AutoPearlPlugin)

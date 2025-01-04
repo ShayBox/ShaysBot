@@ -192,6 +192,7 @@ impl LocalSettings {
     }
 }
 
+/// Handle local account settings.
 pub struct LocalSettingsPlugin;
 
 impl Plugin for LocalSettingsPlugin {

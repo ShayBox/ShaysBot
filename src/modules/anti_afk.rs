@@ -8,7 +8,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Automatically send swing arm packets every minute
+/// Automatically swing arm to prevent being kicked.
 pub struct AntiAfkPlugin;
 
 impl Plugin for AntiAfkPlugin {

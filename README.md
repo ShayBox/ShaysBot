@@ -20,32 +20,32 @@ To enable debug logging you must set the environment variable:
 
 ### Commands
 
-- [**Pearl**](src/commands/pearl.rs) - Manages ender pearl-related commands and tracking
-- [**Playtime**](src/commands/playtime.rs) - Tracks and displays player playtime statistics (2b2t.vc)
-- [**Seen**](src/commands/seen.rs) - Shows when players were last seen online (2b2t.vc)
-- [**Whitelist**](src/commands/whitelist.rs) - Whitelist and link Minecraft and Discord accounts
+- [**Pearl**](src/commands/pearl.rs) - Automatically pull pearls remotely.
+- [**Playtime**](src/commands/playtime.rs) - View players play time. (2b2t.vc)
+- [**Seen**](src/commands/seen.rs) - View players first and last seen. (2b2t.vc)
+- [**Whitelist**](src/commands/whitelist.rs) - Whitelist Players and link their Discord.
 
 ### Modules
 
-- [**AntiAfk**](src/modules/anti_afk.rs) - Prevents being kicked for AFK by simulating activity
-- [**AutoEat**](src/modules/auto_eat.rs) - Automatically eats food when hunger is low
-- [**AutoKill**](src/modules/auto_kill.rs) - Automatically kill monsters nearby
-- [**AutoLeave**](src/modules/auto_leave.rs) - Automatically leaves in dangerous situations
-- [**AutoLook**](src/modules/auto_look.rs) - Automatically looks at specific targets
-- [**AutoPearl**](src/modules/auto_pearl.rs) - Handles automatic ender pearl throwing
-- [**AutoTotem**](src/modules/auto_totem.rs) - Automatically equips totems for survival
-- [**DiscordLogger**](src/modules/discord_logger.rs) - Logs visual range events to Discord
+- [**AntiAfk**](src/modules/anti_afk.rs) - Automatically swing arm to prevent being kicked.
+- [**AutoEat**](src/modules/auto_eat.rs) - Automatically swap and eat food to avoid starving.
+- [**AutoKill**](src/modules/auto_kill.rs) - Automatically swap and kill nearby monsters.
+- [**AutoLeave**](src/modules/auto_leave.rs) - Automatically leave the server when in danger.
+- [**AutoLook**](src/modules/auto_look.rs) - Automatically look at the closest player.
+- [**AutoPearl**](src/modules/auto_pearl.rs) - Automatically goto and pull player pearls.
+- [**AutoTotem**](src/modules/auto_totem.rs) - Automatically equip totems of undying.
+- [**DiscordLogger**](src/modules/discord_logger.rs) - Log various events to Discord.
 
 ### Settings
 
-- [**GlobalSettings**](src/settings/global.rs) - Global swarm settings.
-- [**LocalSettings**](src/settings/local.rs) - Local account settings.
-- [**StasisChambers**](src/settings/stasis.rs) - Stasis Chambers.
+- [**GlobalSettings**](src/settings/global.rs) - Handle global swarm settings.
+- [**LocalSettings**](src/settings/local.rs) - Handle local account settings.
+- [**StasisChambers**](src/settings/stasis.rs) - Handle global stasis chambers.
 
 ### Trackers
 
-- [**BlockStates**](src/trackers/block_state.rs) - Tracks block states
-- [**EnderPearls**](src/trackers/ender_pearl.rs) - Tracks ender pearls for stasis chambers
-- [**GameTicks**](src/trackers/game_tick.rs) - Tracks game tick counts.
-- [**PlayerProfiles**](src/trackers/player_profile.rs) - Tracks player profiles for events
+- [**BlockStates**](src/trackers/block_state.rs) - Tracks block states.
+- [**EnderPearls**](src/trackers/ender_pearl.rs) - Tracks ender pearls.
+- [**GameTicks**](src/trackers/game_tick.rs) - Tracks game ticks.
+- [**PlayerProfiles**](src/trackers/player_profile.rs) - Tracks player profiles.
 

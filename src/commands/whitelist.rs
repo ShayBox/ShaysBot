@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::prelude::*;
 
-/// Whitelist command
+/// Whitelist Players and link their Discord.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WhitelistCommandPlugin;
 

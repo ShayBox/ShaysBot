@@ -14,7 +14,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Automatically equip totems in the offhand slot
+/// Automatically equip totems of undying.
 pub struct AutoTotemPlugin;
 
 impl Plugin for AutoTotemPlugin {

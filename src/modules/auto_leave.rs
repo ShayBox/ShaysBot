@@ -15,10 +15,10 @@ use crate::prelude::*;
 
 pub const ZENITH_PREFIX: &str = "[AutoDisconnect] ";
 
-/// Automatically exit the process conditions are met.
-pub struct AutoExitPlugin;
+/// Automatically leave the server when in danger.
+pub struct AutoLeavePlugin;
 
-impl Plugin for AutoExitPlugin {
+impl Plugin for AutoLeavePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(SwarmState::default()).add_systems(
             Update,
@@ -31,7 +31,7 @@ impl Plugin for AutoExitPlugin {
     }
 }
 
-impl AutoExitPlugin {
+impl AutoLeavePlugin {
     pub fn handle_disconnect_events(
         mut events: EventReader<DisconnectEvent>,
         mut query: Query<(&GameProfileComponent, &LocalSettings)>,

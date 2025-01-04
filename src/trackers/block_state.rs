@@ -10,6 +10,7 @@ use azalea::{
     BlockPos,
 };
 
+/// Tracks block states.
 pub struct BlockStatePlugin;
 
 impl Plugin for BlockStatePlugin {

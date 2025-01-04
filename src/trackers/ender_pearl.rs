@@ -18,7 +18,7 @@ use uuid::Uuid;
 
 use crate::prelude::*;
 
-/// Keep track of thrown pearls inside of stasis chambers for `AutoPearlPlugin`
+/// Tracks ender pearls.
 pub struct EnderPearlPlugin;
 
 impl Plugin for EnderPearlPlugin {

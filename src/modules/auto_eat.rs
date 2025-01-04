@@ -25,7 +25,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Automatically eat any food item when below 18 hunger
+/// Automatically swap and eat food to avoid starving.
 pub struct AutoEatPlugin;
 
 impl Plugin for AutoEatPlugin {

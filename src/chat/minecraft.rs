@@ -88,7 +88,7 @@ impl MinecraftChatPlugin {
             };
 
             if !alias.starts_with(&settings.command_prefix) {
-                continue;
+                continue; /* Command Invalid */
             }
 
             let Some(command) = ChatCmds::find(&alias.replace(&settings.command_prefix, "")) else {
@@ -154,6 +154,8 @@ impl MinecraftChatPlugin {
         }
     }
 }
+
+/* No Chat Reports Mod */
 
 pub static KEY: LazyLock<AesKey> = LazyLock::new(|| {
     AesKey::from([
