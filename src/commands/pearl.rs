@@ -73,7 +73,7 @@ impl PearlCommandPlugin {
             };
 
             let uuid = match event.sender {
-                CommandSender::Minecraft(username) => username,
+                CommandSender::Minecraft(uuid) => uuid,
                 CommandSender::Discord(user_id) => {
                     let Some(username) = event.args.pop_front() else {
                         whisper_event.content = str!("[404] Missing username");
@@ -118,17 +118,22 @@ impl PearlCommandPlugin {
             let local_settings = match settings.first() {
                 Some(local_settings) if settings.len() == 1 => local_settings,
                 _ => {
+                    /* Multi-Account Swarm */
                     if let Some(location) = event.args.pop_front() {
-                        if location != local_settings.auto_pearl.location {
-                            if let CommandSource::Minecraft(_) = event.source {
-                                whisper_event.content = str!("[500] I'm not at that location");
-                                whisper_events.send(whisper_event);
+                        if location == local_settings.auto_pearl.location {
+                            local_settings
+                        } else if let CommandSource::Minecraft(_) = event.source {
+                            whisper_event.content = format!("[500] I'm not at {location}");
+                            whisper_events.send(whisper_event.clone());
+
+                            if event.message {
+                                local_settings
+                            } else {
+                                continue; /* Global Chat */
                             }
-
-                            continue;
+                        } else {
+                            continue; /* Discord Chat */
                         }
-
-                        local_settings
                     } else {
                         match event.source {
                             CommandSource::Minecraft(_) => local_settings,
@@ -184,8 +189,8 @@ impl PearlCommandPlugin {
                 1 => str!("[200] I'm on my way, you have one more pearl!"),
                 c => format!("[200] I'm on my way, you have {c} more pearls."),
             };
-            whisper_events.send(whisper_event);
 
+            whisper_events.send(whisper_event);
             pearl_events.send(PearlGotoEvent(PearlEvent {
                 entity:     event.entity,
                 idle_goal:  local_settings.auto_pearl.idle_goal.clone(),

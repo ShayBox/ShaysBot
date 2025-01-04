@@ -52,13 +52,13 @@ impl MinecraftChatPlugin {
         let mut events = Vec::new();
         for event in chat_received_events.read() {
             let (username, content) = event.packet.split_sender_and_content();
-            let (username, content) = if let Some(username) = username {
-                (username, content) /* Vanilla Server Format */
-            } else if let Some((_whole, username, content)) = regex_captures!(
-                r"^(?:\[.+\] )?([a-zA-Z_0-9]{1,16}) (?:> )?(?:whispers: |-> me] )?(.+)$",
+            let (username, content, message) = if let Some(username) = username {
+                (username, content, event.packet.is_whisper()) /* Vanilla Server Format */
+            } else if let Some((_whole, username, whisper, content)) = regex_captures!(
+                r"^(?:\[.+\] )?([a-zA-Z_0-9]{1,16}) (?:> )?(whispers: |-> me] )?(.+)$",
                 &content /* Custom Server Formats */
             ) {
-                (str!(username), str!(content))
+                (str!(username), str!(content), !whisper.is_empty())
             } else {
                 continue;
             };
@@ -78,8 +78,11 @@ impl MinecraftChatPlugin {
             let key =
                 AesKey::decode_base64(&settings.encryption.key).unwrap_or_else(|_| KEY.clone());
             let (encryption, content) = find_encryption(&content, &key);
+            let mut args = content
+                .split(' ')
+                .map(String::from)
+                .collect::<VecDeque<_>>();
 
-            let mut args = content.split(' ').collect::<VecDeque<_>>();
             let Some(alias) = args.pop_front() else {
                 continue; /* Command Missing */
             };
@@ -99,8 +102,9 @@ impl MinecraftChatPlugin {
 
             events.push(CommandEvent {
                 entity: event.entity,
-                args: args.into_iter().map(String::from).collect(),
+                args,
                 command,
+                message,
                 sender: CommandSender::Minecraft(*uuid),
                 source: CommandSource::Minecraft(encryption),
             });

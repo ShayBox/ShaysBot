@@ -29,6 +29,7 @@ pub struct CommandEvent {
     pub entity:  Entity,
     pub args:    VecDeque<String>,
     pub command: ChatCmds,
+    pub message: bool,
     pub sender:  CommandSender,
     pub source:  CommandSource,
 }

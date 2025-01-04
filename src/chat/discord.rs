@@ -35,7 +35,11 @@ impl DiscordChatPlugin {
             let mut events = Vec::new();
             for entity in &mut query {
                 let message = event.new_message.clone();
-                let mut args = message.content.split(' ').collect::<VecDeque<_>>();
+                let mut args = message
+                    .content
+                    .split(' ')
+                    .map(String::from)
+                    .collect::<VecDeque<_>>();
                 let Some(alias) = args.pop_front() else {
                     continue; /* Command Missing */
                 };
@@ -80,8 +84,9 @@ impl DiscordChatPlugin {
 
                 events.push(CommandEvent {
                     entity,
-                    args: args.into_iter().map(String::from).collect(),
+                    args,
                     command,
+                    message: false,
                     source: CommandSource::Discord(message.channel_id),
                     sender: CommandSender::Discord(message.author.id),
                 });

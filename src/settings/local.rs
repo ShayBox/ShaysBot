@@ -67,7 +67,7 @@ pub enum AuthMode {
 #[derive(Clone, Deserialize, Serialize, SmartDefault)]
 #[serde(default)]
 pub struct AntiAfk {
-    #[default(false)]
+    #[default(true)]
     pub enabled: bool,
 
     #[default(20 * 60)]
