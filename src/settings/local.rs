@@ -70,7 +70,7 @@ pub struct AntiAfk {
     #[default(true)]
     pub enabled: bool,
 
-    #[default(20 * 60)]
+    #[default(1234)]
     #[serde_as(as = "DisplayFromStr")]
     pub delay_ticks: u128,
 }
@@ -127,7 +127,7 @@ pub struct AutoPearl {
 }
 
 #[serde_as]
-#[derive(Clone, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize)]
 #[serde(default)]
 pub struct IdleGoal {
     #[serde_as(as = "DisplayFromStr")]
@@ -220,7 +220,6 @@ pub async fn load_settings(mut swarm: Swarm) -> Result<()> {
     let current_exe_path = std::env::current_exe()?;
     let current_dir_path = current_exe_path.parent().context("None")?;
     let local_settings_path = current_dir_path.join("local-settings");
-
     if !local_settings_path.exists() {
         tokio::fs::create_dir(&local_settings_path).await?;
     }
@@ -258,9 +257,11 @@ pub async fn load_settings(mut swarm: Swarm) -> Result<()> {
             let Ok(resolved_address) = resolver::resolve_address(&server_address).await else {
                 bail!("Failed to resolve server address")
             };
+
             let opts = JoinOpts::new()
                 .custom_address(server_address)
                 .custom_resolved_address(resolved_address);
+
             swarm.add_with_opts(&account, NoState, &opts).await?
         } else {
             swarm.add(&account, NoState).await? /* Use the default server address */

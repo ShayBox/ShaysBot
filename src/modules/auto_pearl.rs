@@ -11,7 +11,7 @@ use azalea::{
     packet_handling::game::{handle_send_packet_event, SendPacketEvent},
     pathfinder::{
         astar::PathfinderTimeout,
-        goals::{RadiusGoal, ReachBlockPosGoal},
+        goals::RadiusGoal,
         goto_listener,
         moves::default_move,
         GotoEvent,
@@ -26,7 +26,6 @@ use azalea::{
         ServerboundUseItemOn,
     },
     BlockPos,
-    InstanceHolder,
     TabList,
     Vec3,
 };
@@ -61,7 +60,7 @@ impl Plugin for AutoPearlPlugin {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PearlEvent {
     pub entity:     Entity,
     pub idle_goal:  IdleGoal,
@@ -69,11 +68,11 @@ pub struct PearlEvent {
     pub owner_uuid: Uuid,
 }
 
-#[derive(Clone, Deref, DerefMut, Event)]
+#[derive(Clone, Debug, Deref, DerefMut, Event)]
 pub struct PearlGotoEvent(pub PearlEvent);
 
-#[derive(Clone, Deref, DerefMut, Event)]
-pub struct PearlPullEvent(PearlEvent);
+#[derive(Clone, Debug, Deref, DerefMut, Event)]
+pub struct PearlPullEvent(pub PearlEvent);
 
 #[derive(Default, Resource)]
 pub struct ResendPearlEvents {
@@ -94,10 +93,12 @@ impl AutoPearlPlugin {
             }
 
             if let Some(event) = pearl_pending_events.goto.pop() {
+                debug!("Resending {event:#?}");
                 pearl_goto_events.send(event);
             }
 
             if let Some(event) = pearl_pending_events.pull.pop() {
+                debug!("Resending {event:#?}");
                 pearl_pull_events.send(event);
             }
         }
@@ -108,10 +109,10 @@ impl AutoPearlPlugin {
         mut pearl_goto_events: EventReader<PearlGotoEvent>,
         mut pearl_pull_events: EventWriter<PearlPullEvent>,
         mut pearl_pending_events: ResMut<ResendPearlEvents>,
-        mut query: Query<(&Pathfinder, &InstanceHolder)>,
+        mut query: Query<&Pathfinder>,
     ) {
         for event in pearl_goto_events.read().cloned() {
-            let Ok((pathfinder, holder)) = query.get_mut(event.entity) else {
+            let Ok(pathfinder) = query.get_mut(event.entity) else {
                 continue;
             };
 
@@ -120,11 +121,8 @@ impl AutoPearlPlugin {
                 continue;
             }
 
-            let goal = ReachBlockPosGoal {
-                chunk_storage: holder.instance.read().chunks.clone(),
-                pos:           event.block_pos,
-            };
-
+            let pos = event.block_pos.to_vec3_floored();
+            let goal = RadiusGoal { radius: 3.0, pos };
             goto_events.send(GotoEvent {
                 entity:        event.entity,
                 goal:          Arc::new(goal),

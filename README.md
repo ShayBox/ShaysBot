@@ -13,10 +13,20 @@ A feature-rich Minecraft bot built using [Azalea](https://github.com/azalea-rs/a
 with automated features and useful commands. Written in Rust for high performance and reliability.  
 Includes support for No Chat Reports (NCR) encryption to ensure secure and private communication.
 
-## Features
+## Setup
 
 To enable debug logging you must set the environment variable:  
 `RUST_LOG=shaysbot=debug` (error, warn, info, debug, trace)
+
+### [Releases](https://github.com/shaybox/shaysbot/releases) - Built with GitHub Actions
+
+### Local
+
+1. Install [rustup.rs](https://rustup.rs) && `rustup default stable`
+2. Clone: `git clone git@github.com:ShayBox/ShaysBot.git` && `cd ShaysBot`
+3. Run: `cargo run` | Build: `cargo build` | Install: `cargo install --path .`
+
+## Features
 
 ### Commands
 

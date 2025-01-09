@@ -47,17 +47,25 @@ impl AutoLeavePlugin {
             };
 
             let name = &game_profile.name;
-            if local_settings.auto_leave.zenith_proxy && str!(reason).starts_with(ZENITH_PREFIX) {
-                info!("[{name}] ZenithProxy Reason: {reason}");
-                info!("[{name}] Disabling AutoReconnect");
-                swarm_state
-                    .auto_reconnect
-                    .write()
-                    .insert(game_profile.uuid, false);
+            info!("[{name}] Disconnect Reason: {reason}");
+
+            let auto_reconnect = if local_settings.auto_leave.zenith_proxy
+                && str!(reason).starts_with(ZENITH_PREFIX)
+            {
+                info!("[{name}] AutoReconnect Disabled: ZenithProxy");
+                (false, 0)
+            } else if str!(reason).starts_with("Connection throttled") {
+                info!("[{name}] You reconnected too fast, waiting 30s...");
+                (true, 30)
             } else {
-                info!("[{name}] Disconnect Reason: {reason}");
-                info!("[{name}] AutoReconnect in 5s");
-            }
+                info!("[{name}] AutoReconnecting in 5s...");
+                (true, 5)
+            };
+
+            swarm_state
+                .auto_reconnect
+                .write()
+                .insert(game_profile.uuid, auto_reconnect);
         }
     }
 

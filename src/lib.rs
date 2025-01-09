@@ -120,7 +120,7 @@ pub async fn start() -> Result<()> {
 
 #[derive(Clone, Component, Resource, SmartDefault)]
 pub struct SwarmState {
-    auto_reconnect: Arc<RwLock<HashMap<Uuid, bool>>>,
+    auto_reconnect: Arc<RwLock<HashMap<Uuid, (bool, u64)>>>,
 }
 
 /// # Errors
@@ -138,16 +138,28 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -
             println!("{}", message.to_ansi());
         }
         SwarmEvent::Disconnect(ref account, ref join_opts) => loop {
-            tokio::time::sleep(Duration::from_secs(5)).await;
-
             let uuid = account.uuid_or_offline();
-            if !state.auto_reconnect.read().get(&uuid).unwrap_or(&true) {
-                continue; /* AutoReconnect Disabled */
+            let Some((rejoin, secs)) = state.auto_reconnect.read().get(&uuid).copied() else {
+                state.auto_reconnect.write().insert(uuid, (false, 5));
+                continue; /* AutoReconnect: Missing */
+            };
+
+            tokio::time::sleep(Duration::from_secs(secs)).await;
+
+            if !rejoin {
+                continue; /* AutoReconnect: Disabled */
             }
 
-            while let Err(error) = swarm.add_with_opts(account, state.clone(), join_opts).await {
-                error!("Error re-joining server: {error}");
+            if let Err(reason) = swarm.add_with_opts(account, state.clone(), join_opts).await {
+                let name = &account.username;
+                warn!("[{name}] Failed to AutoReconnect: {reason}");
+                info!("[{name}] AutoReconnecting in 30s...");
+
+                state.auto_reconnect.write().entry(uuid).or_default().1 = 30;
+                continue;
             }
+
+            break;
         },
     }
 
