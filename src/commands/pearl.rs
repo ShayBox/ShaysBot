@@ -123,12 +123,11 @@ impl PearlCommandPlugin {
                         if location == local_settings.auto_pearl.location {
                             local_settings
                         } else if let CommandSource::Minecraft(_) = event.source {
-                            whisper_event.content = format!("[500] I'm not at {location}");
-                            whisper_events.send(whisper_event.clone());
-
                             if event.message {
                                 local_settings
                             } else {
+                                whisper_event.content = format!("[500] I'm not at {location}");
+                                whisper_events.send(whisper_event.clone());
                                 continue; /* Global Chat */
                             }
                         } else {

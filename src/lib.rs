@@ -145,9 +145,8 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -
                 continue; /* AutoReconnect Disabled */
             }
 
-            match swarm.add_with_opts(account, state.clone(), join_opts).await {
-                Err(error) => error!("Error adding account: {error}"),
-                Ok(_) => break,
+            while let Err(error) = swarm.add_with_opts(account, state.clone(), join_opts).await {
+                error!("Error re-joining server: {error}");
             }
         },
     }
