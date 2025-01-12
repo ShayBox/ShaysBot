@@ -33,6 +33,9 @@ pub struct LocalSettings {
     /// Anti Afk module settings.
     pub anti_afk: AntiAfk,
 
+    /// Anti Spam module settings.
+    pub anti_spam: AntiSpam,
+
     /// Auto kill module settings.
     pub auto_kill: AutoKill,
 
@@ -73,6 +76,17 @@ pub struct AntiAfk {
     #[default(1234)]
     #[serde_as(as = "DisplayFromStr")]
     pub delay_ticks: u128,
+}
+
+#[serde_as]
+#[derive(Clone, Deserialize, Serialize, SmartDefault)]
+#[serde(default)]
+pub struct AntiSpam {
+    #[default(true)]
+    pub enabled: bool,
+
+    #[default(true)]
+    pub unix_epoch: bool,
 }
 
 #[derive(Clone, Deserialize, Serialize, SmartDefault)]

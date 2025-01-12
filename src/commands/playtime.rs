@@ -24,8 +24,8 @@ impl Plugin for PlaytimeCommandPlugin {
             Update,
             Self::handle_playtime_command_events
                 .ambiguous_with_all()
-                .before(DiscordChatPlugin::handle_whisper_events)
-                .before(MinecraftChatPlugin::handle_whisper_events)
+                .before(DiscordChatPlugin::handle_send_whisper_events)
+                .before(MinecraftChatPlugin::handle_send_whisper_events)
                 .after(MinecraftChatPlugin::handle_chat_received_events),
         );
     }

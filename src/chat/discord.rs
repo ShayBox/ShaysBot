@@ -5,7 +5,7 @@ use azalea::{
     ecs::prelude::*,
     entity::{metadata::Player, LocalEntity},
 };
-use bevy_discord::{bot::events::BMessage, http::DiscordHttpResource, DiscordSet};
+use bevy_discord::{events::bot::BMessage, http::DiscordHttpResource, DiscordSet};
 use serenity::json::json;
 
 use crate::prelude::*;
@@ -18,7 +18,7 @@ impl Plugin for DiscordChatPlugin {
             Update,
             (
                 Self::handle_message_events.after(DiscordSet),
-                Self::handle_whisper_events.before(DiscordSet),
+                Self::handle_send_whisper_events.before(DiscordSet),
             ),
         );
     }
@@ -96,25 +96,30 @@ impl DiscordChatPlugin {
         }
     }
 
-    pub fn handle_whisper_events(
+    pub fn handle_send_whisper_events(
         mut whisper_events: EventReader<WhisperEvent>,
-        discord: Res<DiscordHttpResource>,
+        discord: Option<Res<DiscordHttpResource>>,
     ) {
+        let Some(discord) = discord else {
+            return;
+        };
+
         for event in whisper_events.read() {
-            if let CommandSource::Discord(channel_id) = event.source {
-                let content = event.content.clone();
-                let client = discord.client();
+            let client = discord.client();
+            let content = event.content.clone();
+            let CommandSource::Discord(channel_id) = event.source else {
+                continue;
+            };
 
-                tokio::spawn(async move {
-                    let map = &json!({
-                        "content": content,
-                    });
-
-                    if let Err(error) = client.send_message(channel_id, Vec::new(), map).await {
-                        error!("{error}");
-                    }
+            tokio::spawn(async move {
+                let map = &json!({
+                    "content": content,
                 });
-            }
+
+                if let Err(error) = client.send_message(channel_id, Vec::new(), map).await {
+                    error!("{error}");
+                }
+            });
         }
     }
 }

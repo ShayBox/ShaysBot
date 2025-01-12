@@ -47,9 +47,12 @@ impl DiscordLoggerPlugin {
     /// Will panic if `shaysbot::check_for_updates` or `shaysbot::get_remote_version` fails.
     pub fn handle_check_for_updates(
         mut query: Query<(&GameTicks, &LocalSettings)>,
-        discord: Res<DiscordHttpResource>,
+        discord: Option<Res<DiscordHttpResource>>,
     ) {
         const DAY_DELAY: u128 = 20 * 60 * 60 * 24;
+        let Some(discord) = discord else {
+            return;
+        };
 
         for (game_ticks, bot_settings) in &mut query {
             let channel_id = bot_settings.discord_channel;
@@ -72,8 +75,12 @@ impl DiscordLoggerPlugin {
     fn handle_add_entity_packets(
         mut packet_events: EventReader<PacketEvent>,
         query: Query<(&TabList, &LocalSettings, &GameProfileComponent)>,
-        discord: Res<DiscordHttpResource>,
+        discord: Option<Res<DiscordHttpResource>>,
     ) {
+        let Some(discord) = discord else {
+            return;
+        };
+
         for event in packet_events.read() {
             let ClientboundGamePacket::AddEntity(packet) = event.packet.as_ref() else {
                 continue;
@@ -107,8 +114,12 @@ impl DiscordLoggerPlugin {
     fn handle_block_break_packets(
         mut packet_events: EventReader<PacketEvent>,
         query: Query<(&BlockStates, &LocalSettings, &GameProfileComponent)>,
-        discord: Res<DiscordHttpResource>,
+        discord: Option<Res<DiscordHttpResource>>,
     ) {
+        let Some(discord) = discord else {
+            return;
+        };
+
         for event in packet_events.read() {
             let ClientboundGamePacket::BlockDestruction(packet) = event.packet.as_ref() else {
                 continue;
@@ -140,8 +151,12 @@ impl DiscordLoggerPlugin {
     fn handle_block_update_packets(
         mut packet_events: EventReader<PacketEvent>,
         query: Query<(&LocalSettings, &GameProfileComponent)>,
-        discord: Res<DiscordHttpResource>,
+        discord: Option<Res<DiscordHttpResource>>,
     ) {
+        let Some(discord) = discord else {
+            return;
+        };
+
         for event in packet_events.read() {
             let ClientboundGamePacket::BlockUpdate(packet) = event.packet.as_ref() else {
                 continue;
@@ -169,8 +184,12 @@ impl DiscordLoggerPlugin {
     pub fn handle_disconnect_events(
         mut events: EventReader<DisconnectEvent>,
         query: Query<(&LocalSettings, &GameProfileComponent)>,
-        discord: Res<DiscordHttpResource>,
+        discord: Option<Res<DiscordHttpResource>>,
     ) {
+        let Some(discord) = discord else {
+            return;
+        };
+
         for event in events.read() {
             let Ok((local_settings, game_profile)) = query.get(event.entity) else {
                 continue;
@@ -198,8 +217,12 @@ impl DiscordLoggerPlugin {
     fn handle_login_packets(
         mut events: EventReader<LoginPacketEvent>,
         query: Query<(&LocalSettings, &GameProfileComponent)>,
-        discord: Res<DiscordHttpResource>,
+        discord: Option<Res<DiscordHttpResource>>,
     ) {
+        let Some(discord) = discord else {
+            return;
+        };
+
         for event in events.read() {
             let Ok((local_settings, game_profile)) = query.get(event.entity) else {
                 continue;
@@ -219,8 +242,12 @@ impl DiscordLoggerPlugin {
     fn handle_player_info_remove_packets(
         mut packet_events: EventReader<PacketEvent>,
         query: Query<(&PlayerProfiles, &LocalSettings, &GameProfileComponent)>,
-        discord: Res<DiscordHttpResource>,
+        discord: Option<Res<DiscordHttpResource>>,
     ) {
+        let Some(discord) = discord else {
+            return;
+        };
+
         for event in packet_events.read() {
             let ClientboundGamePacket::PlayerInfoRemove(packet) = event.packet.as_ref() else {
                 continue;
@@ -256,8 +283,12 @@ impl DiscordLoggerPlugin {
     fn handle_player_info_update_packets(
         mut packet_events: EventReader<PacketEvent>,
         query: Query<(&PlayerProfiles, &LocalSettings, &GameProfileComponent)>,
-        discord: Res<DiscordHttpResource>,
+        discord: Option<Res<DiscordHttpResource>>,
     ) {
+        let Some(discord) = discord else {
+            return;
+        };
+
         for event in packet_events.read().cloned() {
             let ClientboundGamePacket::PlayerInfoUpdate(packet) = event.packet.as_ref() else {
                 continue;
@@ -295,8 +326,12 @@ impl DiscordLoggerPlugin {
     fn handle_remove_entities_packets(
         mut packet_events: EventReader<PacketEvent>,
         query: Query<(&PlayerProfiles, &LocalSettings, &GameProfileComponent)>,
-        discord: Res<DiscordHttpResource>,
+        discord: Option<Res<DiscordHttpResource>>,
     ) {
+        let Some(discord) = discord else {
+            return;
+        };
+
         for event in packet_events.read() {
             let ClientboundGamePacket::RemoveEntities(packet) = event.packet.as_ref() else {
                 continue;

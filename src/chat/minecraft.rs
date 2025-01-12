@@ -1,4 +1,8 @@
-use std::{collections::VecDeque, sync::LazyLock};
+use std::{
+    collections::VecDeque,
+    sync::LazyLock,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use azalea::{
     app::{App, Plugin, Update},
@@ -34,7 +38,7 @@ impl Plugin for MinecraftChatPlugin {
                 Update,
                 (
                     Self::handle_chat_received_events,
-                    Self::handle_whisper_events.before(handle_send_chat_event),
+                    Self::handle_send_whisper_events.before(handle_send_chat_event),
                 )
                     .chain(),
             );
@@ -113,7 +117,7 @@ impl MinecraftChatPlugin {
         command_events.send_batch(events);
     }
 
-    pub fn handle_whisper_events(
+    pub fn handle_send_whisper_events(
         mut chat_kind_events: EventWriter<SendChatKindEvent>,
         mut whisper_events: EventReader<WhisperEvent>,
         query: Query<(&TabList, &LocalSettings)>,
@@ -128,11 +132,11 @@ impl MinecraftChatPlugin {
                 continue;
             };
 
-            let Ok((tab_list, bot_settings)) = query.get(event.entity) else {
+            let Ok((tab_list, local_settings)) = query.get(event.entity) else {
                 return;
             };
 
-            if bot_settings.disable_responses {
+            if local_settings.disable_responses {
                 continue; /* Responses Disabled */
             }
 
@@ -146,10 +150,17 @@ impl MinecraftChatPlugin {
 
             try_encrypt(&mut event.content, &settings.encryption, type_encryption);
 
+            let mut content = format!("w {username} {}", event.content);
+            if local_settings.anti_spam.enabled {
+                if let Ok(duration) = SystemTime::now().duration_since(UNIX_EPOCH) {
+                    content += &format!(" [{}]", duration.as_secs());
+                }
+            }
+
             chat_kind_events.send(SendChatKindEvent {
-                entity:  event.entity,
-                kind:    ChatKind::Command,
-                content: format!("w {username} {}", event.content),
+                entity: event.entity,
+                kind: ChatKind::Command,
+                content,
             });
         }
     }
