@@ -54,8 +54,10 @@ impl EnderPearlPlugin {
     pub fn handle_add_entity_packet(
         mut packet_events: EventReader<PacketEvent>,
         mut query: Query<(&InstanceHolder, &LocalSettings)>,
+        mut pearl_goto_events: EventWriter<PearlGotoEvent>,
         mut resend_packet_events: EventWriter<ResendPacketEvent>,
         mut stasis_chambers: ResMut<StasisChambers>,
+        mut whisper_events: EventWriter<WhisperEvent>,
         player_profiles: Query<(&MinecraftEntityId, &GameProfileComponent), With<Player>>,
     ) {
         for event in packet_events.read().cloned() {
@@ -76,17 +78,16 @@ impl EnderPearlPlugin {
             };
 
             let owner_uuid = if packet.data == 0 {
-                Uuid::max() /* Player is offline */
+                info!("Unknown player's pearl at {block_pos}");
+                Uuid::max() /* Owner is offline */
             } else if let Some((_, profile)) =
                 player_profiles.iter().find(|(id, _)| id.0 == packet.data)
             {
                 info!("{}'s pearl at {block_pos}", profile.name);
-                profile.uuid
+                profile.uuid /* Owner is in visual range */
             } else {
-                // The owner's uuid was sent, but the owner wasn't found in the entity list
-                // Send the event back and try again next update until the owner is received
                 resend_packet_events.send(ResendPacketEvent(event));
-                continue;
+                continue; /* Owner is not in visual range */
             };
 
             let new_chamber = StasisChamber::new(
@@ -109,6 +110,35 @@ impl EnderPearlPlugin {
             stasis_chambers
                 .save()
                 .expect("Failed to save stasis chambers");
+
+            if owner_uuid == Uuid::max() {
+                continue; /* Don't pull random unknown pearls */
+            }
+
+            let limit = local_settings.auto_pearl.pearl_limit;
+            let content = format!("[402] Your free trial has expired, please purchase WinRAR license: Max {limit} pearls");
+            let count = stasis_chambers
+                .0
+                .values()
+                .filter(|chamber| chamber.location == local_settings.auto_pearl.location)
+                .filter(|chamber| chamber.owner_uuid == owner_uuid)
+                .count();
+
+            debug!("Count: {count} | Limit: {limit}");
+            if count > limit {
+                whisper_events.send(WhisperEvent {
+                    entity: event.entity,
+                    content,
+                    sender: CommandSender::Minecraft(owner_uuid),
+                    source: CommandSource::Minecraft(None),
+                });
+                pearl_goto_events.send(PearlGotoEvent(PearlEvent {
+                    entity: event.entity,
+                    idle_goal: local_settings.auto_pearl.idle_goal.clone(),
+                    block_pos,
+                    owner_uuid,
+                }));
+            };
         }
     }
 

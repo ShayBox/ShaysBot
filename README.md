@@ -16,7 +16,8 @@ Includes support for No Chat Reports (NCR) encryption to ensure secure and priva
 ## Setup
 
 To enable debug logging you must set the environment variable:  
-`RUST_LOG=shaysbot=debug` (error, warn, info, debug, trace)
+`RUST_LOG=shaysbot=debug,info` (error, warn, info, debug, trace)  
+The first is the log level of the bot, the second is of dependencies.
 
 ### [Releases](https://github.com/shaybox/shaysbot/releases) - Built with GitHub Actions
 
@@ -30,6 +31,8 @@ To enable debug logging you must set the environment variable:
 
 ### Commands
 
+- [**Join**](src/commands/join.rs) - Enable AutoReconnect for a bot.
+- [**Leave**](src/commands/leave.rs) - Disable AutoReconnect and disconnect a bot.
 - [**Pearl**](src/commands/pearl.rs) - Automatically pull pearls remotely.
 - [**Playtime**](src/commands/playtime.rs) - View players play time. (2b2t.vc)
 - [**Seen**](src/commands/seen.rs) - View players first and last seen. (2b2t.vc)

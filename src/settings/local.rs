@@ -100,6 +100,10 @@ pub struct AutoLeave {
     /// Requires zenith proxy
     #[default(true)]
     pub zenith_proxy: bool,
+    
+    /// Delay in ticks before leaving the server
+    #[default(0)]
+    pub leave_delay_ticks: usize,
 }
 
 #[serde_as]
@@ -134,6 +138,10 @@ pub struct AutoLook {
 pub struct AutoPearl {
     /// Location name
     pub location: String,
+
+    /// Pearl limit for each player.
+    #[default(10)]
+    pub pearl_limit: usize,
 
     /// Position & Radius to idle after pearling.
     #[serde(rename = "idle")]

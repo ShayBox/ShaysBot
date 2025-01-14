@@ -1,6 +1,6 @@
 pub use super::{
     chat::{discord::*, minecraft::*, *},
-    commands::{pearl::*, playtime::*, seen::*, whitelist::*, *},
+    commands::{join::*, leave::*, pearl::*, playtime::*, seen::*, whitelist::*, *},
     modules::{
         anti_afk::*,
         auto_eat::*,

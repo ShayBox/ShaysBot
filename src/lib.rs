@@ -34,7 +34,6 @@ use serenity::prelude::*;
 use smart_default::SmartDefault;
 use terminal_link::Link;
 use url::Url;
-use uuid::Uuid;
 
 use crate::prelude::*;
 
@@ -50,8 +49,8 @@ pub fn get_remote_version() -> Result<Version> {
     let response = ureq::get(CARGO_PKG_HOMEPAGE).call()?;
 
     if let Ok(parsed_url) = Url::parse(response.get_url()) {
-        if let Some(segments) = parsed_url.path_segments() {
-            if let Some(remote_version) = segments.last() {
+        if let Some(mut segments) = parsed_url.path_segments() {
+            if let Some(remote_version) = segments.next_back() {
                 return Ok(remote_version.parse()?);
             }
         }
@@ -120,7 +119,7 @@ pub async fn start() -> Result<()> {
 
 #[derive(Clone, Component, Resource, SmartDefault)]
 pub struct SwarmState {
-    auto_reconnect: Arc<RwLock<HashMap<Uuid, (bool, u64)>>>,
+    auto_reconnect: Arc<RwLock<HashMap<String, (bool, u64)>>>,
 }
 
 /// # Errors
@@ -138,9 +137,13 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -
             println!("{}", message.to_ansi());
         }
         SwarmEvent::Disconnect(ref account, ref join_opts) => loop {
-            let uuid = account.uuid_or_offline();
-            let Some((rejoin, secs)) = state.auto_reconnect.read().get(&uuid).copied() else {
-                state.auto_reconnect.write().insert(uuid, (false, 5));
+            let bot_name = account.username.to_lowercase();
+            let Some((rejoin, secs)) = state.auto_reconnect.read().get(&bot_name).copied() else {
+                state
+                    .auto_reconnect
+                    .write()
+                    .insert(bot_name.to_lowercase(), (false, 5));
+
                 continue; /* AutoReconnect: Missing */
             };
 
@@ -150,12 +153,12 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -
                 continue; /* AutoReconnect: Disabled */
             }
 
+            debug!("AutoReconnecting on {}", account.username);
             if let Err(reason) = swarm.add_with_opts(account, state.clone(), join_opts).await {
-                let name = &account.username;
-                warn!("[{name}] Failed to AutoReconnect: {reason}");
-                info!("[{name}] AutoReconnecting in 30s...");
+                warn!("[{bot_name}] Failed to AutoReconnect: {reason}");
+                info!("[{bot_name}] AutoReconnecting in 30s...");
 
-                state.auto_reconnect.write().entry(uuid).or_default().1 = 30;
+                state.auto_reconnect.write().entry(bot_name).or_default().1 = 30;
                 continue;
             }
 
