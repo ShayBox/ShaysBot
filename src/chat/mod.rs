@@ -49,7 +49,7 @@ impl CommandCooldown {
     fn check(&mut self, sender: &str, duration: Duration) -> bool {
         if let Some(instant) = self.0.get(sender) {
             if instant.elapsed() < duration {
-                return true;
+                return true; /* Cooldown */
             }
         } else {
             self.0.insert(str!(sender), Instant::now());

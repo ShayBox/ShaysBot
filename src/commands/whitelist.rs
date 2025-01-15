@@ -59,7 +59,8 @@ impl WhitelistCommandPlugin {
             };
 
             let Some(action) = args.pop_front() else {
-                whisper_event.content = str!("[400] Missing Action: 'add', 'remove', 'link'");
+                whisper_event.content =
+                    str!("[404] Missing action | Actions: 'add', 'remove', 'link'");
                 whisper_events.send(whisper_event);
                 return;
             };
@@ -69,7 +70,7 @@ impl WhitelistCommandPlugin {
                 "add" => handle_add(&mut settings, user, tab_list),
                 "remove" => handle_remove(&mut settings, user, tab_list),
                 "link" => handle_link(&mut settings, user, &event.sender),
-                _ => str!("[400] Invalid Action: 'add', 'remove', or 'link'"),
+                _ => str!("[400] Invalid action | Actions: 'add', 'remove', or 'link'"),
             };
 
             whisper_events.send(whisper_event);
@@ -133,12 +134,12 @@ fn handle_link(
     match sender {
         CommandSender::Discord(_) => {
             let Some(auth_code) = user else {
-                return str!("[400] Missing auth code (Join: auth.aristois.net)");
+                return str!("[404] Missing auth code (Join: auth.aristois.net)");
             };
 
             let path = format!("https://auth.aristois.net/token/{auth_code}");
             let Ok(response) = ureq::get(&path).call() else {
-                return str!("[500] Invalid auth code (Join: auth.aristois.net)");
+                return str!("[400] Invalid auth code (Join: auth.aristois.net)");
             };
 
             let code = response.status();

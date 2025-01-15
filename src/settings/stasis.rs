@@ -35,7 +35,12 @@ impl StasisChambers {
     /// # Errors
     /// Will return `Err` if `std::env::current_exe` fails.
     pub fn path() -> Result<PathBuf> {
-        let mut path = std::env::current_exe()?;
+        let mut path = if cfg!(debug_assertions) {
+            std::env::current_exe()?
+        } else {
+            std::env::current_dir()?
+        };
+
         path.set_file_name("stasis-chambers");
         path.set_extension("yaml");
 

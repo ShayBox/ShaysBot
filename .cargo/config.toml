@@ -11,7 +11,7 @@
 # platform support and the easiest installation process. It is enabled by default in this file for Linux
 # and Windows. On macOS, the default linker yields higher performance than LLD and is used instead.
 #
-# To install, please scroll to the corresponding table for your target (eg. `[target.x86_64-pc-windows-msvc]`
+# To install, please scroll to the corresponding table for your target (e.g. `[target.x86_64-pc-windows-msvc]`
 # for Windows) and follow the steps under `LLD linker`.
 #
 # For more information, please see LLD's website at <https://lld.llvm.org>.
@@ -42,7 +42,7 @@
 # rustup toolchain install nightly
 # ```
 #
-# Finally, uncomment the lines under the `Nightly` heading for your corresponding target table (eg.
+# Finally, uncomment the lines under the `Nightly` heading for your corresponding target table (e.g.
 # `[target.x86_64-unknown-linux-gnu]` for Linux) to enable the following features:
 #
 # ## `share-generics`

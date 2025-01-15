@@ -55,17 +55,17 @@ jobs:
       - name: Add Rust Target
         run: rustup target add ${{ matrix.target }}
 
-      - name: Build Release Binaries
-        run: cargo build --release --target ${{ matrix.target }}
+      - name: Build Debug Binaries
+        run: cargo build --target ${{ matrix.target }}
 
       - name: Rename Binary and Upload to GitHub Release
         if: ${{ matrix.runner == 'windows-latest' }}
         run: |
-          mv target/${{ matrix.target }}/release/shaysbot.exe ShaysBot-${{ matrix.name }}.exe
+          mv target/${{ matrix.target }}/debug/shaysbot.exe ShaysBot-${{ matrix.name }}.exe
           gh release upload ${{ github.ref_name }} ShaysBot-${{ matrix.name }}.exe --clobber
 
       - name: Rename Binary and Upload to GitHub Release
         if: ${{ matrix.runner != 'windows-latest' }}
         run: |
-          mv target/${{ matrix.target }}/release/shaysbot ShaysBot-${{ matrix.name }}
+          mv target/${{ matrix.target }}/debug/shaysbot ShaysBot-${{ matrix.name }}
           gh release upload ${{ github.ref_name }} ShaysBot-${{ matrix.name }} --clobber

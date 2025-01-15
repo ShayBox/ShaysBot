@@ -49,7 +49,7 @@ impl PlaytimeCommandPlugin {
             };
 
             let Some(player_name) = event.args.iter().next() else {
-                whisper_event.content = str!("[400] Missing player name");
+                whisper_event.content = str!("[404] Missing player name");
                 whisper_events.send(whisper_event);
                 return;
             };
@@ -69,7 +69,7 @@ impl PlaytimeCommandPlugin {
             };
 
             if response.status() == 204 {
-                whisper_event.content = str!("[204] Invalid player?");
+                whisper_event.content = str!("[204] Player not found: {player_name}");
                 whisper_events.send(whisper_event);
                 return;
             }

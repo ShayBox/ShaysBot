@@ -67,16 +67,20 @@ impl PearlCommandPlugin {
                 source:  event.source,
                 sender:  event.sender,
                 content: format!(
-                    "[404] Invalid location, Available locations: {}",
+                    "[400] Invalid location | Locations: {}",
                     locations.join(", ")
                 ),
             };
+
+            if !local_settings.auto_pearl.enabled {
+                continue; /* Auto Pearl Disabled */
+            }
 
             let uuid = match event.sender {
                 CommandSender::Minecraft(uuid) => uuid,
                 CommandSender::Discord(user_id) => {
                     let Some(username) = event.args.pop_front() else {
-                        whisper_event.content = str!("[404] Missing username");
+                        whisper_event.content = str!("[404] Missing player name");
                         whisper_events.send(whisper_event);
                         command_events.clear();
                         return;
@@ -98,8 +102,9 @@ impl PearlCommandPlugin {
                         };
 
                         let Some(discord_id) = whitelist else {
-                            whisper_event.content = str!("[404] That account isn't linked to you");
+                            whisper_event.content = str!("[403] That account isn't linked to you");
                             whisper_events.send(whisper_event);
+                            command_events.clear();
                             return;
                         };
 
@@ -124,10 +129,9 @@ impl PearlCommandPlugin {
                             local_settings
                         } else if let CommandSource::Minecraft(_) = event.source {
                             if event.message {
-                                local_settings
+                                // TODO: Redirect to appropriate bot
+                                local_settings /* Local Chat */
                             } else {
-                                whisper_event.content = format!("[500] I'm not at {location}");
-                                whisper_events.send(whisper_event.clone());
                                 continue; /* Global Chat */
                             }
                         } else {

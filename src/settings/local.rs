@@ -100,7 +100,7 @@ pub struct AutoLeave {
     /// Requires zenith proxy
     #[default(true)]
     pub zenith_proxy: bool,
-    
+
     /// Delay in ticks before leaving the server
     #[default(0)]
     pub leave_delay_ticks: usize,
@@ -136,6 +136,9 @@ pub struct AutoLook {
 #[derive(Clone, Deserialize, Serialize, SmartDefault)]
 #[serde(default)]
 pub struct AutoPearl {
+    #[default(true)]
+    pub enabled: bool,
+
     /// Location name
     pub location: String,
 
@@ -171,7 +174,12 @@ impl LocalSettings {
     /// Will panic if `std::env::current_exe` fails.
     #[must_use]
     pub fn new(username: &str) -> Self {
-        let mut path = std::env::current_exe().unwrap();
+        let mut path = if cfg!(debug_assertions) {
+            std::env::current_exe().unwrap()
+        } else {
+            std::env::current_dir().unwrap()
+        };
+
         path.set_file_name(format!("local-settings/{username}"));
         path.set_extension("toml");
 

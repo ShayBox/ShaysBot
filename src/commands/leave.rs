@@ -56,7 +56,7 @@ impl LeaveCommandPlugin {
             };
 
             let Some(bot_name) = event.args.iter().next().cloned() else {
-                whisper_event.content = str!("[400] Missing bot name");
+                whisper_event.content = str!("[404] Missing bot name");
                 whisper_events.send(whisper_event);
                 continue;
             };
@@ -64,7 +64,7 @@ impl LeaveCommandPlugin {
             let bot_name = bot_name.to_lowercase();
             if profile.name.to_lowercase() != bot_name {
                 if event.message {
-                    whisper_event.content = str!("[400] Invalid bot name");
+                    whisper_event.content = str!("[406] Invalid bot name");
                     whisper_events.send(whisper_event);
                 }
                 continue; /* Not this account */

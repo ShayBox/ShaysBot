@@ -21,11 +21,19 @@ The first is the log level of the bot, the second is of dependencies.
 
 ### [Releases](https://github.com/shaybox/shaysbot/releases) - Built with GitHub Actions
 
+Built using debug profile so you can decompile the binaries easier.
+
 ### Local
 
 1. Install [rustup.rs](https://rustup.rs) && `rustup default stable`
 2. Clone: `git clone git@github.com:ShayBox/ShaysBot.git` && `cd ShaysBot`
 3. Run: `cargo run` | Build: `cargo build` | Install: `cargo install --path .`
+
+Note: Cargo install uses Release, while Run and Build use Debug.  
+Debug: Settings are relative to the binary executable directory.  
+Release: Settings are relative to the current working directory.  
+Release has more optimizations, runs faster, and uses less disk.
+You can manually override with either: `--debug` or `--release`.
 
 ## Features
 

@@ -47,12 +47,12 @@ impl JoinCommandPlugin {
             };
 
             let Some(bot_name) = event.args.iter().next() else {
-                whisper_event.content = str!("[400] Missing bot name");
+                whisper_event.content = str!("[404] Missing bot name");
                 whisper_events.send(whisper_event);
                 return;
             };
 
-            whisper_event.content = format!("[{bot_name}] AutoReconnect Enabled");
+            whisper_event.content = format!("[202] Enabling AutoReconnect for {bot_name}");
             whisper_events.send(whisper_event);
             swarm_state
                 .auto_reconnect
