@@ -21,14 +21,18 @@ impl Plugin for ApiServerPlugin {
             .add_systems(Startup, Self::handle_startup)
             .add_systems(
                 Update,
-                (Self::handle_api_requests, Self::handle_send_whisper_events),
+                (
+                    Self::handle_api_requests
+                        .before(MinecraftChatPlugin::handle_chat_received_events),
+                    Self::handle_send_whisper_events,
+                ),
             );
     }
 }
 
 impl ApiServerPlugin {
     pub fn handle_startup(mut api_server: ResMut<ApiServer>, settings: Res<GlobalSettings>) {
-        match Server::http(settings.api_server.bind_addr.clone()) {
+        match Server::http(settings.api.bind_addr.clone()) {
             Ok(server) => {
                 info!("API Server @ {}", server.server_addr());
                 api_server.0 = Some(server);
@@ -87,7 +91,7 @@ impl ApiServerPlugin {
             return;
         };
 
-        if username != settings.api_server.username || password != settings.api_server.password {
+        if username != settings.api.username || password != settings.api.password {
             send_text(request, "Invalid Credentials", 406);
             return;
         }

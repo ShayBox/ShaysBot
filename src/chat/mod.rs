@@ -4,9 +4,10 @@ pub mod api;
 pub mod discord;
 pub mod minecraft;
 
+#[cfg(feature = "api")]
+use std::sync::Mutex;
 use std::{
     collections::{HashMap, VecDeque},
-    sync::Mutex,
     time::{Duration, Instant},
 };
 

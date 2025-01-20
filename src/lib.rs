@@ -37,7 +37,7 @@ use smart_default::SmartDefault;
 use terminal_link::Link;
 use url::Url;
 
-use crate::{chat::api::ApiServerPlugin, prelude::*};
+use crate::prelude::*;
 
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_HOMEPAGE: &str = env!("CARGO_PKG_HOMEPAGE");
@@ -98,16 +98,16 @@ pub async fn start() -> Result<()> {
     }
 
     #[cfg(feature = "api")] /* Enable the ApiServer plugin if it's enabled */
-    if global_settings.api_server.enabled {
+    if global_settings.api.enabled {
         client = client.add_plugins(ApiServerPlugin);
     }
 
     #[cfg(feature = "discord")] /* Enable the Discord plugin if a token was provided */
-    if !global_settings.discord_token.is_empty() {
+    if !global_settings.discord.token.is_empty() {
         let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
         let config = DiscordBotConfig::default()
             .gateway_intents(intents)
-            .token(global_settings.discord_token.clone());
+            .token(global_settings.discord.token.clone());
 
         client = client.add_plugins((
             DiscordBotPlugin::new(config),

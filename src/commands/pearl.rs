@@ -33,6 +33,7 @@ impl Plugin for PearlCommandPlugin {
 
 impl PearlCommandPlugin {
     #[allow(clippy::too_many_lines)]
+    #[cfg_attr(not(feature = "discord"), allow(unused_variables))]
     pub fn handle_pearl_command_events(
         mut command_events: EventReader<CommandEvent>,
         mut pearl_events: EventWriter<PearlGotoEvent>,

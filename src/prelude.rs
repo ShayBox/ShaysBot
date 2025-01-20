@@ -1,7 +1,9 @@
+#[cfg(feature = "api")]
+pub use super::chat::api::*;
 #[cfg(feature = "discord")]
 pub use super::{chat::discord::*, modules::discord_logger::*};
 pub use super::{
-    chat::{api::*, minecraft::*, *},
+    chat::{minecraft::*, *},
     commands::{join::*, leave::*, pearl::*, playtime::*, seen::*, whitelist::*, *},
     modules::{
         anti_afk::*,

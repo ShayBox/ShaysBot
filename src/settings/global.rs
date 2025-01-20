@@ -30,21 +30,16 @@ pub struct GlobalSettings {
     #[serde_as(as = "DurationSeconds")]
     pub command_cooldown: Duration,
 
-    /// Discord client token for commands and events. (Optional)
-    #[default("")]
-    #[cfg(feature = "discord")]
-    pub discord_token: String,
-
     /// Minecraft server ender pearl view distance in blocks.
     /// It is better to under-estimate than to over-estimate.
     #[default(64)]
     pub pearl_view_distance: i32,
 
     /// Minecraft server address.
-    #[default(ServerAddress {
+    #[default(ServerAddress{
         host: str!("play.vengeancecraft.net"),
         port: 25565
-    })]
+        })]
     pub server_address: ServerAddress,
 
     /// ViaProxy server version. (Optional)
@@ -55,10 +50,18 @@ pub struct GlobalSettings {
     #[default(false)]
     pub whitelist: bool,
 
-    /// API Server for local integrations. (SECURITY: USE A REVERSE PROXY FOR PUBLIC ACCESS!)
-    pub api_server: ApiServer,
+    /// API Server for local integrations.
+    #[cfg(feature = "api")]
+    #[serde(rename = "api_server")]
+    pub api: ApiServer,
+
+    /// Discord bot for commands and events.
+    #[cfg(feature = "discord")]
+    #[serde(rename = "discord_bot")]
+    pub discord: DiscordBot,
 
     /// Chat encryption using the NCR (No Chat Reports) mod.
+    #[serde(rename = "chat_encryption")]
     pub encryption: ChatEncryption,
 
     /// Whitelisted Minecraft accounts and their linked Discord accounts.
@@ -95,6 +98,17 @@ pub struct ChatEncryption {
     /// Encryption response mode. (`OnDemand`, `Always`, or `Never`)
     #[default(EncryptionMode::OnDemand)]
     pub mode: EncryptionMode,
+}
+
+#[cfg(feature = "discord")]
+#[derive(Clone, Eq, PartialEq, Deserialize, Serialize, SmartDefault)]
+#[serde(default)]
+pub struct DiscordBot {
+    #[default(false)]
+    pub enabled: bool,
+
+    /// Discord client token.
+    pub token: String,
 }
 
 #[derive(Clone, Default, Eq, PartialEq, Deserialize, Serialize)]

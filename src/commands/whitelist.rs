@@ -4,6 +4,7 @@ use azalea::{
     PlayerInfo,
     TabList,
 };
+#[cfg(feature = "discord")]
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -184,6 +185,7 @@ fn try_find_player<'a>(tab_list: &'a TabList, name: &str) -> Option<(&'a Uuid, &
     tab_list.iter().find(|(_, info)| info.profile.name == name)
 }
 
+#[cfg(feature = "discord")]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Json {
