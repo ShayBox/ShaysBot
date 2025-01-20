@@ -27,15 +27,17 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anyhow::{bail, Result};
 use azalea::{ecs::prelude::*, prelude::*, swarm::prelude::*};
 use azalea_viaversion::ViaVersionPlugin;
+#[cfg(feature = "discord")]
 use bevy_discord::bot::{DiscordBotConfig, DiscordBotPlugin};
 use parking_lot::RwLock;
 use semver::Version;
+#[cfg(feature = "discord")]
 use serenity::prelude::*;
 use smart_default::SmartDefault;
 use terminal_link::Link;
 use url::Url;
 
-use crate::prelude::*;
+use crate::{chat::api::ApiServerPlugin, prelude::*};
 
 pub const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CARGO_PKG_HOMEPAGE: &str = env!("CARGO_PKG_HOMEPAGE");
@@ -95,7 +97,12 @@ pub async fn start() -> Result<()> {
         info!("{link}");
     }
 
-    /* Enable the Discord plugin if a token was provided */
+    #[cfg(feature = "api")] /* Enable the ApiServer plugin if it's enabled */
+    if global_settings.api_server.enabled {
+        client = client.add_plugins(ApiServerPlugin);
+    }
+
+    #[cfg(feature = "discord")] /* Enable the Discord plugin if a token was provided */
     if !global_settings.discord_token.is_empty() {
         let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
         let config = DiscordBotConfig::default()

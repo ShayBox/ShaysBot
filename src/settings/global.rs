@@ -21,11 +21,6 @@ use uuid::Uuid;
 #[derive(Clone, Deserialize, Serialize, SmartDefault, Resource)]
 #[serde(default)]
 pub struct GlobalSettings {
-    /// Minecraft server ender pearl view distance in blocks.
-    /// It is better to under-estimate than to over-estimate.
-    #[default(64)]
-    pub pearl_view_distance: i32,
-
     /// Chat command prefix.
     #[default("!")]
     pub command_prefix: String,
@@ -37,7 +32,13 @@ pub struct GlobalSettings {
 
     /// Discord client token for commands and events. (Optional)
     #[default("")]
+    #[cfg(feature = "discord")]
     pub discord_token: String,
+
+    /// Minecraft server ender pearl view distance in blocks.
+    /// It is better to under-estimate than to over-estimate.
+    #[default(64)]
+    pub pearl_view_distance: i32,
 
     /// Minecraft server address.
     #[default(ServerAddress {
@@ -50,16 +51,38 @@ pub struct GlobalSettings {
     #[default("")]
     pub server_version: String,
 
-    /// Chat encryption using the NCR (No Chat Reports) mod.
-    pub encryption: ChatEncryption,
-
     /// Disable commands for non-whitelisted players.
     #[default(false)]
     pub whitelist: bool,
 
+    /// API Server for local integrations. (SECURITY: USE A REVERSE PROXY FOR PUBLIC ACCESS!)
+    pub api_server: ApiServer,
+
+    /// Chat encryption using the NCR (No Chat Reports) mod.
+    pub encryption: ChatEncryption,
+
     /// Whitelisted Minecraft accounts and their linked Discord accounts.
     #[serde_as(as = "HashMap<_, NoneAsEmptyString>")]
     pub whitelisted: HashMap<Uuid, Option<String>>,
+}
+
+#[derive(Clone, Eq, PartialEq, Deserialize, Serialize, SmartDefault)]
+#[serde(default)]
+pub struct ApiServer {
+    #[default(false)]
+    pub enabled: bool,
+
+    /// API Server bind address. (default localhost only, random port)
+    #[default("127.0.0.1:0")]
+    pub bind_addr: String,
+
+    /// Authentication username
+    #[default("username")]
+    pub username: String,
+
+    /// Authentication password
+    #[default("password")]
+    pub password: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Deserialize, Serialize, SmartDefault)]

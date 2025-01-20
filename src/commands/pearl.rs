@@ -25,7 +25,6 @@ impl Plugin for PearlCommandPlugin {
             Self::handle_pearl_command_events
                 .ambiguous_with_all()
                 .before(AutoPearlPlugin::handle_goto_pearl_events)
-                .before(DiscordChatPlugin::handle_send_whisper_events)
                 .before(MinecraftChatPlugin::handle_send_whisper_events)
                 .after(MinecraftChatPlugin::handle_chat_received_events),
         );
@@ -64,12 +63,10 @@ impl PearlCommandPlugin {
             let settings = settings.iter().cloned().collect::<Vec<_>>();
             let mut whisper_event = WhisperEvent {
                 entity:  event.entity,
-                source:  event.source,
+                source:  event.source.clone(),
                 sender:  event.sender,
-                content: format!(
-                    "[400] Invalid location | Locations: {}",
-                    locations.join(", ")
-                ),
+                status:  406,
+                content: format!("Invalid location | Locations: {}", locations.join(", ")),
             };
 
             if !local_settings.auto_pearl.enabled {
@@ -77,10 +74,11 @@ impl PearlCommandPlugin {
             }
 
             let uuid = match event.sender {
-                CommandSender::Minecraft(uuid) => uuid,
-                CommandSender::Discord(user_id) => {
+                #[cfg(feature = "api")]
+                CommandSender::ApiServer => {
                     let Some(username) = event.args.pop_front() else {
-                        whisper_event.content = str!("[404] Missing player name");
+                        whisper_event.content = str!("Missing player name");
+                        whisper_event.status = 404;
                         whisper_events.send(whisper_event);
                         command_events.clear();
                         return;
@@ -89,7 +87,30 @@ impl PearlCommandPlugin {
                     let Some((uuid, _info)) = tab_list.iter().find(|(_, info)| {
                         info.profile.name.to_lowercase() == username.to_lowercase()
                     }) else {
-                        whisper_event.content = format!("[404] {username} is not online");
+                        whisper_event.content = format!("{username} is not online");
+                        whisper_event.status = 404;
+                        whisper_events.send(whisper_event);
+                        command_events.clear();
+                        return;
+                    };
+
+                    *uuid
+                }
+                #[cfg(feature = "discord")]
+                CommandSender::Discord(user_id) => {
+                    let Some(username) = event.args.pop_front() else {
+                        whisper_event.content = str!("Missing player name");
+                        whisper_event.status = 404;
+                        whisper_events.send(whisper_event);
+                        command_events.clear();
+                        return;
+                    };
+
+                    let Some((uuid, _info)) = tab_list.iter().find(|(_, info)| {
+                        info.profile.name.to_lowercase() == username.to_lowercase()
+                    }) else {
+                        whisper_event.content = format!("{username} is not online");
+                        whisper_event.status = 404;
                         whisper_events.send(whisper_event);
                         command_events.clear();
                         return;
@@ -102,14 +123,16 @@ impl PearlCommandPlugin {
                         };
 
                         let Some(discord_id) = whitelist else {
-                            whisper_event.content = str!("[403] That account isn't linked to you");
+                            whisper_event.content = str!("That account isn't linked to you");
+                            whisper_event.status = 403;
                             whisper_events.send(whisper_event);
                             command_events.clear();
                             return;
                         };
 
                         if discord_id != &str!(user_id) {
-                            whisper_event.content = str!("[403] That account isn't linked to you");
+                            whisper_event.content = str!("That account isn't linked to you");
+                            whisper_event.status = 403;
                             whisper_events.send(whisper_event);
                             command_events.clear();
                             return;
@@ -118,6 +141,7 @@ impl PearlCommandPlugin {
 
                     *uuid
                 }
+                CommandSender::Minecraft(uuid) => uuid,
             };
 
             let local_settings = match settings.first() {
@@ -139,12 +163,19 @@ impl PearlCommandPlugin {
                         }
                     } else {
                         match event.source {
-                            CommandSource::Minecraft(_) => local_settings,
+                            #[cfg(feature = "api")]
+                            CommandSource::ApiServer(_) => {
+                                whisper_events.send(whisper_event);
+                                command_events.clear();
+                                return;
+                            }
+                            #[cfg(feature = "discord")]
                             CommandSource::Discord(_) => {
                                 whisper_events.send(whisper_event);
                                 command_events.clear();
                                 return;
                             }
+                            CommandSource::Minecraft(_) => local_settings,
                         }
                     }
                 }
@@ -178,19 +209,19 @@ impl PearlCommandPlugin {
                 // First compare by shared count, then by distance
                 (shared_count, *distance)
             }) else {
-                whisper_event.content = format!(
-                    "[404] Pearl not found at {}",
-                    local_settings.auto_pearl.location
-                );
+                let location = &local_settings.auto_pearl.location;
+                whisper_event.content = format!("Pearl not found at {location}");
+                whisper_event.status = 404;
                 whisper_events.send(whisper_event);
                 command_events.clear();
                 return;
             };
 
+            whisper_event.status = 200;
             whisper_event.content = match count {
-                0 => str!("[200] I'm on my way, this was your last pearl!"),
-                1 => str!("[200] I'm on my way, you have one more pearl!"),
-                c => format!("[200] I'm on my way, you have {c} more pearls."),
+                0 => str!("I'm on my way, this was your last pearl!"),
+                1 => str!("I'm on my way, you have one more pearl!"),
+                c => format!("I'm on my way, you have {c} more pearls."),
             };
 
             whisper_events.send(whisper_event);

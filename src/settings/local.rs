@@ -18,6 +18,7 @@ use azalea::{
 };
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;
+#[cfg(feature = "discord")]
 use serenity::all::ChannelId;
 use smart_default::SmartDefault;
 
@@ -52,6 +53,7 @@ pub struct LocalSettings {
     pub disable_responses: bool,
 
     /// Discord Channel ID. (Optional)
+    #[cfg(feature = "discord")]
     pub discord_channel: ChannelId,
 
     /// Minecraft account server address. (Optional)

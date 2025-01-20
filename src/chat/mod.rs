@@ -1,25 +1,38 @@
+#[cfg(feature = "api")]
+pub mod api;
+#[cfg(feature = "discord")]
 pub mod discord;
 pub mod minecraft;
 
 use std::{
     collections::{HashMap, VecDeque},
+    sync::Mutex,
     time::{Duration, Instant},
 };
 
 use azalea::{ecs::prelude::*, prelude::*};
+#[cfg(feature = "discord")]
 use serenity::all::{ChannelId, UserId};
+#[cfg(feature = "api")]
+use tiny_http::Request;
 use uuid::Uuid;
 
 use crate::prelude::*;
 
 #[derive(Clone, Copy, Debug)]
 pub enum CommandSender {
+    #[cfg(feature = "api")]
+    ApiServer,
+    #[cfg(feature = "discord")]
     Discord(UserId),
     Minecraft(Uuid),
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum CommandSource {
+    #[cfg(feature = "api")]
+    ApiServer(Arc<Mutex<Option<Request>>>),
+    #[cfg(feature = "discord")]
     Discord(ChannelId),
     Minecraft(Option<EncryptionType>),
 }
@@ -40,6 +53,7 @@ pub struct WhisperEvent {
     pub content: String,
     pub sender:  CommandSender,
     pub source:  CommandSource,
+    pub status:  u16,
 }
 
 #[derive(Default, Resource)]

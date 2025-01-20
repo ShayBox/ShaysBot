@@ -1,5 +1,7 @@
+#[cfg(feature = "discord")]
+pub use super::{chat::discord::*, modules::discord_logger::*};
 pub use super::{
-    chat::{discord::*, minecraft::*, *},
+    chat::{api::*, minecraft::*, *},
     commands::{join::*, leave::*, pearl::*, playtime::*, seen::*, whitelist::*, *},
     modules::{
         anti_afk::*,
@@ -9,7 +11,6 @@ pub use super::{
         auto_look::*,
         auto_pearl::*,
         auto_totem::*,
-        discord_logger::*,
         *,
     },
     settings::{global::*, local::*, stasis::*, *},

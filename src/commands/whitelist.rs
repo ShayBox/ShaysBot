@@ -25,7 +25,6 @@ impl Plugin for WhitelistCommandPlugin {
             Update,
             Self::handle_whitelist_command_events
                 .ambiguous_with_all()
-                .before(DiscordChatPlugin::handle_send_whisper_events)
                 .before(MinecraftChatPlugin::handle_send_whisper_events)
                 .after(MinecraftChatPlugin::handle_chat_received_events),
         );
@@ -52,27 +51,33 @@ impl WhitelistCommandPlugin {
 
             let mut args = event.args.clone();
             let mut whisper_event = WhisperEvent {
-                entity:  event.entity,
-                source:  event.source,
-                sender:  event.sender,
                 content: String::new(),
+                entity:  event.entity,
+                sender:  event.sender,
+                source:  event.source.clone(),
+                status:  200,
             };
 
             let Some(action) = args.pop_front() else {
-                whisper_event.content =
-                    str!("[404] Missing action | Actions: 'add', 'remove', 'link'");
+                whisper_event.content = str!("Missing action | Actions: 'add', 'remove', 'link'");
+                whisper_event.status = 404;
                 whisper_events.send(whisper_event);
                 return;
             };
 
             let user = args.pop_front();
-            whisper_event.content = match action.as_ref() {
+            let (status, content) = match action.as_ref() {
                 "add" => handle_add(&mut settings, user, tab_list),
                 "remove" => handle_remove(&mut settings, user, tab_list),
                 "link" => handle_link(&mut settings, user, &event.sender),
-                _ => str!("[400] Invalid action | Actions: 'add', 'remove', or 'link'"),
+                _ => (
+                    406,
+                    str!("Invalid action | Actions: 'add', 'remove', or 'link'"),
+                ),
             };
 
+            whisper_event.content = content;
+            whisper_event.status = status;
             whisper_events.send(whisper_event);
         }
 
@@ -84,22 +89,22 @@ fn handle_add(
     settings: &mut ResMut<GlobalSettings>,
     user: Option<String>,
     tab_list: &TabList,
-) -> String {
+) -> (u16, String) {
     let Some(player_name) = user else {
-        return str!("[400] Missing Minecraft player name");
+        return (404, str!("Missing player name"));
     };
 
     let Some((uuid, info)) = try_find_player(tab_list, &player_name) else {
-        return str!("[404] Player not found");
+        return (404, str!("Player not found"));
     };
 
     if settings.whitelisted.contains_key(uuid) {
-        str!("[409] Already whitelisted")
+        (409, str!("Already whitelisted"))
     } else {
         settings.whitelisted.insert(*uuid, None);
         settings.clone().save().expect("Failed to save settings");
 
-        format!("[200] Successfully added: {}", info.profile.name)
+        (200, format!("Successfully added: {}", info.profile.name))
     }
 }
 
@@ -107,22 +112,22 @@ fn handle_remove(
     settings: &mut ResMut<GlobalSettings>,
     user: Option<String>,
     tab_list: &TabList,
-) -> String {
+) -> (u16, String) {
     let Some(player_name) = user else {
-        return str!("[400] Missing Minecraft player name");
+        return (404, str!("Missing Minecraft player name"));
     };
 
     let Some((uuid, info)) = try_find_player(tab_list, &player_name) else {
-        return str!("[404] Player not found");
+        return (404, str!("Player not found"));
     };
 
     if settings.whitelisted.contains_key(uuid) {
         settings.whitelisted.remove(uuid);
         settings.clone().save().expect("Failed to save settings");
 
-        format!("[200] Successfully removed: {}", info.profile.name)
+        (200, format!("Successfully removed: {}", info.profile.name))
     } else {
-        str!("[409] Already not whitelisted")
+        (409, str!("Already not whitelisted"))
     }
 }
 
@@ -130,41 +135,47 @@ fn handle_link(
     settings: &mut ResMut<GlobalSettings>,
     user: Option<String>,
     sender: &CommandSender,
-) -> String {
+) -> (u16, String) {
     match sender {
+        #[cfg(feature = "api")]
+        CommandSender::ApiServer => (500, str!("Cannot link to nobody")),
+        #[cfg(feature = "discord")]
         CommandSender::Discord(_) => {
             let Some(auth_code) = user else {
-                return str!("[404] Missing auth code (Join: auth.aristois.net)");
+                return (404, str!("Missing auth code (Join: auth.aristois.net)"));
             };
 
             let path = format!("https://auth.aristois.net/token/{auth_code}");
             let Ok(response) = ureq::get(&path).call() else {
-                return str!("[400] Invalid auth code (Join: auth.aristois.net)");
+                return (406, str!("Invalid auth code (Join: auth.aristois.net)"));
             };
 
             let code = response.status();
             let Ok(json) = response.into_json::<Json>() else {
-                return str!("[500] Failed to parse JSON");
+                return (500, str!("Failed to parse JSON"));
             };
 
             let Some(uuid) = json.uuid else {
-                return format!("[{code}] Authentication {}: {}", json.status, json.message);
+                return (
+                    code,
+                    format!("Authentication {}: {}", json.status, json.message),
+                );
             };
 
             settings.whitelisted.insert(uuid, Some(auth_code));
             settings.clone().save().expect("Failed to save settings");
 
-            str!("[200] Successfully linked")
+            (200, str!("Successfully linked"))
         }
         CommandSender::Minecraft(uuid) => {
             let Some(user_id) = user else {
-                return str!("[400] Missing Discord user id");
+                return (404, str!("Missing Discord user id"));
             };
 
             settings.whitelisted.insert(*uuid, Some(user_id));
             settings.clone().save().expect("Failed to save settings");
 
-            str!("[200] Successfully linked")
+            (200, str!("Successfully linked"))
         }
     }
 }

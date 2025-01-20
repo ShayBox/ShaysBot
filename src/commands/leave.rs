@@ -25,7 +25,6 @@ impl Plugin for LeaveCommandPlugin {
             Update,
             Self::handle_leave_command_events
                 .ambiguous_with_all()
-                .before(DiscordChatPlugin::handle_send_whisper_events)
                 .before(MinecraftChatPlugin::handle_send_whisper_events)
                 .after(MinecraftChatPlugin::handle_chat_received_events),
         );
@@ -49,14 +48,16 @@ impl LeaveCommandPlugin {
             };
 
             let mut whisper_event = WhisperEvent {
-                entity:  event.entity,
-                source:  event.source,
-                sender:  event.sender,
                 content: String::new(),
+                entity:  event.entity,
+                sender:  event.sender,
+                source:  event.source.clone(),
+                status:  200,
             };
 
             let Some(bot_name) = event.args.iter().next().cloned() else {
-                whisper_event.content = str!("[404] Missing bot name");
+                whisper_event.content = str!("Missing bot name");
+                whisper_event.status = 404;
                 whisper_events.send(whisper_event);
                 continue;
             };
@@ -64,7 +65,8 @@ impl LeaveCommandPlugin {
             let bot_name = bot_name.to_lowercase();
             if profile.name.to_lowercase() != bot_name {
                 if event.message {
-                    whisper_event.content = str!("[406] Invalid bot name");
+                    whisper_event.content = str!("Invalid bot name");
+                    whisper_event.status = 406;
                     whisper_events.send(whisper_event);
                 }
                 continue; /* Not this account */

@@ -32,7 +32,7 @@ Built using debug profile so you can decompile the binaries easier.
 Note: Cargo install uses Release, while Run and Build use Debug.  
 Debug: Settings are relative to the binary executable directory.  
 Release: Settings are relative to the current working directory.  
-Release has more optimizations, runs faster, and uses less disk.
+Release has more optimizations, runs faster, and uses less disk.  
 You can manually override with either: `--debug` or `--release`.
 
 ## Features

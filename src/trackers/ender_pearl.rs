@@ -73,6 +73,7 @@ impl EnderPearlPlugin {
                 continue;
             }
 
+            trace!("Fishdar: {packet:#?}");
             let Some(block_pos) = find_trapdoor_pos(packet.position, holder) else {
                 continue;
             };
@@ -116,7 +117,6 @@ impl EnderPearlPlugin {
             }
 
             let limit = local_settings.auto_pearl.pearl_limit;
-            let content = format!("[402] Your free trial has expired, please purchase WinRAR license: Max {limit} pearls");
             let count = stasis_chambers
                 .0
                 .values()
@@ -128,9 +128,12 @@ impl EnderPearlPlugin {
             if count > limit {
                 whisper_events.send(WhisperEvent {
                     entity: event.entity,
-                    content,
                     sender: CommandSender::Minecraft(owner_uuid),
                     source: CommandSource::Minecraft(None),
+                    status: 402,
+                    content: format!(
+                        "Your free trial has expired, please purchase WinRAR license: Max {limit} pearls"
+                    ),
                 });
                 pearl_goto_events.send(PearlGotoEvent(PearlEvent {
                     entity: event.entity,

@@ -24,7 +24,6 @@ impl Plugin for PlaytimeCommandPlugin {
             Update,
             Self::handle_playtime_command_events
                 .ambiguous_with_all()
-                .before(DiscordChatPlugin::handle_send_whisper_events)
                 .before(MinecraftChatPlugin::handle_send_whisper_events)
                 .after(MinecraftChatPlugin::handle_chat_received_events),
         );
@@ -42,14 +41,16 @@ impl PlaytimeCommandPlugin {
             };
 
             let mut whisper_event = WhisperEvent {
-                entity:  event.entity,
-                source:  event.source,
-                sender:  event.sender,
                 content: String::new(),
+                entity:  event.entity,
+                sender:  event.sender,
+                source:  event.source.clone(),
+                status:  200,
             };
 
             let Some(player_name) = event.args.iter().next() else {
-                whisper_event.content = str!("[404] Missing player name");
+                whisper_event.content = str!("Missing player name");
+                whisper_event.status = 404;
                 whisper_events.send(whisper_event);
                 return;
             };
@@ -61,7 +62,8 @@ impl PlaytimeCommandPlugin {
             {
                 Ok(response) => response,
                 Err(error) => {
-                    whisper_event.content = format!("[404] Player not found: {player_name}");
+                    whisper_event.content = format!("Player not found: {player_name}");
+                    whisper_event.status = 404;
                     whisper_events.send(whisper_event);
                     error!("{error}");
                     return;
@@ -69,13 +71,15 @@ impl PlaytimeCommandPlugin {
             };
 
             if response.status() == 204 {
-                whisper_event.content = str!("[204] Player not found: {player_name}");
+                whisper_event.content = format!("Player not found: {player_name}");
+                whisper_event.status = 204;
                 whisper_events.send(whisper_event);
                 return;
             }
 
             let Ok(json) = response.into_json::<Json>() else {
-                whisper_event.content = str!("[500] Failed to parse JSON");
+                whisper_event.content = str!("Failed to parse JSON");
+                whisper_event.status = 500;
                 whisper_events.send(whisper_event);
                 return;
             };
