@@ -23,22 +23,25 @@ pub struct DiscordLoggerPlugin;
 
 impl Plugin for DiscordLoggerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(GameTick, Self::handle_check_for_updates)
-            .add_systems(
-                Update,
-                (
-                    Self::handle_add_entity_packets,
-                    Self::handle_block_break_packets,
-                    Self::handle_block_update_packets,
-                    Self::handle_disconnect_events,
-                    Self::handle_login_packets,
-                    Self::handle_player_info_remove_packets,
-                    Self::handle_player_info_update_packets,
-                    Self::handle_remove_entities_packets,
-                )
-                    .after(BlockStatePlugin::handle_block_update_packets)
-                    .after(PlayerProfilePlugin::handle_add_entity_packets),
-            );
+        app.add_systems(
+            GameTick,
+            Self::handle_check_for_updates.after(GameTickPlugin::handle_game_ticks),
+        )
+        .add_systems(
+            Update,
+            (
+                Self::handle_add_entity_packets,
+                Self::handle_block_break_packets,
+                Self::handle_block_update_packets,
+                Self::handle_disconnect_events.after(AutoLeavePlugin::handle_add_entity_packets),
+                Self::handle_login_packets,
+                Self::handle_player_info_remove_packets,
+                Self::handle_player_info_update_packets,
+                Self::handle_remove_entities_packets,
+            )
+                .after(BlockStatePlugin::handle_block_update_packets)
+                .after(PlayerProfilePlugin::handle_add_entity_packets),
+        );
     }
 }
 

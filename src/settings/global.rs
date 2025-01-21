@@ -13,7 +13,8 @@ use azalea::{
     protocol::ServerAddress,
 };
 use serde::{Deserialize, Serialize};
-use serde_with::{DurationSeconds, NoneAsEmptyString};
+use serde_tuple::{Deserialize_tuple as DeserializeTuple, Serialize_tuple as SerializeTuple};
+use serde_with::DurationSeconds;
 use smart_default::SmartDefault;
 use uuid::Uuid;
 
@@ -30,9 +31,12 @@ pub struct GlobalSettings {
     #[serde_as(as = "DurationSeconds")]
     pub command_cooldown: Duration,
 
+    /// Discord client token for commands and events. (Optional)
+    pub discord_token: String,
+
     /// Minecraft server ender pearl view distance in blocks.
     /// It is better to under-estimate than to over-estimate.
-    #[default(64)]
+    #[default(64)] /* Vanilla/Spigot/Paper/Folia Default */
     pub pearl_view_distance: i32,
 
     /// Minecraft server address.
@@ -43,30 +47,26 @@ pub struct GlobalSettings {
     pub server_address: ServerAddress,
 
     /// ViaProxy server version. (Optional)
-    #[default("")]
     pub server_version: String,
 
     /// Disable commands for non-whitelisted players.
     #[default(false)]
-    pub whitelist: bool,
+    #[serde(alias = "whitelist")] /* Deprecated: 0.13 */
+    pub whitelist_only: bool,
 
     /// API Server for local integrations.
     #[cfg(feature = "api")]
     #[serde(rename = "api_server")]
     pub api: ApiServer,
 
-    /// Discord bot for commands and events.
-    #[cfg(feature = "discord")]
-    #[serde(rename = "discord_bot")]
-    pub discord: DiscordBot,
-
     /// Chat encryption using the NCR (No Chat Reports) mod.
     #[serde(rename = "chat_encryption")]
-    pub encryption: ChatEncryption,
+    #[serde(alias = "encryption")] /* Deprecated: 0.13 */
+    pub chat: ChatEncryption,
 
-    /// Whitelisted Minecraft accounts and their linked Discord accounts.
-    #[serde_as(as = "HashMap<_, NoneAsEmptyString>")]
-    pub whitelisted: HashMap<Uuid, Option<String>>,
+    /// Minecraft accounts with their linked Discord ID and API Password.
+    #[serde(alias = "whitelisted")] /* Deprecated: 0.13 */
+    pub users: HashMap<Uuid, User>,
 }
 
 #[derive(Clone, Eq, PartialEq, Deserialize, Serialize, SmartDefault)]
@@ -75,17 +75,9 @@ pub struct ApiServer {
     #[default(false)]
     pub enabled: bool,
 
-    /// API Server bind address. (default localhost only, random port)
+    /// API Server bind address. (default local only & random port)
     #[default("127.0.0.1:0")]
     pub bind_addr: String,
-
-    /// Authentication username
-    #[default("username")]
-    pub username: String,
-
-    /// Authentication password
-    #[default("password")]
-    pub password: String,
 }
 
 #[derive(Clone, Eq, PartialEq, Deserialize, Serialize, SmartDefault)]
@@ -100,15 +92,11 @@ pub struct ChatEncryption {
     pub mode: EncryptionMode,
 }
 
-#[cfg(feature = "discord")]
-#[derive(Clone, Eq, PartialEq, Deserialize, Serialize, SmartDefault)]
-#[serde(default)]
-pub struct DiscordBot {
-    #[default(false)]
-    pub enabled: bool,
-
-    /// Discord client token.
-    pub token: String,
+#[serde_as]
+#[derive(Clone, Default, Eq, PartialEq, DeserializeTuple, SerializeTuple)]
+pub struct User {
+    pub discord_id:   String,
+    pub api_password: String,
 }
 
 #[derive(Clone, Default, Eq, PartialEq, Deserialize, Serialize)]
@@ -163,7 +151,7 @@ impl GlobalSettings {
             .truncate(true)
             .open(&path)?;
 
-        let text = toml::to_string_pretty(&self)?;
+        let text = toml::to_string(&self)?;
         let buf = text.as_bytes();
         file.write_all(buf)?;
 

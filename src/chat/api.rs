@@ -3,7 +3,7 @@ use std::{collections::VecDeque, io::Read, str::FromStr, sync::Mutex};
 use azalea::{
     app::{App, Plugin, Startup, Update},
     ecs::prelude::*,
-    entity::{metadata::Player, LocalEntity},
+    TabList,
 };
 use base64::{prelude::BASE64_STANDARD, Engine};
 use tiny_http::{Header, Request, Response, Server};
@@ -47,9 +47,10 @@ impl ApiServerPlugin {
     /// Will panic if `Header::from_str` fails.
     pub fn handle_api_requests(
         mut command_events: EventWriter<CommandEvent>,
-        mut query: Query<Entity, (With<Player>, With<LocalEntity>)>,
+        mut query: Query<Entity>,
         api_server: ResMut<ApiServer>,
         settings: Res<GlobalSettings>,
+        tab_list: Res<TabList>,
     ) {
         let Some(server) = &api_server.0 else {
             error!("[API] Server not running.");
@@ -91,22 +92,33 @@ impl ApiServerPlugin {
             return;
         };
 
-        if username != settings.api.username || password != settings.api.password {
-            send_text(request, "Invalid Credentials", 406);
+        let Some(uuid) = tab_list
+            .iter()
+            .find(|(_, player_info)| player_info.profile.name == username)
+            .map(|(uuid, _)| uuid)
+        else {
+            warn!("[API] {username} tried but isn't online");
+            send_text(request, "User isn't online", 404);
+            return;
+        };
+
+        let Some(user) = settings.users.get(uuid) else {
+            warn!("[API] {username} tried but isn't whitelisted!");
+            send_text(request, "User isn't whitelisted", 404);
+            return;
+        };
+
+        if user.api_password != password {
+            warn!("[API] {username} tried an incorrect password!");
+            send_text(request, "Incorrect password", 401);
             return;
         }
 
         // TODO: Separate the rest into a another handle for routes.
-
         let url = request.url().replace("%20", " ");
         let Some(message) = url.strip_prefix("/cmd/") else {
-            if let Err(error) = request.respond(
-                Response::from_string("Invalid route, available: /cmd/<command>")
-                    .with_status_code(500),
-            ) {
-                error!("[API] Failed to send response: {error}");
-            };
-            return; /* No command found */
+            send_text(request, "Invalid route, available: /cmd/<command>", 500);
+            return;
         };
 
         let mut events = Vec::new();
@@ -129,8 +141,8 @@ impl ApiServerPlugin {
                 args,
                 command,
                 message: false,
+                sender: CommandSender::ApiServer(*uuid),
                 source: CommandSource::ApiServer(request.clone()),
-                sender: CommandSender::ApiServer,
             });
         }
 
@@ -142,7 +154,7 @@ impl ApiServerPlugin {
             #[rustfmt::skip]
             let (
                 CommandSource::ApiServer(request),
-                CommandSender::ApiServer
+                CommandSender::ApiServer(_)
             ) = (event.source, event.sender) else {
                 continue;
             };

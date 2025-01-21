@@ -72,7 +72,7 @@ impl AutoLeavePlugin {
         }
     }
 
-    fn handle_add_entity_packets(
+    pub fn handle_add_entity_packets(
         mut packet_events: EventReader<PacketEvent>,
         mut disconnect_events: EventWriter<DisconnectEvent>,
         query: Query<(&TabList, &GameProfileComponent, &LocalSettings)>,
@@ -95,9 +95,9 @@ impl AutoLeavePlugin {
                 continue;
             };
 
-            if global_settings.whitelist
+            if global_settings.whitelist_only
                 && local_settings.auto_leave.unknown_player
-                && !global_settings.whitelisted.contains_key(uuid)
+                && !global_settings.users.contains_key(uuid)
             {
                 let name = &info.profile.name;
                 let username = &game_profile.name;

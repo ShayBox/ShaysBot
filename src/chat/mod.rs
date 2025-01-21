@@ -23,7 +23,7 @@ use crate::prelude::*;
 #[derive(Clone, Copy, Debug)]
 pub enum CommandSender {
     #[cfg(feature = "api")]
-    ApiServer,
+    ApiServer(Uuid),
     #[cfg(feature = "discord")]
     Discord(UserId),
     Minecraft(Uuid),

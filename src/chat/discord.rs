@@ -5,7 +5,7 @@ use azalea::{
     ecs::prelude::*,
     entity::{metadata::Player, LocalEntity},
 };
-use bevy_discord::{events::bot::BMessage, http::DiscordHttpResource, DiscordSet};
+use bevy_discord::{bot::events::BMessage, http::DiscordHttpResource, DiscordSet};
 use serenity::json::json;
 
 use crate::prelude::*;
@@ -49,14 +49,11 @@ impl DiscordChatPlugin {
                     continue; /* Command Invalid */
                 };
 
-                if settings.whitelist
+                if settings.whitelist_only
                     && !settings
-                        .whitelisted
+                        .users
                         .iter()
-                        .filter_map(|(uuid, user_id)| {
-                            user_id.as_ref().map(|user_id| (*uuid, user_id))
-                        })
-                        .any(|(_, user_id)| user_id == &str!(message.author.id))
+                        .any(|(_, user)| user.discord_id == str!(message.author.id))
                 {
                     let http = event.ctx.http.clone();
                     let prefix = settings.command_prefix.clone();

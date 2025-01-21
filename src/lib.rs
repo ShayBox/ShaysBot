@@ -103,11 +103,11 @@ pub async fn start() -> Result<()> {
     }
 
     #[cfg(feature = "discord")] /* Enable the Discord plugin if a token was provided */
-    if !global_settings.discord.token.is_empty() {
+    if !global_settings.discord_token.is_empty() {
         let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
         let config = DiscordBotConfig::default()
             .gateway_intents(intents)
-            .token(global_settings.discord.token.clone());
+            .token(global_settings.discord_token.clone());
 
         client = client.add_plugins((
             DiscordBotPlugin::new(config),

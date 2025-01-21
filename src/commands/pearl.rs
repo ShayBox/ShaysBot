@@ -76,27 +76,7 @@ impl PearlCommandPlugin {
 
             let uuid = match event.sender {
                 #[cfg(feature = "api")]
-                CommandSender::ApiServer => {
-                    let Some(username) = event.args.pop_front() else {
-                        whisper_event.content = str!("Missing player name");
-                        whisper_event.status = 404;
-                        whisper_events.send(whisper_event);
-                        command_events.clear();
-                        return;
-                    };
-
-                    let Some((uuid, _info)) = tab_list.iter().find(|(_, info)| {
-                        info.profile.name.to_lowercase() == username.to_lowercase()
-                    }) else {
-                        whisper_event.content = format!("{username} is not online");
-                        whisper_event.status = 404;
-                        whisper_events.send(whisper_event);
-                        command_events.clear();
-                        return;
-                    };
-
-                    *uuid
-                }
+                CommandSender::ApiServer(uuid) => uuid,
                 #[cfg(feature = "discord")]
                 CommandSender::Discord(user_id) => {
                     let Some(username) = event.args.pop_front() else {
@@ -117,21 +97,13 @@ impl PearlCommandPlugin {
                         return;
                     };
 
-                    if global_settings.whitelist {
-                        let Some(whitelist) = global_settings.whitelisted.get(uuid) else {
+                    if global_settings.whitelist_only {
+                        let Some(user) = global_settings.users.get(uuid) else {
                             command_events.clear();
                             return; /* Not Whitelisted */
                         };
 
-                        let Some(discord_id) = whitelist else {
-                            whisper_event.content = str!("That account isn't linked to you");
-                            whisper_event.status = 403;
-                            whisper_events.send(whisper_event);
-                            command_events.clear();
-                            return;
-                        };
-
-                        if discord_id != &str!(user_id) {
+                        if user.discord_id != str!(user_id) {
                             whisper_event.content = str!("That account isn't linked to you");
                             whisper_event.status = 403;
                             whisper_events.send(whisper_event);

@@ -60,20 +60,21 @@ impl WhitelistCommandPlugin {
             };
 
             let Some(action) = args.pop_front() else {
-                whisper_event.content = str!("Missing action | Actions: 'add', 'remove', 'link'");
+                whisper_event.content = str!("Missing action | Actions: add, remove, link, & set");
                 whisper_event.status = 404;
                 whisper_events.send(whisper_event);
                 return;
             };
 
-            let user = args.pop_front();
+            let discord_id = args.pop_front();
             let (status, content) = match action.as_ref() {
-                "add" => handle_add(&mut settings, user, tab_list),
-                "remove" => handle_remove(&mut settings, user, tab_list),
-                "link" => handle_link(&mut settings, user, &event.sender),
+                "add" => handle_add(&mut settings, discord_id, tab_list),
+                "link" => handle_link(&mut settings, discord_id, &event.sender),
+                "pass" => handle_pass(&mut settings, discord_id, &event.sender),
+                "remove" => handle_remove(&mut settings, discord_id, tab_list),
                 _ => (
                     406,
-                    str!("Invalid action | Actions: 'add', 'remove', or 'link'"),
+                    str!("Invalid action | Actions: add, remove, link, & set"),
                 ),
             };
 
@@ -99,10 +100,10 @@ fn handle_add(
         return (404, str!("Player not found"));
     };
 
-    if settings.whitelisted.contains_key(uuid) {
+    if settings.users.contains_key(uuid) {
         (409, str!("Already whitelisted"))
     } else {
-        settings.whitelisted.insert(*uuid, None);
+        settings.users.entry(*uuid).or_default();
         settings.clone().save().expect("Failed to save settings");
 
         (200, format!("Successfully added: {}", info.profile.name))
@@ -122,8 +123,8 @@ fn handle_remove(
         return (404, str!("Player not found"));
     };
 
-    if settings.whitelisted.contains_key(uuid) {
-        settings.whitelisted.remove(uuid);
+    if settings.users.contains_key(uuid) {
+        settings.users.remove(uuid);
         settings.clone().save().expect("Failed to save settings");
 
         (200, format!("Successfully removed: {}", info.profile.name))
@@ -132,21 +133,83 @@ fn handle_remove(
     }
 }
 
-fn handle_link(
+fn handle_pass(
     settings: &mut ResMut<GlobalSettings>,
-    user: Option<String>,
+    api_password: Option<String>,
     sender: &CommandSender,
 ) -> (u16, String) {
     match sender {
         #[cfg(feature = "api")]
-        CommandSender::ApiServer => (500, str!("Cannot link to nobody")),
+        CommandSender::ApiServer(uuid) => {
+            let Some(api_password) = api_password else {
+                return (404, str!("Missing Discord user id"));
+            };
+
+            settings
+                .users
+                .entry(*uuid)
+                .and_modify(|user| user.api_password.clone_from(&api_password))
+                .or_insert_with(|| User {
+                    api_password,
+                    ..Default::default()
+                });
+            settings.clone().save().expect("Failed to save settings");
+
+            (200, str!("Successfully updated password"))
+        }
+        #[cfg(feature = "discord")]
+        CommandSender::Discord(_) => (500, str!("You can't update your API password on Discord")),
+        CommandSender::Minecraft(uuid) => {
+            let Some(discord_id) = api_password else {
+                return (404, str!("Missing Discord user id"));
+            };
+
+            settings
+                .users
+                .entry(*uuid)
+                .and_modify(|user| user.discord_id.clone_from(&discord_id))
+                .or_insert_with(|| User {
+                    discord_id,
+                    ..Default::default()
+                });
+            settings.clone().save().expect("Failed to save settings");
+
+            (200, str!("Successfully linked"))
+        }
+    }
+}
+
+fn handle_link(
+    settings: &mut ResMut<GlobalSettings>,
+    discord_id: Option<String>,
+    sender: &CommandSender,
+) -> (u16, String) {
+    match sender {
+        #[cfg(feature = "api")]
+        CommandSender::ApiServer(uuid) => {
+            let Some(discord_id) = discord_id else {
+                return (404, str!("Missing Discord user id"));
+            };
+
+            settings
+                .users
+                .entry(*uuid)
+                .and_modify(|user| user.discord_id.clone_from(&discord_id))
+                .or_insert_with(|| User {
+                    discord_id,
+                    ..Default::default()
+                });
+            settings.clone().save().expect("Failed to save settings");
+
+            (200, str!("Successfully linked discord"))
+        }
         #[cfg(feature = "discord")]
         CommandSender::Discord(_) => {
-            let Some(auth_code) = user else {
+            let Some(discord_id) = discord_id else {
                 return (404, str!("Missing auth code (Join: auth.aristois.net)"));
             };
 
-            let path = format!("https://auth.aristois.net/token/{auth_code}");
+            let path = format!("https://auth.aristois.net/token/{discord_id}");
             let Ok(response) = ureq::get(&path).call() else {
                 return (406, str!("Invalid auth code (Join: auth.aristois.net)"));
             };
@@ -163,17 +226,31 @@ fn handle_link(
                 );
             };
 
-            settings.whitelisted.insert(uuid, Some(auth_code));
+            settings
+                .users
+                .entry(uuid)
+                .and_modify(|user| user.discord_id.clone_from(&discord_id))
+                .or_insert_with(|| User {
+                    discord_id,
+                    ..Default::default()
+                });
             settings.clone().save().expect("Failed to save settings");
 
             (200, str!("Successfully linked"))
         }
         CommandSender::Minecraft(uuid) => {
-            let Some(user_id) = user else {
+            let Some(discord_id) = discord_id else {
                 return (404, str!("Missing Discord user id"));
             };
 
-            settings.whitelisted.insert(*uuid, Some(user_id));
+            settings
+                .users
+                .entry(*uuid)
+                .and_modify(|user| user.discord_id.clone_from(&discord_id))
+                .or_insert_with(|| User {
+                    discord_id,
+                    ..Default::default()
+                });
             settings.clone().save().expect("Failed to save settings");
 
             (200, str!("Successfully linked"))

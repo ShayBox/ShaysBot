@@ -75,12 +75,11 @@ impl MinecraftChatPlugin {
                 continue; /* Not Online */
             };
 
-            if settings.whitelist && !settings.whitelisted.contains_key(uuid) {
+            if settings.whitelist_only && !settings.users.contains_key(uuid) {
                 continue; /* Not Whitelisted */
             }
 
-            let key =
-                AesKey::decode_base64(&settings.encryption.key).unwrap_or_else(|_| KEY.clone());
+            let key = AesKey::decode_base64(&settings.chat.key).unwrap_or_else(|_| KEY.clone());
             let (encryption, content) = find_encryption(&content, &key);
             let mut args = content
                 .split(' ')
@@ -148,7 +147,7 @@ impl MinecraftChatPlugin {
                 continue; /* Player Offline */
             };
 
-            try_encrypt(&mut event.content, &settings.encryption, type_encryption);
+            try_encrypt(&mut event.content, &settings.chat, type_encryption);
 
             let mut content = format!("w {username} {}", event.content);
             if local_settings.anti_spam.enabled {
