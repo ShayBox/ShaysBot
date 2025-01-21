@@ -108,7 +108,7 @@ impl ApiServerPlugin {
             return;
         };
 
-        if user.api_password != password {
+        if user.api_password.is_empty() || user.api_password != password {
             warn!("[API] {username} tried an incorrect password!");
             send_text(request, "Incorrect password", 401);
             return;

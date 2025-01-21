@@ -70,8 +70,8 @@ impl WhitelistCommandPlugin {
             let (status, content) = match action.as_ref() {
                 "add" => handle_add(&mut settings, discord_id, tab_list),
                 "link" => handle_link(&mut settings, discord_id, &event.sender),
-                "pass" => handle_pass(&mut settings, discord_id, &event.sender),
                 "remove" => handle_remove(&mut settings, discord_id, tab_list),
+                "set" => handle_set(&mut settings, discord_id, &event.sender),
                 _ => (
                     406,
                     str!("Invalid action | Actions: add, remove, link, & set"),
@@ -130,52 +130,6 @@ fn handle_remove(
         (200, format!("Successfully removed: {}", info.profile.name))
     } else {
         (409, str!("Already not whitelisted"))
-    }
-}
-
-fn handle_pass(
-    settings: &mut ResMut<GlobalSettings>,
-    api_password: Option<String>,
-    sender: &CommandSender,
-) -> (u16, String) {
-    match sender {
-        #[cfg(feature = "api")]
-        CommandSender::ApiServer(uuid) => {
-            let Some(api_password) = api_password else {
-                return (404, str!("Missing Discord user id"));
-            };
-
-            settings
-                .users
-                .entry(*uuid)
-                .and_modify(|user| user.api_password.clone_from(&api_password))
-                .or_insert_with(|| User {
-                    api_password,
-                    ..Default::default()
-                });
-            settings.clone().save().expect("Failed to save settings");
-
-            (200, str!("Successfully updated password"))
-        }
-        #[cfg(feature = "discord")]
-        CommandSender::Discord(_) => (500, str!("You can't update your API password on Discord")),
-        CommandSender::Minecraft(uuid) => {
-            let Some(discord_id) = api_password else {
-                return (404, str!("Missing Discord user id"));
-            };
-
-            settings
-                .users
-                .entry(*uuid)
-                .and_modify(|user| user.discord_id.clone_from(&discord_id))
-                .or_insert_with(|| User {
-                    discord_id,
-                    ..Default::default()
-                });
-            settings.clone().save().expect("Failed to save settings");
-
-            (200, str!("Successfully linked"))
-        }
     }
 }
 
@@ -254,6 +208,36 @@ fn handle_link(
             settings.clone().save().expect("Failed to save settings");
 
             (200, str!("Successfully linked"))
+        }
+    }
+}
+
+fn handle_set(
+    settings: &mut ResMut<GlobalSettings>,
+    api_password: Option<String>,
+    sender: &CommandSender,
+) -> (u16, String) {
+    match sender {
+        #[cfg(feature = "api")]
+        CommandSender::ApiServer(_) => (500, str!("You can't update your API password on the API")),
+        #[cfg(feature = "discord")]
+        CommandSender::Discord(_) => (500, str!("You can't update your API password on Discord")),
+        CommandSender::Minecraft(uuid) => {
+            let Some(api_password) = api_password else {
+                return (404, str!("Missing Discord user id"));
+            };
+
+            settings
+                .users
+                .entry(*uuid)
+                .and_modify(|user| user.api_password.clone_from(&api_password))
+                .or_insert_with(|| User {
+                    api_password,
+                    ..Default::default()
+                });
+            settings.clone().save().expect("Failed to save settings");
+
+            (200, str!("Successfully updated password"))
         }
     }
 }

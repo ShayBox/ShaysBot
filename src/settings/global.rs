@@ -65,6 +65,7 @@ pub struct GlobalSettings {
     pub chat: ChatEncryption,
 
     /// Minecraft accounts with their linked Discord ID and API Password.
+    #[serde(default)] /* Deprecated: 0.13 */
     #[serde(alias = "whitelisted")] /* Deprecated: 0.13 */
     pub users: HashMap<Uuid, User>,
 }
