@@ -103,7 +103,7 @@ impl PearlCommandPlugin {
                             return; /* Not Whitelisted */
                         };
 
-                        if user.discord_id != str!(user_id) {
+                        if ![str!(user_id), str!("*")].contains(&user.discord_id) {
                             whisper_event.content = str!("That account isn't linked to you");
                             whisper_event.status = 403;
                             whisper_events.send(whisper_event);
