@@ -24,7 +24,7 @@ impl Plugin for ApiServerPlugin {
                 (
                     Self::handle_api_requests
                         .before(MinecraftChatPlugin::handle_chat_received_events),
-                    Self::handle_send_whisper_events,
+                    Self::handle_send_msg_events,
                 ),
             );
     }
@@ -46,8 +46,8 @@ impl ApiServerPlugin {
     /// # Panics
     /// Will panic if `Header::from_str` fails.
     pub fn handle_api_requests(
-        mut command_events: EventWriter<CommandEvent>,
-        mut query: Query<Entity>,
+        mut cmd_events: EventWriter<CmdEvent>,
+        query: Query<Entity>,
         api_server: ResMut<ApiServer>,
         settings: Res<GlobalSettings>,
         tab_list: Res<TabList>,
@@ -121,40 +121,41 @@ impl ApiServerPlugin {
             return;
         };
 
-        let mut events = Vec::new();
-        let request = Arc::new(Mutex::new(Some(request)));
-        for entity in &mut query {
-            let mut args = message
-                .split(' ')
-                .map(String::from)
-                .collect::<VecDeque<_>>();
-            let Some(alias) = args.pop_front() else {
-                continue; /* Command Missing */
-            };
+        let mut args = message
+            .split(' ')
+            .map(String::from)
+            .collect::<VecDeque<_>>();
+        let Some(alias) = args.pop_front() else {
+            return; /* Command Missing */
+        };
 
-            let Some(command) = ChatCmds::find(&alias.replace(&settings.command_prefix, "")) else {
-                continue; /* Command Invalid */
-            };
+        let Some(cmd) = Cmds::find(&alias.replace(&settings.command_prefix, "")) else {
+            return; /* Command Invalid */
+        };
 
-            events.push(CommandEvent {
-                entity,
-                args,
-                command,
-                message: false,
-                sender: CommandSender::ApiServer(*uuid),
-                source: CommandSource::ApiServer(request.clone()),
-            });
-        }
+        let mut cmd_event = CmdEvent {
+            args: args.clone(),
+            cmd,
+            entity: None,
+            message: false,
+            sender: CmdSender::ApiServer(*uuid),
+            source: CmdSource::ApiServer(Arc::new(Mutex::new(Some(request)))),
+        };
 
-        command_events.send_batch(events);
+        cmd_events.send_batch(std::iter::once(cmd_event.clone()).chain(query.iter().map(
+            |entity| {
+                cmd_event.entity = Some(entity);
+                cmd_event.clone()
+            },
+        )));
     }
 
-    pub fn handle_send_whisper_events(mut whisper_events: EventReader<WhisperEvent>) {
-        for event in whisper_events.read().cloned() {
+    pub fn handle_send_msg_events(mut msg_events: EventReader<MsgEvent>) {
+        for event in msg_events.read().cloned() {
             #[rustfmt::skip]
             let (
-                CommandSource::ApiServer(request),
-                CommandSender::ApiServer(_)
+                CmdSource::ApiServer(request),
+                CmdSender::ApiServer(_)
             ) = (event.source, event.sender) else {
                 continue;
             };

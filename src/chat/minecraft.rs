@@ -31,14 +31,14 @@ pub struct MinecraftChatPlugin;
 
 impl Plugin for MinecraftChatPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(CommandCooldown::default())
-            .add_event::<CommandEvent>()
-            .add_event::<WhisperEvent>()
+        app.insert_resource(CmdCooldown::default())
+            .add_event::<CmdEvent>()
+            .add_event::<MsgEvent>()
             .add_systems(
                 Update,
                 (
                     Self::handle_chat_received_events,
-                    Self::handle_send_whisper_events.before(handle_send_chat_event),
+                    Self::handle_send_msg_events.before(handle_send_chat_event),
                 )
                     .chain(),
             );
@@ -48,8 +48,8 @@ impl Plugin for MinecraftChatPlugin {
 impl MinecraftChatPlugin {
     pub fn handle_chat_received_events(
         mut chat_received_events: EventReader<ChatReceivedEvent>,
-        mut command_events: EventWriter<CommandEvent>,
-        mut cooldown: ResMut<CommandCooldown>,
+        mut cmd_events: EventWriter<CmdEvent>,
+        mut cooldown: ResMut<CmdCooldown>,
         query: Query<&TabList>,
         settings: Res<GlobalSettings>,
     ) {
@@ -94,7 +94,7 @@ impl MinecraftChatPlugin {
                 continue; /* Command Invalid */
             }
 
-            let Some(command) = ChatCmds::find(&alias.replace(&settings.command_prefix, "")) else {
+            let Some(command) = Cmds::find(&alias.replace(&settings.command_prefix, "")) else {
                 continue; /* Command Invalid */
             };
 
@@ -103,35 +103,36 @@ impl MinecraftChatPlugin {
                 continue; /* Command Cooldown */
             }
 
-            events.push(CommandEvent {
-                entity: event.entity,
+            events.push(CmdEvent {
                 args,
-                command,
+                cmd: command,
+                entity: Some(event.entity),
                 message,
-                sender: CommandSender::Minecraft(*uuid),
-                source: CommandSource::Minecraft(encryption),
+                sender: CmdSender::Minecraft(*uuid),
+                source: CmdSource::Minecraft(encryption),
             });
         }
 
-        command_events.send_batch(events);
+        cmd_events.send_batch(events);
     }
 
-    pub fn handle_send_whisper_events(
+    pub fn handle_send_msg_events(
         mut chat_kind_events: EventWriter<SendChatKindEvent>,
-        mut whisper_events: EventReader<WhisperEvent>,
+        mut msg_events: EventReader<MsgEvent>,
         query: Query<(&TabList, &LocalSettings)>,
         settings: Res<GlobalSettings>,
     ) {
-        for mut event in whisper_events.read().cloned() {
+        for mut event in msg_events.read().cloned() {
             #[rustfmt::skip]
             let (
-                CommandSource::Minecraft(type_encryption),
-                CommandSender::Minecraft(uuid)
-            ) = (event.source, event.sender) else {
+                Some(entity),
+                CmdSource::Minecraft(type_encryption),
+                CmdSender::Minecraft(uuid)
+            ) = (event.entity, event.source, event.sender) else {
                 continue;
             };
 
-            let Ok((tab_list, local_settings)) = query.get(event.entity) else {
+            let Ok((tab_list, local_settings)) = query.get(entity) else {
                 return;
             };
 
@@ -157,9 +158,9 @@ impl MinecraftChatPlugin {
             }
 
             chat_kind_events.send(SendChatKindEvent {
-                entity: event.entity,
-                kind: ChatKind::Command,
                 content,
+                entity,
+                kind: ChatKind::Command,
             });
         }
     }

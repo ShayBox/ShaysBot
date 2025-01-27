@@ -57,7 +57,7 @@ impl EnderPearlPlugin {
         mut pearl_goto_events: EventWriter<PearlGotoEvent>,
         mut resend_packet_events: EventWriter<ResendPacketEvent>,
         mut stasis_chambers: ResMut<StasisChambers>,
-        mut whisper_events: EventWriter<WhisperEvent>,
+        mut msg_events: EventWriter<MsgEvent>,
         player_profiles: Query<(&MinecraftEntityId, &GameProfileComponent), With<Player>>,
     ) {
         for event in packet_events.read().cloned() {
@@ -126,10 +126,10 @@ impl EnderPearlPlugin {
 
             debug!("Count: {count} | Limit: {limit}");
             if count > limit {
-                whisper_events.send(WhisperEvent {
-                    entity: event.entity,
-                    sender: CommandSender::Minecraft(owner_uuid),
-                    source: CommandSource::Minecraft(None),
+                msg_events.send(MsgEvent {
+                    entity: Some(event.entity),
+                    sender: CmdSender::Minecraft(owner_uuid),
+                    source: CmdSource::Minecraft(None),
                     status: 402,
                     content: format!(
                         "Your free trial has expired, please purchase WinRAR license: Max {limit} pearls"

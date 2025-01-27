@@ -18,7 +18,7 @@ impl Plugin for DiscordChatPlugin {
             Update,
             (
                 Self::handle_message_events.after(DiscordSet),
-                Self::handle_send_whisper_events.before(DiscordSet),
+                Self::handle_send_msg_events.before(DiscordSet),
             ),
         );
     }
@@ -27,84 +27,83 @@ impl Plugin for DiscordChatPlugin {
 impl DiscordChatPlugin {
     pub fn handle_message_events(
         mut message_events: EventReader<BMessage>,
-        mut command_events: EventWriter<CommandEvent>,
-        mut query: Query<Entity, (With<Player>, With<LocalEntity>)>,
+        mut cmd_events: EventWriter<CmdEvent>,
+        query: Query<Entity, (With<Player>, With<LocalEntity>)>,
         settings: Res<GlobalSettings>,
     ) {
         for event in message_events.read() {
-            let mut events = Vec::new();
-            for entity in &mut query {
-                let message = event.new_message.clone();
-                let mut args = message
-                    .content
-                    .split(' ')
-                    .map(String::from)
-                    .collect::<VecDeque<_>>();
-                let Some(alias) = args.pop_front() else {
-                    continue; /* Command Missing */
-                };
+            let message = event.new_message.clone();
+            let mut args = message
+                .content
+                .split(' ')
+                .map(String::from)
+                .collect::<VecDeque<_>>();
+            let Some(alias) = args.pop_front() else {
+                continue; /* Command Missing */
+            };
 
-                let Some(command) = ChatCmds::find(&alias.replace(&settings.command_prefix, ""))
-                else {
-                    continue; /* Command Invalid */
-                };
+            let Some(cmd) = Cmds::find(&alias.replace(&settings.command_prefix, "")) else {
+                continue; /* Command Invalid */
+            };
 
-                if settings.whitelist_only
-                    && !settings
-                        .users
-                        .iter()
-                        .any(|(_, user)| user.discord_id == str!(message.author.id))
-                {
-                    let http = event.ctx.http.clone();
-                    let prefix = settings.command_prefix.clone();
-                    let user_id = str!(message.author.id);
-                    tokio::spawn(async move {
-                        let content = [
+            if settings.whitelist_only
+                && !settings
+                    .users
+                    .iter()
+                    .any(|(_, user)| user.discord_id == str!(message.author.id))
+            {
+                let http = event.ctx.http.clone();
+                let prefix = settings.command_prefix.clone();
+                let user_id = str!(message.author.id);
+                tokio::spawn(async move {
+                    let content = [
                             str!("Your Discord and Minecraft accounts are not currently linked."),
                             format!("To link via in-game, message the bot the following command: `{prefix}whitelist link {user_id}`"),
                             format!("To link via Discord, run the following command with your `auth.aristois.net` code `{prefix}whitelist link <code>`"),
                         ];
 
-                        let map = json!({
-                            "content": content.join("\n"),
-                        });
-
-                        if let Err(error) =
-                            http.send_message(message.channel_id, vec![], &map).await
-                        {
-                            error!("{error}");
-                        };
+                    let map = json!({
+                        "content": content.join("\n"),
                     });
 
-                    continue;
-                }
-
-                events.push(CommandEvent {
-                    entity,
-                    args,
-                    command,
-                    message: false,
-                    source: CommandSource::Discord(message.channel_id),
-                    sender: CommandSender::Discord(message.author.id),
+                    if let Err(error) = http.send_message(message.channel_id, vec![], &map).await {
+                        error!("{error}");
+                    };
                 });
+
+                continue;
             }
 
-            command_events.send_batch(events);
+            let mut cmd_event = CmdEvent {
+                args: args.clone(),
+                cmd,
+                entity: None,
+                message: false,
+                source: CmdSource::Discord(message.channel_id),
+                sender: CmdSender::Discord(message.author.id),
+            };
+
+            cmd_events.send_batch(std::iter::once(cmd_event.clone()).chain(query.iter().map(
+                |entity| {
+                    cmd_event.entity = Some(entity);
+                    cmd_event.clone()
+                },
+            )));
         }
     }
 
-    pub fn handle_send_whisper_events(
-        mut whisper_events: EventReader<WhisperEvent>,
+    pub fn handle_send_msg_events(
+        mut msg_events: EventReader<MsgEvent>,
         discord: Option<Res<DiscordHttpResource>>,
     ) {
         let Some(discord) = discord else {
             return;
         };
 
-        for event in whisper_events.read() {
+        for event in msg_events.read() {
             let client = discord.client();
             let content = event.content.clone();
-            let CommandSource::Discord(channel_id) = event.source else {
+            let CmdSource::Discord(channel_id) = event.source else {
                 continue;
             };
 

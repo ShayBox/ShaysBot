@@ -9,31 +9,76 @@
 
 # ShaysBot
 
-A feature-rich Minecraft bot built using [Azalea](https://github.com/azalea-rs/azalea), designed to enhance gameplay  
-with automated features and useful commands. Written in Rust for high performance and reliability.  
-Includes support for No Chat Reports (NCR) encryption to ensure secure and private communication.
+My personal Minecraft bot written in Rust, built using [Azalea].  
+Primarily designed to be a pearl bot, allowing for quick travel to different locations with multiple accounts.  
+Also featuring a Discord bot and a HTTP API for local integrations, and support for [No Chat Reports] encryption.
 
-## Setup
+## How to use
+
+Choose your preferred [Installation Method](#installation-methods) below, then run the bot once to create files.  
+Open the `global-settings.toml` file and change the `server_address` to your desired server.  
+Rename the `ExampleBot*.toml` in `local-settings` to your desired accounts Minecraft Username,  
+Then open the local settings file and change the `auth_mode` to `online`.
+
+You can check the [global](src/settings/global.rs) and [local](src/settings/local.rs) source files for documentation.
+
+### ZenithProxy
+
+You can optionally use [ZenithProxy] between my bot and your desired server,  
+This can be useful if you want to keep your place in queue with non-priority accounts.  
+Add `server_address = "127.0.0.1:ZENITH PORT HERE"` to the top of your local settings file.  
+Note: This is intended for proxies only, do not use it to connect accounts to different servers.
+
+### Verbose Output
 
 To enable debug logging you must set the environment variable:  
 `RUST_LOG=shaysbot=debug,info` (error, warn, info, debug, trace)  
 The first is the log level of the bot, the second is of dependencies.
 
-### [Releases](https://github.com/shaybox/shaysbot/releases) - Built with GitHub Actions
+## Installation Methods
 
-Built using debug profile so you can decompile the binaries easier.
+### Binaries: [Latest] | [Releases]
 
-### Local
+Compiled with [GitHub Actions](.github/workflows/release.yml) using the [**Debug**](#cargo-profiles) profile.
 
-1. Install [rustup.rs](https://rustup.rs) && `rustup default stable`
-2. Clone: `git clone git@github.com:ShayBox/ShaysBot.git` && `cd ShaysBot`
-3. Run: `cargo run` | Build: `cargo build` | Install: `cargo install --path .`
+### Install or Develop Locally
 
-Note: Cargo install uses Release, while Run and Build use Debug.  
-Debug: Settings are relative to the binary executable directory.  
-Release: Settings are relative to the current working directory.  
-Release has more optimizations, runs faster, and uses less disk.  
-You can manually override with either: `--debug` or `--release`.
+Prerequisites:
+
+- Rust(up)
+    - Windows: `winget install -e --id Rustlang.Rustup`
+    - Debian: `sudo apt install rustup` (Includes LLVM)
+    - Ubuntu: `sudo snap install rustup` (Includes LLVM)
+    - Other: [Rustup] (requires LLVM)
+- LLVM (LLD/Clang)
+    - Windows: `winget install -e --id LLVM.LLVM` or [Visual Studio]
+    - Other: [Google] | [ChatGPT] | [Deepseek]
+
+### Install (Recommended) - Compiled Locally
+
+1. `rustup toolchain install nightly`
+2. `cargo +nightly install --git https://github.com/ShayBox/ShaysBot`
+3. `mkdir pearl-bot`
+4. `shaysbot`
+
+### Build (Development) - You should know Rust!
+
+1. `git clone git@github.com:ShayBox/ShaysBot.git`
+2. `cd ShaysBot`
+3. Run: `cargo run`
+4. Build: `cargo build` (`target/debug/shaysbot`)
+5. Install: `cargo install --path .`
+
+### Cargo Profiles
+
+Run and Build use **Debug** while Install uses **Release**.  
+You can manually override with either: `--debug` or `--release`
+
+**Debug** includes debug symbols which makes it easier to debug and decompile.  
+**Release** has more optimizations, runs faster, and uses less disk space.
+
+**Debug**: Settings are relative to the **binary executable directory**.  
+**Release**: Settings are relative to the **current working directory**.
 
 ## Features
 
@@ -70,3 +115,20 @@ You can manually override with either: `--debug` or `--release`.
 - [**GameTicks**](src/trackers/game_tick.rs) - Tracks game ticks.
 - [**PlayerProfiles**](src/trackers/player_profile.rs) - Tracks player profiles.
 
+[Azalea]: https://github.com/azalea-rs/azalea
+
+[No Chat Reports]: https://github.com/Aizistral-Studios/No-Chat-Reports
+
+[Visual Studio]: https://visualstudio.microsoft.com
+
+[ZenithProxy]: https://github.com/rfresh2/ZenithProxy
+
+[Latest]: https://github.com/shaybox/shaysbot/releases/latest
+
+[Releases]: https://github.com/shaybox/shaysbot/releases
+
+[Google]: https://google.com
+
+[ChatGPT]: https://chatgpt.com
+
+[Deepseek]: https://chat.deepseek.com

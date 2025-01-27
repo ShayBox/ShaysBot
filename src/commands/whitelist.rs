@@ -14,7 +14,7 @@ use crate::prelude::*;
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WhitelistCommandPlugin;
 
-impl ChatCmd for WhitelistCommandPlugin {
+impl Cmd for WhitelistCommandPlugin {
     fn aliases(&self) -> Vec<&'static str> {
         vec!["whitelist"]
     }
@@ -24,9 +24,9 @@ impl Plugin for WhitelistCommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            Self::handle_whitelist_command_events
+            Self::handle_whitelist_cmd_events
                 .ambiguous_with_all()
-                .before(MinecraftChatPlugin::handle_send_whisper_events)
+                .before(MinecraftChatPlugin::handle_send_msg_events)
                 .after(MinecraftChatPlugin::handle_chat_received_events),
         );
     }
@@ -35,23 +35,19 @@ impl Plugin for WhitelistCommandPlugin {
 impl WhitelistCommandPlugin {
     /// # Panics
     /// Will panic if `DeriveTomlConfig::save` fails.
-    pub fn handle_whitelist_command_events(
-        mut command_events: EventReader<CommandEvent>,
-        mut whisper_events: EventWriter<WhisperEvent>,
+    pub fn handle_whitelist_cmd_events(
+        mut cmd_events: EventReader<CmdEvent>,
+        mut msg_events: EventWriter<MsgEvent>,
         mut settings: ResMut<GlobalSettings>,
-        query: Query<&TabList>,
+        tab_list: Res<TabList>,
     ) {
-        if let Some(event) = command_events.read().next() {
-            let ChatCmds::Whitelist(_plugin) = event.command else {
-                return;
-            };
-
-            let Ok(tab_list) = query.get(event.entity) else {
+        if let Some(event) = cmd_events.read().next() {
+            let Cmds::Whitelist(_plugin) = event.cmd else {
                 return;
             };
 
             let mut args = event.args.clone();
-            let mut whisper_event = WhisperEvent {
+            let mut msg_event = MsgEvent {
                 content: String::new(),
                 entity:  event.entity,
                 sender:  event.sender,
@@ -60,17 +56,17 @@ impl WhitelistCommandPlugin {
             };
 
             let Some(action) = args.pop_front() else {
-                whisper_event.content = str!("Missing action | Actions: add, remove, link, & set");
-                whisper_event.status = 404;
-                whisper_events.send(whisper_event);
+                msg_event.content = str!("Missing action | Actions: add, remove, link, & set");
+                msg_event.status = 404;
+                msg_events.send(msg_event);
                 return;
             };
 
             let discord_id = args.pop_front();
             let (status, content) = match action.as_ref() {
-                "add" => handle_add(&mut settings, discord_id, tab_list),
+                "add" => handle_add(&mut settings, discord_id, &tab_list),
                 "link" => handle_link(&mut settings, discord_id, &event.sender),
-                "remove" => handle_remove(&mut settings, discord_id, tab_list),
+                "remove" => handle_remove(&mut settings, discord_id, &tab_list),
                 "set" => handle_set(&mut settings, discord_id, &event.sender),
                 _ => (
                     406,
@@ -78,12 +74,12 @@ impl WhitelistCommandPlugin {
                 ),
             };
 
-            whisper_event.content = content;
-            whisper_event.status = status;
-            whisper_events.send(whisper_event);
+            msg_event.content = content;
+            msg_event.status = status;
+            msg_events.send(msg_event);
         }
 
-        command_events.clear();
+        cmd_events.clear();
     }
 }
 
@@ -136,11 +132,11 @@ fn handle_remove(
 fn handle_link(
     settings: &mut ResMut<GlobalSettings>,
     discord_id: Option<String>,
-    sender: &CommandSender,
+    sender: &CmdSender,
 ) -> (u16, String) {
     match sender {
         #[cfg(feature = "api")]
-        CommandSender::ApiServer(uuid) => {
+        CmdSender::ApiServer(uuid) => {
             let Some(discord_id) = discord_id else {
                 return (404, str!("Missing Discord user id"));
             };
@@ -158,24 +154,24 @@ fn handle_link(
             (200, str!("Successfully linked discord"))
         }
         #[cfg(feature = "discord")]
-        CommandSender::Discord(_) => {
+        CmdSender::Discord(_) => {
             let Some(discord_id) = discord_id else {
                 return (404, str!("Missing auth code (Join: auth.aristois.net)"));
             };
 
             let path = format!("https://auth.aristois.net/token/{discord_id}");
-            let Ok(response) = ureq::get(&path).call() else {
+            let Ok(mut response) = ureq::get(&path).call() else {
                 return (406, str!("Invalid auth code (Join: auth.aristois.net)"));
             };
 
             let code = response.status();
-            let Ok(json) = response.into_json::<Json>() else {
+            let Ok(json) = response.body_mut().read_json::<Json>() else {
                 return (500, str!("Failed to parse JSON"));
             };
 
             let Some(uuid) = json.uuid else {
                 return (
-                    code,
+                    code.as_u16(),
                     format!("Authentication {}: {}", json.status, json.message),
                 );
             };
@@ -192,7 +188,7 @@ fn handle_link(
 
             (200, str!("Successfully linked"))
         }
-        CommandSender::Minecraft(uuid) => {
+        CmdSender::Minecraft(uuid) => {
             let Some(discord_id) = discord_id else {
                 return (404, str!("Missing Discord user id"));
             };
@@ -215,14 +211,14 @@ fn handle_link(
 fn handle_set(
     settings: &mut ResMut<GlobalSettings>,
     api_password: Option<String>,
-    sender: &CommandSender,
+    sender: &CmdSender,
 ) -> (u16, String) {
     match sender {
         #[cfg(feature = "api")]
-        CommandSender::ApiServer(_) => (500, str!("You can't update your API password on the API")),
+        CmdSender::ApiServer(_) => (500, str!("You can't update your API password on the API")),
         #[cfg(feature = "discord")]
-        CommandSender::Discord(_) => (500, str!("You can't update your API password on Discord")),
-        CommandSender::Minecraft(uuid) => {
+        CmdSender::Discord(_) => (500, str!("You can't update your API password on Discord")),
+        CmdSender::Minecraft(uuid) => {
             let Some(api_password) = api_password else {
                 return (404, str!("Missing Discord user id"));
             };

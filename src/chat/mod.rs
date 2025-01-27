@@ -14,14 +14,44 @@ use std::{
 use azalea::{ecs::prelude::*, prelude::*};
 #[cfg(feature = "discord")]
 use serenity::all::{ChannelId, UserId};
+use strum::IntoEnumIterator;
 #[cfg(feature = "api")]
 use tiny_http::Request;
 use uuid::Uuid;
 
 use crate::prelude::*;
 
+pub trait Cmd {
+    fn aliases(&self) -> Vec<&'static str>;
+}
+
+/// Compile time checked list of commands
+#[derive(Clone, Copy, Debug, Eq, PartialEq, EnumIter)]
+pub enum Cmds {
+    Join(JoinCommandPlugin),
+    Leave(LeaveCommandPlugin),
+    Pearl(PearlCommandPlugin),
+    Playtime(PlaytimeCommandPlugin),
+    Seen(SeenCommandPlugin),
+    Whitelist(WhitelistCommandPlugin),
+}
+
+impl Cmds {
+    #[must_use]
+    pub fn find(alias: &str) -> Option<Self> {
+        Self::iter().find(|cmds| match cmds {
+            Self::Join(cmd) => cmd.aliases().contains(&alias),
+            Self::Leave(cmd) => cmd.aliases().contains(&alias),
+            Self::Pearl(cmd) => cmd.aliases().contains(&alias),
+            Self::Playtime(cmd) => cmd.aliases().contains(&alias),
+            Self::Seen(cmd) => cmd.aliases().contains(&alias),
+            Self::Whitelist(cmd) => cmd.aliases().contains(&alias),
+        })
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
-pub enum CommandSender {
+pub enum CmdSender {
     #[cfg(feature = "api")]
     ApiServer(Uuid),
     #[cfg(feature = "discord")]
@@ -30,7 +60,7 @@ pub enum CommandSender {
 }
 
 #[derive(Clone, Debug)]
-pub enum CommandSource {
+pub enum CmdSource {
     #[cfg(feature = "api")]
     ApiServer(Arc<Mutex<Option<Request>>>),
     #[cfg(feature = "discord")]
@@ -39,28 +69,29 @@ pub enum CommandSource {
 }
 
 #[derive(Clone, Debug, Event)]
-pub struct CommandEvent {
-    pub entity:  Entity,
+pub struct CmdEvent {
+    /// Optional command arguments
     pub args:    VecDeque<String>,
-    pub command: ChatCmds,
+    pub cmd:     Cmds,
+    pub entity:  Option<Entity>,
     pub message: bool,
-    pub sender:  CommandSender,
-    pub source:  CommandSource,
+    pub sender:  CmdSender,
+    pub source:  CmdSource,
 }
 
 #[derive(Clone, Debug, Event)]
-pub struct WhisperEvent {
-    pub entity:  Entity,
+pub struct MsgEvent {
     pub content: String,
-    pub sender:  CommandSender,
-    pub source:  CommandSource,
+    pub entity:  Option<Entity>,
+    pub sender:  CmdSender,
+    pub source:  CmdSource,
     pub status:  u16,
 }
 
 #[derive(Default, Resource)]
-pub struct CommandCooldown(HashMap<String, Instant>);
+pub struct CmdCooldown(HashMap<String, Instant>);
 
-impl CommandCooldown {
+impl CmdCooldown {
     fn check(&mut self, sender: &str, duration: Duration) -> bool {
         if let Some(instant) = self.0.get(sender) {
             if instant.elapsed() < duration {

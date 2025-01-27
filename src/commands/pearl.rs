@@ -12,7 +12,7 @@ use crate::prelude::*;
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct PearlCommandPlugin;
 
-impl ChatCmd for PearlCommandPlugin {
+impl Cmd for PearlCommandPlugin {
     fn aliases(&self) -> Vec<&'static str> {
         vec!["pearl", "tp", "teleport", "warp", "home"]
     }
@@ -22,10 +22,10 @@ impl Plugin for PearlCommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            Self::handle_pearl_command_events
+            Self::handle_pearl_cmd_events
                 .ambiguous_with_all()
                 .before(AutoPearlPlugin::handle_goto_pearl_events)
-                .before(MinecraftChatPlugin::handle_send_whisper_events)
+                .before(MinecraftChatPlugin::handle_send_msg_events)
                 .after(MinecraftChatPlugin::handle_chat_received_events),
         );
     }
@@ -34,21 +34,21 @@ impl Plugin for PearlCommandPlugin {
 impl PearlCommandPlugin {
     #[allow(clippy::too_many_lines)]
     #[cfg_attr(not(feature = "discord"), allow(unused_variables))]
-    pub fn handle_pearl_command_events(
-        mut command_events: EventReader<CommandEvent>,
+    pub fn handle_pearl_cmd_events(
+        mut cmd_events: EventReader<CmdEvent>,
+        mut msg_events: EventWriter<MsgEvent>,
         mut pearl_events: EventWriter<PearlGotoEvent>,
-        mut whisper_events: EventWriter<WhisperEvent>,
         query: Query<(&TabList, &Position, &LocalSettings)>,
         settings: Query<&LocalSettings>,
         global_settings: Res<GlobalSettings>,
         stasis_chambers: Res<StasisChambers>,
     ) {
-        for mut event in command_events.read().cloned() {
-            let ChatCmds::Pearl(_plugin) = event.command else {
+        for mut event in cmd_events.read().cloned() {
+            let (Cmds::Pearl(_plugin), Some(entity)) = (event.cmd, event.entity) else {
                 continue;
             };
 
-            let Ok((tab_list, position, local_settings)) = query.get(event.entity) else {
+            let Ok((tab_list, position, local_settings)) = query.get(entity) else {
                 continue;
             };
 
@@ -62,7 +62,7 @@ impl PearlCommandPlugin {
             locations.dedup();
 
             let settings = settings.iter().cloned().collect::<Vec<_>>();
-            let mut whisper_event = WhisperEvent {
+            let mut msg_event = MsgEvent {
                 entity:  event.entity,
                 source:  event.source.clone(),
                 sender:  event.sender,
@@ -74,47 +74,49 @@ impl PearlCommandPlugin {
                 continue; /* Auto Pearl Disabled */
             }
 
+            #[allow(clippy::infallible_destructuring_match)]
             let uuid = match event.sender {
                 #[cfg(feature = "api")]
-                CommandSender::ApiServer(uuid) => uuid,
+                CmdSender::ApiServer(uuid) => uuid,
                 #[cfg(feature = "discord")]
-                CommandSender::Discord(user_id) => {
+                CmdSender::Discord(user_id) => {
                     let Some(username) = event.args.pop_front() else {
-                        whisper_event.content = str!("Missing player name");
-                        whisper_event.status = 404;
-                        whisper_events.send(whisper_event);
-                        command_events.clear();
+                        msg_event.content = str!("Missing player name");
+                        msg_event.status = 404;
+                        msg_events.send(msg_event);
+                        cmd_events.clear();
                         return;
                     };
 
                     let Some((uuid, _info)) = tab_list.iter().find(|(_, info)| {
                         info.profile.name.to_lowercase() == username.to_lowercase()
                     }) else {
-                        whisper_event.content = format!("{username} is not online");
-                        whisper_event.status = 404;
-                        whisper_events.send(whisper_event);
-                        command_events.clear();
+                        msg_event.content = format!("{username} is not online");
+                        msg_event.status = 404;
+                        msg_events.send(msg_event);
+                        cmd_events.clear();
                         return;
                     };
 
                     if global_settings.whitelist_only {
                         let Some(user) = global_settings.users.get(uuid) else {
-                            command_events.clear();
+                            cmd_events.clear();
                             return; /* Not Whitelisted */
                         };
 
                         if ![str!(user_id), str!("*")].contains(&user.discord_id) {
-                            whisper_event.content = str!("That account isn't linked to you");
-                            whisper_event.status = 403;
-                            whisper_events.send(whisper_event);
-                            command_events.clear();
+                            msg_event.content = str!("That account isn't linked to you");
+                            msg_event.status = 403;
+                            msg_events.send(msg_event);
+                            cmd_events.clear();
                             return;
                         }
                     }
 
                     *uuid
                 }
-                CommandSender::Minecraft(uuid) => uuid,
+                #[allow(irrefutable_let_patterns)]
+                CmdSender::Minecraft(uuid) => uuid,
             };
 
             let local_settings = match settings.first() {
@@ -122,9 +124,10 @@ impl PearlCommandPlugin {
                 _ => {
                     /* Multi-Account Swarm */
                     if let Some(location) = event.args.pop_front() {
+                        #[allow(irrefutable_let_patterns)]
                         if location == local_settings.auto_pearl.location {
                             local_settings
-                        } else if let CommandSource::Minecraft(_) = event.source {
+                        } else if let CmdSource::Minecraft(_) = event.source {
                             if event.message {
                                 // TODO: Redirect to appropriate bot
                                 local_settings /* Local Chat */
@@ -137,18 +140,18 @@ impl PearlCommandPlugin {
                     } else {
                         match event.source {
                             #[cfg(feature = "api")]
-                            CommandSource::ApiServer(_) => {
-                                whisper_events.send(whisper_event);
-                                command_events.clear();
+                            CmdSource::ApiServer(_) => {
+                                msg_events.send(msg_event);
+                                cmd_events.clear();
                                 return;
                             }
                             #[cfg(feature = "discord")]
-                            CommandSource::Discord(_) => {
-                                whisper_events.send(whisper_event);
-                                command_events.clear();
+                            CmdSource::Discord(_) => {
+                                msg_events.send(msg_event);
+                                cmd_events.clear();
                                 return;
                             }
-                            CommandSource::Minecraft(_) => local_settings,
+                            CmdSource::Minecraft(_) => local_settings,
                         }
                     }
                 }
@@ -183,29 +186,29 @@ impl PearlCommandPlugin {
                 (shared_count, *distance)
             }) else {
                 let location = &local_settings.auto_pearl.location;
-                whisper_event.content = format!("Pearl not found at {location}");
-                whisper_event.status = 404;
-                whisper_events.send(whisper_event);
-                command_events.clear();
+                msg_event.content = format!("Pearl not found at {location}");
+                msg_event.status = 404;
+                msg_events.send(msg_event);
+                cmd_events.clear();
                 return;
             };
 
-            whisper_event.status = 200;
-            whisper_event.content = match count {
+            msg_event.status = 200;
+            msg_event.content = match count {
                 0 => str!("I'm on my way, this was your last pearl!"),
                 1 => str!("I'm on my way, you have one more pearl!"),
                 c => format!("I'm on my way, you have {c} more pearls."),
             };
 
-            whisper_events.send(whisper_event);
+            msg_events.send(msg_event);
             pearl_events.send(PearlGotoEvent(PearlEvent {
-                entity:     event.entity,
-                idle_goal:  local_settings.auto_pearl.idle_goal.clone(),
-                block_pos:  chamber.block_pos,
+                entity,
+                idle_goal: local_settings.auto_pearl.idle_goal.clone(),
+                block_pos: chamber.block_pos,
                 owner_uuid: chamber.owner_uuid,
             }));
 
-            command_events.clear();
+            cmd_events.clear();
             return;
         }
     }

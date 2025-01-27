@@ -9,7 +9,7 @@ use crate::prelude::*;
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct JoinCommandPlugin;
 
-impl ChatCmd for JoinCommandPlugin {
+impl Cmd for JoinCommandPlugin {
     fn aliases(&self) -> Vec<&'static str> {
         vec!["connect", "join", "c"]
     }
@@ -19,26 +19,26 @@ impl Plugin for JoinCommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            Self::handle_join_command_events
+            Self::handle_join_cmd_events
                 .ambiguous_with_all()
-                .before(MinecraftChatPlugin::handle_send_whisper_events)
+                .before(MinecraftChatPlugin::handle_send_msg_events)
                 .after(MinecraftChatPlugin::handle_chat_received_events),
         );
     }
 }
 
 impl JoinCommandPlugin {
-    pub fn handle_join_command_events(
-        mut command_events: EventReader<CommandEvent>,
-        mut whisper_events: EventWriter<WhisperEvent>,
+    pub fn handle_join_cmd_events(
+        mut cmd_events: EventReader<CmdEvent>,
+        mut msg_events: EventWriter<MsgEvent>,
         swarm_state: Res<SwarmState>,
     ) {
-        if let Some(event) = command_events.read().next() {
-            let ChatCmds::Join(_plugin) = event.command else {
+        if let Some(event) = cmd_events.read().next() {
+            let Cmds::Join(_plugin) = event.cmd else {
                 return;
             };
 
-            let mut whisper_event = WhisperEvent {
+            let mut msg_event = MsgEvent {
                 content: String::new(),
                 entity:  event.entity,
                 sender:  event.sender,
@@ -47,21 +47,21 @@ impl JoinCommandPlugin {
             };
 
             let Some(bot_name) = event.args.iter().next() else {
-                whisper_event.content = str!("[404] Missing bot name");
-                whisper_event.status = 404;
-                whisper_events.send(whisper_event);
+                msg_event.content = str!("[404] Missing bot name");
+                msg_event.status = 404;
+                msg_events.send(msg_event);
                 return;
             };
 
-            whisper_event.content = format!("[202] Enabling AutoReconnect for {bot_name}");
-            whisper_event.status = 202;
-            whisper_events.send(whisper_event);
+            msg_event.content = format!("[202] Enabling AutoReconnect for {bot_name}");
+            msg_event.status = 202;
+            msg_events.send(msg_event);
             swarm_state
                 .auto_reconnect
                 .write()
                 .insert(bot_name.to_lowercase(), (true, 0));
         }
 
-        command_events.clear();
+        cmd_events.clear();
     }
 }

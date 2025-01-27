@@ -35,7 +35,7 @@ use semver::Version;
 use serenity::prelude::*;
 use smart_default::SmartDefault;
 use terminal_link::Link;
-use url::Url;
+use ureq::ResponseExt;
 
 use crate::prelude::*;
 
@@ -50,12 +50,9 @@ pub const CARGO_PKG_REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 pub fn get_remote_version() -> Result<Version> {
     let response = ureq::get(CARGO_PKG_HOMEPAGE).call()?;
 
-    if let Ok(parsed_url) = Url::parse(response.get_url()) {
-        if let Some(mut segments) = parsed_url.path_segments() {
-            if let Some(remote_version) = segments.next_back() {
-                return Ok(remote_version.parse()?);
-            }
-        }
+    let url = response.get_uri().to_string();
+    if let Some(remote_version) = url.split('/').next_back() {
+        return Ok(remote_version.parse()?);
     }
 
     bail!("Failed to get the remote version")
