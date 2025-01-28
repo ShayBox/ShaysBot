@@ -9,9 +9,9 @@
 
 # ShaysBot
 
-My personal Minecraft bot written in Rust, built using [Azalea].  
+My personal Minecraft bot written in Rust built with [Azalea].  
 Primarily designed to be a pearl bot, allowing for quick travel to different locations with multiple accounts.  
-Also featuring a Discord bot and a HTTP API for local integrations, and support for [No Chat Reports] encryption.
+Also featuring a Discord bot, an HTTP API for local integrations, and support for [No Chat Reports] encryption.
 
 ## How to use
 
@@ -45,14 +45,23 @@ Compiled with [GitHub Actions](.github/workflows/release.yml) using the [**Debug
 
 Prerequisites:
 
-- Rust(up)
-    - Windows: `winget install -e --id Rustlang.Rustup`
-    - Debian: `sudo apt install rustup` (Includes LLVM)
-    - Ubuntu: `sudo snap install rustup` (Includes LLVM)
-    - Other: [Rustup] (requires LLVM)
-- LLVM (LLD/Clang)
+- 2GIB of RAM/SWAP
+- LLVM (Clang/LLD)
     - Windows: `winget install -e --id LLVM.LLVM` or [Visual Studio]
-    - Other: [Google] | [ChatGPT] | [Deepseek]
+    - ArchLinux: `sudo pacman -S base-devel clang lld`
+    - Debian/Ubuntu: `sudo apt install build-essential clang lld`
+    - Other: Ask [Google], [ChatGPT], or [Deepseek]
+- Rust (Cargo/Rustup)
+    - Windows: `winget install -e --id Rustlang.Rustup`
+    - ArchLinux: `sudo pacman -S rustup`
+    - Debian 13+: `sudo apt install rustup`
+    - Ubuntu 24.04+: `sudo apt/snap install rustup`
+    - Other: [Rustup]
+
+Troubleshooting:
+
+- No space left on device - Your /tmp directory is too small or full
+    - `sudo mount -o remount,size=1G /tmp && rm -rf /tmp/cargo-install*`
 
 ### Install (Recommended) - Compiled Locally
 
@@ -67,7 +76,7 @@ Prerequisites:
 2. `cd ShaysBot`
 3. Run: `cargo run`
 4. Build: `cargo build` (`target/debug/shaysbot`)
-5. Install: `cargo install --path .`
+5. Install: `cargo install --path .` (`shaysbot`)
 
 ### Cargo Profiles
 
@@ -117,18 +126,20 @@ You can manually override with either: `--debug` or `--release`
 
 [Azalea]: https://github.com/azalea-rs/azalea
 
+[ChatGPT]: https://chatgpt.com
+
+[Deepseek]: https://chat.deepseek.com
+
+[Google]: https://google.com
+
+[Latest]: https://github.com/shaybox/shaysbot/releases/latest
+
 [No Chat Reports]: https://github.com/Aizistral-Studios/No-Chat-Reports
+
+[Releases]: https://github.com/shaybox/shaysbot/releases
+
+[Rustup]: https://rustup.rs
 
 [Visual Studio]: https://visualstudio.microsoft.com
 
 [ZenithProxy]: https://github.com/rfresh2/ZenithProxy
-
-[Latest]: https://github.com/shaybox/shaysbot/releases/latest
-
-[Releases]: https://github.com/shaybox/shaysbot/releases
-
-[Google]: https://google.com
-
-[ChatGPT]: https://chatgpt.com
-
-[Deepseek]: https://chat.deepseek.com

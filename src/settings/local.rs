@@ -172,20 +172,23 @@ impl From<PathBuf> for LocalSettings {
 }
 
 impl LocalSettings {
-    /// # Panics
-    /// Will panic if `std::env::current_exe` fails.
-    #[must_use]
-    pub fn new(username: &str) -> Self {
-        let mut path = if cfg!(debug_assertions) {
-            std::env::current_exe().unwrap()
+    /// # Errors
+    /// Will return `Err` if `Self::path` fails.
+    pub fn new(username: &str) -> Result<Self> {
+        Ok(Self::from(Self::path()?.join(format!("{username}.toml"))))
+    }
+
+    /// # Errors
+    /// Will return `Err` if `std::env::current_exe` or `std::env::current_dir` fails.
+    pub fn path() -> Result<PathBuf> {
+        let path = if cfg!(debug_assertions) {
+            let path = std::env::current_exe()?;
+            path.parent().context("None")?.to_path_buf()
         } else {
-            std::env::current_dir().unwrap()
+            std::env::current_dir()?
         };
 
-        path.set_file_name(format!("local-settings/{username}"));
-        path.set_extension("toml");
-
-        Self::from(path)
+        Ok(path.join("local-settings"))
     }
 
     /// # Errors
@@ -249,24 +252,18 @@ impl LocalSettingsPlugin {
 /// # Errors
 /// Will return `Err` if settings fails to load.
 pub async fn load_settings(mut swarm: Swarm) -> Result<()> {
-    let current_exe_path = std::env::current_exe()?;
-    let current_dir_path = current_exe_path.parent().context("None")?;
-    let local_settings_path = current_dir_path.join("local-settings");
-    if !local_settings_path.exists() {
-        tokio::fs::create_dir(&local_settings_path).await?;
+    let path = LocalSettings::path()?;
+    if !path.exists() {
+        tokio::fs::create_dir(&path).await?;
     }
 
-    let mut entries = tokio::fs::read_dir(&local_settings_path).await?;
+    let mut entries = tokio::fs::read_dir(&path).await?;
     let mut usernames = Vec::new();
     while let Some(entry) = entries.next_entry().await? {
         let file_name = entry.file_name().to_string_lossy().to_string();
         let Some(username) = file_name.strip_suffix(".toml") else {
             continue;
         };
-
-        if username == "global-settings" {
-            continue;
-        }
 
         usernames.push(str!(username));
     }
@@ -278,7 +275,7 @@ pub async fn load_settings(mut swarm: Swarm) -> Result<()> {
     }
 
     for username in usernames {
-        let settings = LocalSettings::new(&username).load()?.save()?;
+        let settings = LocalSettings::new(&username)?.load()?.save()?;
         let account = match settings.auth_mode {
             AuthMode::Offline => Account::offline(&username),
             AuthMode::Online => Account::microsoft(&username).await?,

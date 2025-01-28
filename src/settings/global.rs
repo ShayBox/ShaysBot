@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use azalea::{
     app::{App, Plugin},
     prelude::*,
@@ -111,18 +111,16 @@ pub enum EncryptionMode {
 
 impl GlobalSettings {
     /// # Errors
-    /// Will return `Err` if `std::env::current_exe` fails.
+    /// Will return `Err` if `std::env::current_exe` or `std::env::current_dir` fails.
     pub fn path() -> Result<PathBuf> {
-        let mut path = if cfg!(debug_assertions) {
-            std::env::current_exe()?
+        let path = if cfg!(debug_assertions) {
+            let path = std::env::current_exe()?;
+            path.parent().context("None")?.to_path_buf()
         } else {
             std::env::current_dir()?
         };
 
-        path.set_file_name("global-settings");
-        path.set_extension("toml");
-
-        Ok(path)
+        Ok(path.join("global-settings.toml"))
     }
 
     /// # Errors

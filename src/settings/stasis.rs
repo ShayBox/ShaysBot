@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
 };
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use azalea::{
     app::{App, Plugin},
     prelude::*,
@@ -33,18 +33,16 @@ pub struct StasisChambers(#[serde_as(as = "Vec<(_, _)>")] pub HashMap<Uuid, Stas
 
 impl StasisChambers {
     /// # Errors
-    /// Will return `Err` if `std::env::current_exe` fails.
+    /// Will return `Err` if `std::env::current_exe` or `std::env::current_dir` fails.
     pub fn path() -> Result<PathBuf> {
-        let mut path = if cfg!(debug_assertions) {
-            std::env::current_exe()?
+        let path = if cfg!(debug_assertions) {
+            let path = std::env::current_exe()?;
+            path.parent().context("None")?.to_path_buf()
         } else {
             std::env::current_dir()?
         };
 
-        path.set_file_name("stasis-chambers");
-        path.set_extension("yaml");
-
-        Ok(path)
+        Ok(path.join("stasis-chambers.yaml"))
     }
 
     /// # Errors
