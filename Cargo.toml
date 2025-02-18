@@ -1,8 +1,8 @@
 [package]
 name = "shaysbot"
-version = "0.14.0"
+version = "0.15.0"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
-edition = "2021"
+edition = "2024"
 description = "My personal Minecraft bot using Azalea"
 readme = "README.md"
 homepage = "https://git.shaybox.com/shaysbot/releases/latest"
@@ -20,11 +20,10 @@ anyhow = "1"
 azalea = { git = "https://github.com/azalea-rs/azalea", default-features = false, features = ["serde"] }
 azalea-viaversion = { git = "https://github.com/azalea-rs/azalea-viaversion" }
 base64 = "0.22"
-bevy-discord = { version = "0.5.0", features = ["full"], optional = true }
+bevy-discord = { version = "0.6.0-rc.1", features = ["bot"], optional = true }
 bounded-counter = { version = "0.1", features = ["deref", "deref_mut"] }
 chrono = "0.4"
-derive-new = "0.7"
-derive_more = { version = "1", features = ["full"] }
+derive_more = { version = "2", features = ["full"] }
 fastrand = "2"
 lazy-regex = "3"
 ncr = { git = "https://github.com/Shays-Forks/ncr-rs", features = ["cfb8", "ecb", "gcm"] }
@@ -37,7 +36,7 @@ serde_yml = "0.0.12"
 serenity = { version = "0.12", optional = true }
 smart-default = "0.7"
 str-macro = "1"
-strum = { version = "0.26", features = ["derive"] }
+strum = { version = "0.27", features = ["derive"] }
 terminal-link = "0.1"
 tiny_http = { version = "0.12", optional = true }
 tokio = { version = "1", features = ["full"] }
@@ -48,9 +47,9 @@ ureq = { version = "3", features = ["json"] }
 uuid = "1"
 
 [features]
-default = ["api", "discord"]
+default = ["api", "bot"]
 api = ["dep:tiny_http"]
-discord = ["dep:bevy-discord", "dep:serenity"]
+bot = ["dep:bevy-discord", "dep:serenity"]
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }

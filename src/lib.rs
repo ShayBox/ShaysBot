@@ -16,9 +16,9 @@ extern crate tracing;
 
 pub mod prelude;
 
-pub mod chat;
 pub mod commands;
 pub mod modules;
+pub mod parsers;
 pub mod settings;
 pub mod trackers;
 
@@ -27,11 +27,12 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use anyhow::{bail, Result};
 use azalea::{ecs::prelude::*, prelude::*, swarm::prelude::*};
 use azalea_viaversion::ViaVersionPlugin;
-#[cfg(feature = "discord")]
-use bevy_discord::bot::{DiscordBotConfig, DiscordBotPlugin};
+#[cfg(feature = "bot")]
+use bevy_discord::config::DiscordBotConfig;
+use bevy_discord::DiscordPluginGroup;
 use parking_lot::RwLock;
 use semver::Version;
-#[cfg(feature = "discord")]
+#[cfg(feature = "bot")]
 use serenity::prelude::*;
 use smart_default::SmartDefault;
 use terminal_link::Link;
@@ -80,7 +81,7 @@ pub async fn start() -> Result<()> {
         .set_swarm_handler(swarm_handler)
         .add_plugins((
             CommandsPluginGroup,
-            MinecraftChatPlugin,
+            MinecraftParserPlugin,
             ModulesPluginGroup,
             SettingsPluginGroup,
             TrackersPluginGroup,
@@ -94,21 +95,21 @@ pub async fn start() -> Result<()> {
         info!("{link}");
     }
 
-    #[cfg(feature = "api")] /* Enable the ApiServer plugin if it's enabled */
-    if global_settings.api.enabled {
-        client = client.add_plugins(ApiServerPlugin);
+    #[cfg(feature = "api")]
+    if global_settings.http_api.enabled {
+        client = client.add_plugins(HttpApiParserPlugin);
     }
 
-    #[cfg(feature = "discord")] /* Enable the Discord plugin if a token was provided */
+    #[cfg(feature = "bot")]
     if !global_settings.discord_token.is_empty() {
-        let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
-        let config = DiscordBotConfig::default()
-            .gateway_intents(intents)
+        let gateway_intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+        let bot_config = DiscordBotConfig::default()
+            .gateway_intents(gateway_intents)
             .token(global_settings.discord_token.clone());
 
         client = client.add_plugins((
-            DiscordBotPlugin::new(config),
-            DiscordChatPlugin,
+            DiscordPluginGroup { bot_config },
+            DiscordParserPlugin,
             DiscordLoggerPlugin,
         ));
     }

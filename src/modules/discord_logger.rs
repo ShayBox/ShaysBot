@@ -10,7 +10,7 @@ use azalea::{
     GameProfileComponent,
     TabList,
 };
-use bevy_discord::http::DiscordHttpResource;
+use bevy_discord::res::DiscordHttpResource;
 use serenity::{
     all::{ChannelId, Http},
     json::json,
@@ -18,7 +18,7 @@ use serenity::{
 
 use crate::prelude::*;
 
-/// Log various events to Discord.
+/// Log events such as `Visual Range` to Discord
 pub struct DiscordLoggerPlugin;
 
 impl Plugin for DiscordLoggerPlugin {

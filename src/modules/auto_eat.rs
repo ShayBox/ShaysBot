@@ -25,7 +25,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Automatically swap and eat food to avoid starving.
+/// Automatically eat food to avoid starving to death
 pub struct AutoEatPlugin;
 
 impl Plugin for AutoEatPlugin {
@@ -48,6 +48,7 @@ type QueryData<'a> = (
     &'a Hunger,
     &'a Inventory,
     &'a LookDirection,
+    &'a LocalSettings,
 );
 type QueryFilter = (With<Player>, With<LocalEntity>);
 
@@ -59,14 +60,16 @@ impl AutoEatPlugin {
         mut packet_events: EventWriter<SendPacketEvent>,
         mut container_click_events: EventWriter<ContainerClickEvent>,
     ) {
-        const EAT_DELAY: u128 = 32 + 2; /* Extra Delay: Fix de-sync */
+        for (entity, game_ticks, hunger, inventory, direction, local_settings) in &mut query {
+            if !local_settings.auto_eat.enabled {
+                continue;
+            }
 
-        for (entity, game_ticks, hunger, inventory, direction) in &mut query {
             if hunger.food >= 18 {
                 continue;
             }
 
-            if game_ticks.0 % EAT_DELAY != 0 {
+            if game_ticks.0 % local_settings.auto_eat.delay_ticks != 0 {
                 continue;
             }
 

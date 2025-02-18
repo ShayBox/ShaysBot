@@ -6,7 +6,7 @@ use azalea::{
 };
 use bounded_counter::BoundedCounter;
 
-/// Tracks game ticks.
+/// Tracks game ticks for counting intervals
 pub struct GameTickPlugin;
 
 impl Plugin for GameTickPlugin {

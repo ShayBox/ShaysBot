@@ -1,3 +1,4 @@
+<!--suppress HtmlDeprecatedAttribute -->
 <div align="center">
   <a href="https://discord.shaybox.com">
     <img alt="Discord" src="https://img.shields.io/discord/824865729445888041?color=404eed&label=Discord&logo=Discord&logoColor=FFFFFF">
@@ -50,6 +51,7 @@ Prerequisites:
     - Windows: `winget install -e --id LLVM.LLVM` or [Visual Studio]
     - ArchLinux: `sudo pacman -S base-devel clang lld`
     - Debian/Ubuntu: `sudo apt install build-essential clang lld`
+    - Fedora: `sudo dnf install clang lld`
     - Other: Ask [Google], [ChatGPT], or [Deepseek]
 - Rust (Cargo/Rustup)
     - Windows: `winget install -e --id Rustlang.Rustup`
@@ -93,36 +95,43 @@ You can manually override with either: `--debug` or `--release`
 
 ### Commands
 
-- [**Join**](src/commands/join.rs) - Enable AutoReconnect for a bot.
-- [**Leave**](src/commands/leave.rs) - Disable AutoReconnect and disconnect a bot.
-- [**Pearl**](src/commands/pearl.rs) - Automatically pull pearls remotely.
-- [**Playtime**](src/commands/playtime.rs) - View players play time. (2b2t.vc)
-- [**Seen**](src/commands/seen.rs) - View players first and last seen. (2b2t.vc)
-- [**Whitelist**](src/commands/whitelist.rs) - Whitelist Players and link their Discord.
+- [**Join**](src/commands/join.rs) - Connect an account to the server by enabling `AutoReconnect`
+- [**Leave**](src/commands/leave.rs) - Disconnect an account from the server and disable `AutoReconnect`
+- [**Pearl**](src/commands/pearl.rs) - Automatically pull the closest stasis chamber at a `location`
+- [**Playtime**](src/commands/playtime.rs) - Fetch a players play time using `2b2t.vc`
+- [**Seen**](src/commands/seen.rs) - Fetch a players first and last seen time using `2b2t.vc`
+- [**Whitelist**](src/commands/whitelist.rs) - Add or remove players from the whitelist or link their Discord
 
 ### Modules
 
-- [**AntiAfk**](src/modules/anti_afk.rs) - Automatically swing arm to prevent being kicked.
-- [**AutoEat**](src/modules/auto_eat.rs) - Automatically swap and eat food to avoid starving.
-- [**AutoKill**](src/modules/auto_kill.rs) - Automatically swap and kill nearby monsters.
-- [**AutoLeave**](src/modules/auto_leave.rs) - Automatically leave the server when in danger.
-- [**AutoLook**](src/modules/auto_look.rs) - Automatically look at the closest player.
-- [**AutoPearl**](src/modules/auto_pearl.rs) - Automatically goto and pull player pearls.
-- [**AutoTotem**](src/modules/auto_totem.rs) - Automatically equip totems of undying.
-- [**DiscordLogger**](src/modules/discord_logger.rs) - Log various events to Discord.
+- [**AntiAfk**](src/modules/anti_afk.rs) - Automatically swing arm to avoid being kicked
+- [**AutoEat**](src/modules/auto_eat.rs) - Automatically eat food to avoid starving to death
+- [**AutoKill**](src/modules/auto_kill.rs) - Automatically swap and attack nearby monsters
+- [**AutoLeave**](src/modules/auto_leave.rs) - Automatically leave the server when in danger
+- [**AutoLook**](src/modules/auto_look.rs) - Automatically look at the closest player in range
+- [**AutoPearl**](src/modules/auto_pearl.rs) - Automatically goto and pull player stasis chambers
+- [**AutoTotem**](src/modules/auto_totem.rs) - Automatically equip totems of undying to avoid dying
+- [**AutoWhitelist**](src/modules/auto_whitelist.rs) - Automatically whitelist players that enter range
+- [**DiscordLogger**](src/modules/discord_logger.rs) - Log events such as `Visual Range` to Discord
+
+### Parsers
+
+- [**Discord**](src/parsers/discord.rs) - Discord chat command parsing integration
+- [**HttpApi**](src/parsers/http_api.rs) - Local HTTP API command parsing integration
+- [**Minecraft**](src/parsers/minecraft.rs) - Minecraft chat command parsing integration
 
 ### Settings
 
-- [**GlobalSettings**](src/settings/global.rs) - Handle global swarm settings.
-- [**LocalSettings**](src/settings/local.rs) - Handle local account settings.
-- [**StasisChambers**](src/settings/stasis.rs) - Handle global stasis chambers.
+- [**GlobalSettings**](src/settings/global.rs) - Global Swarm Settings that apply to every account
+- [**LocalSettings**](src/settings/local.rs) - Local Account Settings that apply per-account
+- [**StasisChambers**](src/settings/stasis.rs) - Global Stasis Chambers
 
 ### Trackers
 
-- [**BlockStates**](src/trackers/block_state.rs) - Tracks block states.
-- [**EnderPearls**](src/trackers/ender_pearl.rs) - Tracks ender pearls.
-- [**GameTicks**](src/trackers/game_tick.rs) - Tracks game ticks.
-- [**PlayerProfiles**](src/trackers/player_profile.rs) - Tracks player profiles.
+- [**BlockStates**](src/trackers/block_state.rs) - Tracks block states for trapdoor closes
+- [**EnderPearls**](src/trackers/ender_pearl.rs) - Tracks ender pearls for new chambers
+- [**GameTicks**](src/trackers/game_tick.rs) - Tracks game ticks for counting intervals
+- [**PlayerProfiles**](src/trackers/player_profile.rs) - Tracks player profiles for visual range
 
 [Azalea]: https://github.com/azalea-rs/azalea
 

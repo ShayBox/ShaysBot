@@ -33,7 +33,7 @@ use uuid::Uuid;
 
 use crate::prelude::*;
 
-/// Automatically goto and pull player pearls.
+/// Automatically goto and pull player stasis chambers
 pub struct AutoPearlPlugin;
 
 impl Plugin for AutoPearlPlugin {

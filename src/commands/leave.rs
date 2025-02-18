@@ -9,7 +9,7 @@ use crate::prelude::*;
 
 pub const LEAVE_PREFIX: &str = "Leave Command: ";
 
-/// Disconnect a bot from the Minecraft server.
+/// Disconnect an account from the server and disable `AutoReconnect`
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct LeaveCommandPlugin;
 
@@ -25,8 +25,8 @@ impl Plugin for LeaveCommandPlugin {
             Update,
             Self::handle_leave_cmd_events
                 .ambiguous_with_all()
-                .before(MinecraftChatPlugin::handle_send_msg_events)
-                .after(MinecraftChatPlugin::handle_chat_received_events),
+                .before(MinecraftParserPlugin::handle_send_msg_events)
+                .after(MinecraftParserPlugin::handle_chat_received_events),
         );
     }
 }

@@ -18,7 +18,7 @@ use uuid::Uuid;
 
 use crate::prelude::*;
 
-/// Tracks ender pearls.
+/// Tracks ender pearls for new chambers
 pub struct EnderPearlPlugin;
 
 impl Plugin for EnderPearlPlugin {
@@ -51,6 +51,7 @@ impl EnderPearlPlugin {
     /// # Panics
     /// Will panic if `MinecraftEntityId` is out of bounds.
     /// Will panic of `Settings::save` fails.
+    #[allow(clippy::cognitive_complexity)]
     pub fn handle_add_entity_packet(
         mut packet_events: EventReader<PacketEvent>,
         mut query: Query<(&InstanceHolder, &LocalSettings)>,
@@ -74,15 +75,16 @@ impl EnderPearlPlugin {
             }
 
             trace!("Fishdar: {packet:#?}");
-            let Some(block_pos) = find_trapdoor_pos(packet.position, holder) else {
+            let Some(block_pos) = find_block_pos(packet.position, holder, "_trapdoor") else {
                 continue;
             };
 
             let owner_uuid = if packet.data == 0 {
                 info!("Unknown player's pearl at {block_pos}");
                 Uuid::max() /* Owner is offline */
-            } else if let Some((_, profile)) =
-                player_profiles.iter().find(|(id, _)| id.0 == packet.data)
+            } else if let Some((_, profile)) = player_profiles
+                .iter()
+                .find(|(id, _)| i64::from(id.0) == i64::from(packet.data))
             {
                 info!("{}'s pearl at {block_pos}", profile.name);
                 profile.uuid /* Owner is in visual range */
@@ -91,12 +93,12 @@ impl EnderPearlPlugin {
                 continue; /* Owner is not in visual range */
             };
 
-            let new_chamber = StasisChamber::new(
+            let new_chamber = StasisChamber {
                 block_pos,
-                packet.id,
+                entity_id: packet.id,
                 owner_uuid,
-                local_settings.auto_pearl.location.clone(),
-            );
+                location: local_settings.auto_pearl.location.clone(),
+            };
 
             stasis_chambers
                 .0
@@ -141,7 +143,7 @@ impl EnderPearlPlugin {
                     block_pos,
                     owner_uuid,
                 }));
-            };
+            }
         }
     }
 
@@ -160,7 +162,7 @@ impl EnderPearlPlugin {
                 if open {
                     return;
                 }
-            };
+            }
 
             stasis_chambers
                 .0
@@ -214,7 +216,7 @@ impl EnderPearlPlugin {
 
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
-pub fn find_trapdoor_pos(position: Vec3, holder: &InstanceHolder) -> Option<BlockPos> {
+pub fn find_block_pos(position: Vec3, holder: &InstanceHolder, pat: &str) -> Option<BlockPos> {
     let instance = holder.instance.read();
 
     let x = position.x.floor() as i32;
@@ -227,7 +229,7 @@ pub fn find_trapdoor_pos(position: Vec3, holder: &InstanceHolder) -> Option<Bloc
             continue;
         };
 
-        if Box::<dyn Block>::from(state).id().ends_with("_trapdoor") {
+        if Box::<dyn Block>::from(state).id().ends_with(pat) {
             return Some(pos);
         }
     }

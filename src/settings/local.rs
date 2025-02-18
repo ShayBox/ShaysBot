@@ -18,9 +18,31 @@ use azalea::{
 };
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;
-#[cfg(feature = "discord")]
+#[cfg(feature = "bot")]
 use serenity::all::ChannelId;
 use smart_default::SmartDefault;
+
+/// Local Account Settings that apply per-account
+pub struct LocalSettingsPlugin;
+
+impl Plugin for LocalSettingsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, Self::handle_startup);
+    }
+}
+
+impl LocalSettingsPlugin {
+    pub fn handle_startup(swarm: Res<Swarm>) {
+        let swarm = swarm.clone();
+
+        tokio::spawn(async move {
+            if let Err(error) = load_settings(swarm).await {
+                error!("There was an error loading local settings: {error}");
+                std::process::exit(1);
+            }
+        });
+    }
+}
 
 #[derive(Clone, Component, Deserialize, Serialize, SmartDefault)]
 #[serde(default)]
@@ -36,6 +58,9 @@ pub struct LocalSettings {
 
     /// Anti Spam module settings.
     pub anti_spam: AntiSpam,
+
+    /// Auto eat module settings.
+    pub auto_eat: AutoEat,
 
     /// Auto kill module settings.
     pub auto_kill: AutoKill,
@@ -53,7 +78,7 @@ pub struct LocalSettings {
     pub disable_responses: bool,
 
     /// Discord Channel ID. (Optional)
-    #[cfg(feature = "discord")]
+    #[cfg(feature = "bot")]
     pub discord_channel: ChannelId,
 
     /// Minecraft account server address. (Optional)
@@ -91,21 +116,16 @@ pub struct AntiSpam {
     pub unix_epoch: bool,
 }
 
+#[serde_as]
 #[derive(Clone, Deserialize, Serialize, SmartDefault)]
-#[serde(rename = "auto_exit")] /* Deprecated: 0.11 */
 #[serde(default)]
-pub struct AutoLeave {
-    /// Requires whitelist
+pub struct AutoEat {
     #[default(true)]
-    pub unknown_player: bool,
+    pub enabled: bool,
 
-    /// Requires zenith proxy
-    #[default(true)]
-    pub zenith_proxy: bool,
-
-    /// Delay in ticks before leaving the server
-    #[default(0)]
-    pub leave_delay_ticks: usize,
+    #[default(42)]
+    #[serde_as(as = "DisplayFromStr")]
+    pub delay_ticks: u128,
 }
 
 #[serde_as]
@@ -121,6 +141,22 @@ pub struct AutoKill {
     #[default(25)]
     #[serde_as(as = "DisplayFromStr")]
     pub delay_ticks: u128,
+}
+
+#[derive(Clone, Deserialize, Serialize, SmartDefault)]
+#[serde(default)]
+pub struct AutoLeave {
+    /// Automatically leave the server if an unknown player enters visual range
+    #[default(false)]
+    pub unknown_player: bool,
+
+    /// Stay disconnected if `ZenithProxy` disconnects us and force disconnect through `ZenithProxy`
+    #[default(false)]
+    pub zenith_proxy: bool,
+
+    /// Automatically leave to re-queue on 2B2T when another bot at the same location enters visual range
+    #[default(false)]
+    pub auto_requeue: bool,
 }
 
 #[serde_as]
@@ -224,28 +260,6 @@ impl LocalSettings {
         file.write_all(buf)?;
 
         Ok(self)
-    }
-}
-
-/// Handle local account settings.
-pub struct LocalSettingsPlugin;
-
-impl Plugin for LocalSettingsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, Self::handle_startup);
-    }
-}
-
-impl LocalSettingsPlugin {
-    pub fn handle_startup(swarm: Res<Swarm>) {
-        let swarm = swarm.clone();
-
-        tokio::spawn(async move {
-            if let Err(error) = load_settings(swarm).await {
-                error!("There was an error loading local settings: {error}");
-                std::process::exit(1);
-            }
-        });
     }
 }
 

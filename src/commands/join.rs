@@ -5,7 +5,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Connect a bot to the Minecraft server.
+/// Connect an account to the server by enabling `AutoReconnect`
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct JoinCommandPlugin;
 
@@ -21,8 +21,8 @@ impl Plugin for JoinCommandPlugin {
             Update,
             Self::handle_join_cmd_events
                 .ambiguous_with_all()
-                .before(MinecraftChatPlugin::handle_send_msg_events)
-                .after(MinecraftChatPlugin::handle_chat_received_events),
+                .before(MinecraftParserPlugin::handle_send_msg_events)
+                .after(MinecraftParserPlugin::handle_chat_received_events),
         );
     }
 }

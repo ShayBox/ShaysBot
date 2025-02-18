@@ -10,7 +10,7 @@ use ureq::{config::Config, Agent};
 
 use crate::prelude::*;
 
-/// View players first and last seen. <https://2b2t.vc>
+/// Fetch a players first and last seen time using <https://2b2t.vc>
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct SeenCommandPlugin;
 
@@ -26,8 +26,8 @@ impl Plugin for SeenCommandPlugin {
             Update,
             Self::handle_seen_cmd_events
                 .ambiguous_with_all()
-                .before(MinecraftChatPlugin::handle_send_msg_events)
-                .after(MinecraftChatPlugin::handle_chat_received_events),
+                .before(MinecraftParserPlugin::handle_send_msg_events)
+                .after(MinecraftParserPlugin::handle_chat_received_events),
         );
     }
 }

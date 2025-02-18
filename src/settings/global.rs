@@ -18,6 +18,15 @@ use serde_with::DurationSeconds;
 use smart_default::SmartDefault;
 use uuid::Uuid;
 
+/// Global Swarm Settings that apply to every account
+pub struct GlobalSettingsPlugin;
+
+impl Plugin for GlobalSettingsPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(GlobalSettings::load().expect("Failed to load global settings"));
+    }
+}
+
 #[serde_as]
 #[derive(Clone, Deserialize, Serialize, SmartDefault, Resource)]
 #[serde(default)]
@@ -49,24 +58,24 @@ pub struct GlobalSettings {
     /// ViaProxy server version. (Optional)
     pub server_version: String,
 
+    /// Automatically whitelist players that enter visual range.
+    #[default(false)]
+    pub whitelist_in_range: bool,
+
     /// Disable commands for non-whitelisted players.
     #[default(false)]
-    #[serde(alias = "whitelist")] /* Deprecated: 0.13 */
     pub whitelist_only: bool,
 
     /// API Server for local integrations.
     #[cfg(feature = "api")]
     #[serde(rename = "api_server")]
-    pub api: ApiServer,
+    pub http_api: ApiServer,
 
     /// Chat encryption using the NCR (No Chat Reports) mod.
     #[serde(rename = "chat_encryption")]
-    #[serde(alias = "encryption")] /* Deprecated: 0.13 */
     pub chat: ChatEncryption,
 
     /// Minecraft accounts with their linked Discord ID and API Password.
-    #[serde(default)] /* Deprecated: 0.13 */
-    #[serde(alias = "whitelisted")] /* Deprecated: 0.13 */
     pub users: HashMap<Uuid, User>,
 }
 
@@ -155,14 +164,5 @@ impl GlobalSettings {
         file.write_all(buf)?;
 
         Ok(self)
-    }
-}
-
-/// Handle global swarm settings.
-pub struct GlobalSettingsPlugin;
-
-impl Plugin for GlobalSettingsPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(GlobalSettings::load().expect("Failed to load global settings"));
     }
 }

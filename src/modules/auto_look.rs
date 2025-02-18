@@ -10,7 +10,7 @@ use azalea::{
 
 use crate::prelude::{GameTicks, LocalSettings};
 
-/// Automatically look at the closest player.
+/// Automatically look at the closest player in range
 pub struct AutoLookPlugin;
 
 impl Plugin for AutoLookPlugin {

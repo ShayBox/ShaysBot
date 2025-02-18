@@ -8,7 +8,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Automatically swing arm to prevent being kicked.
+/// Automatically swing arm to avoid being kicked
 pub struct AntiAfkPlugin;
 
 impl Plugin for AntiAfkPlugin {
@@ -37,7 +37,7 @@ impl AntiAfkPlugin {
                 continue;
             }
 
-            debug!("Anti-Afk Swing Arm Event");
+            trace!("Anti-Afk Swing Arm Event");
             swing_arm_events.send(SwingArmEvent { entity });
         }
     }

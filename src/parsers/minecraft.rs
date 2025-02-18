@@ -1,16 +1,19 @@
 use std::{
     collections::VecDeque,
+    fmt::Write,
     sync::LazyLock,
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use azalea::{
-    app::{App, Plugin, Update},
-    chat::{handle_send_chat_event, ChatKind, ChatReceivedEvent, SendChatKindEvent},
-    ecs::prelude::*,
     TabList,
+    app::{App, Plugin, Update},
+    chat::{ChatKind, ChatReceivedEvent, SendChatKindEvent, handle_send_chat_event},
+    ecs::prelude::*,
 };
 use ncr::{
+    AesKey,
+    NcrError,
     encoding::{
         Base64Encoding,
         Base64rEncoding,
@@ -21,15 +24,14 @@ use ncr::{
     },
     encryption::{Cfb8Encryption, EcbEncryption, Encryption, GcmEncryption},
     utils::{prepend_header, trim_header},
-    AesKey,
-    NcrError,
 };
 
 use crate::prelude::*;
 
-pub struct MinecraftChatPlugin;
+/// Minecraft chat command parsing integration
+pub struct MinecraftParserPlugin;
 
-impl Plugin for MinecraftChatPlugin {
+impl Plugin for MinecraftParserPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(CmdCooldown::default())
             .add_event::<CmdEvent>()
@@ -45,7 +47,7 @@ impl Plugin for MinecraftChatPlugin {
     }
 }
 
-impl MinecraftChatPlugin {
+impl MinecraftParserPlugin {
     pub fn handle_chat_received_events(
         mut chat_received_events: EventReader<ChatReceivedEvent>,
         mut cmd_events: EventWriter<CmdEvent>,
@@ -148,17 +150,16 @@ impl MinecraftChatPlugin {
                 continue; /* Player Offline */
             };
 
-            try_encrypt(&mut event.content, &settings.chat, type_encryption);
-
-            let mut content = format!("w {username} {}", event.content);
+            debug!("Command Response: {}", event.content);
             if local_settings.anti_spam.enabled {
                 if let Ok(duration) = SystemTime::now().duration_since(UNIX_EPOCH) {
-                    content += &format!(" [{}]", duration.as_secs());
+                    let _ = write!(event.content, " [{}]", duration.as_secs());
                 }
             }
 
+            try_encrypt(&mut event.content, &settings.chat, type_encryption);
             chat_kind_events.send(SendChatKindEvent {
-                content,
+                content: format!("w {username} {}", event.content),
                 entity,
                 kind: ChatKind::Command,
             });

@@ -10,7 +10,7 @@ use azalea::{
     BlockPos,
 };
 
-/// Tracks block states.
+/// Tracks block states for trapdoor closes
 pub struct BlockStatePlugin;
 
 impl Plugin for BlockStatePlugin {

@@ -5,7 +5,8 @@ pub mod auto_leave;
 pub mod auto_look;
 pub mod auto_pearl;
 pub mod auto_totem;
-#[cfg(feature = "discord")]
+pub mod auto_whitelist;
+#[cfg(feature = "bot")]
 pub mod discord_logger;
 
 use azalea::app::{PluginGroup, PluginGroupBuilder};
@@ -24,5 +25,6 @@ impl PluginGroup for ModulesPluginGroup {
             .add(AutoLookPlugin)
             .add(AutoPearlPlugin)
             .add(AutoTotemPlugin)
+            .add(AutoWhitelistPlugin)
     }
 }

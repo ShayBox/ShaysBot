@@ -4,13 +4,13 @@ use azalea::{
     PlayerInfo,
     TabList,
 };
-#[cfg(feature = "discord")]
+#[cfg(feature = "bot")]
 use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::prelude::*;
 
-/// Whitelist Players and link their Discord.
+/// Add or remove players from the whitelist or link their Discord
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WhitelistCommandPlugin;
 
@@ -26,8 +26,8 @@ impl Plugin for WhitelistCommandPlugin {
             Update,
             Self::handle_whitelist_cmd_events
                 .ambiguous_with_all()
-                .before(MinecraftChatPlugin::handle_send_msg_events)
-                .after(MinecraftChatPlugin::handle_chat_received_events),
+                .before(MinecraftParserPlugin::handle_send_msg_events)
+                .after(MinecraftParserPlugin::handle_chat_received_events),
         );
     }
 }
@@ -153,7 +153,7 @@ fn handle_link(
 
             (200, str!("Successfully linked discord"))
         }
-        #[cfg(feature = "discord")]
+        #[cfg(feature = "bot")]
         CmdSender::Discord(_) => {
             let Some(discord_id) = discord_id else {
                 return (404, str!("Missing auth code (Join: auth.aristois.net)"));
@@ -216,7 +216,7 @@ fn handle_set(
     match sender {
         #[cfg(feature = "api")]
         CmdSender::ApiServer(_) => (500, str!("You can't update your API password on the API")),
-        #[cfg(feature = "discord")]
+        #[cfg(feature = "bot")]
         CmdSender::Discord(_) => (500, str!("You can't update your API password on Discord")),
         CmdSender::Minecraft(uuid) => {
             let Some(api_password) = api_password else {
@@ -242,7 +242,7 @@ fn try_find_player<'a>(tab_list: &'a TabList, name: &str) -> Option<(&'a Uuid, &
     tab_list.iter().find(|(_, info)| info.profile.name == name)
 }
 
-#[cfg(feature = "discord")]
+#[cfg(feature = "bot")]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Json {

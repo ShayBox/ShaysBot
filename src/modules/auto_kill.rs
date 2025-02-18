@@ -20,7 +20,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Automatically swap and kill nearby monsters.
+/// Automatically swap and attack nearby monsters
 pub struct AutoKillPlugin;
 
 impl Plugin for AutoKillPlugin {

@@ -1,7 +1,7 @@
-#[cfg(feature = "api")]
-pub mod api;
-#[cfg(feature = "discord")]
+#[cfg(feature = "bot")]
 pub mod discord;
+#[cfg(feature = "api")]
+pub mod http_api;
 pub mod minecraft;
 
 #[cfg(feature = "api")]
@@ -12,7 +12,7 @@ use std::{
 };
 
 use azalea::{ecs::prelude::*, prelude::*};
-#[cfg(feature = "discord")]
+#[cfg(feature = "bot")]
 use serenity::all::{ChannelId, UserId};
 use strum::IntoEnumIterator;
 #[cfg(feature = "api")]
@@ -54,7 +54,7 @@ impl Cmds {
 pub enum CmdSender {
     #[cfg(feature = "api")]
     ApiServer(Uuid),
-    #[cfg(feature = "discord")]
+    #[cfg(feature = "bot")]
     Discord(UserId),
     Minecraft(Uuid),
 }
@@ -63,7 +63,7 @@ pub enum CmdSender {
 pub enum CmdSource {
     #[cfg(feature = "api")]
     ApiServer(Arc<Mutex<Option<Request>>>),
-    #[cfg(feature = "discord")]
+    #[cfg(feature = "bot")]
     Discord(ChannelId),
     Minecraft(Option<EncryptionType>),
 }

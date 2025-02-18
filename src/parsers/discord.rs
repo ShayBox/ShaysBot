@@ -5,14 +5,15 @@ use azalea::{
     ecs::prelude::*,
     entity::{metadata::Player, LocalEntity},
 };
-use bevy_discord::{bot::events::BMessage, http::DiscordHttpResource, DiscordSet};
+use bevy_discord::{events::bot::BMessage, res::DiscordHttpResource, DiscordSet};
 use serenity::json::json;
 
 use crate::prelude::*;
 
-pub struct DiscordChatPlugin;
+/// Discord chat command parsing integration
+pub struct DiscordParserPlugin;
 
-impl Plugin for DiscordChatPlugin {
+impl Plugin for DiscordParserPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
@@ -24,7 +25,7 @@ impl Plugin for DiscordChatPlugin {
     }
 }
 
-impl DiscordChatPlugin {
+impl DiscordParserPlugin {
     pub fn handle_message_events(
         mut message_events: EventReader<BMessage>,
         mut cmd_events: EventWriter<CmdEvent>,

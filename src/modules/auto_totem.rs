@@ -14,7 +14,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Automatically equip totems of undying.
+/// Automatically equip totems of undying to avoid dying
 pub struct AutoTotemPlugin;
 
 impl Plugin for AutoTotemPlugin {

@@ -8,10 +8,11 @@ use azalea::{
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
+    world::MinecraftEntityId,
     TabList,
 };
 
-/// Tracks player profiles.
+/// Tracks player profiles for visual range
 pub struct PlayerProfilePlugin;
 
 impl Plugin for PlayerProfilePlugin {
@@ -23,7 +24,7 @@ impl Plugin for PlayerProfilePlugin {
 }
 
 #[derive(Clone, Component, Default, Resource)]
-pub struct PlayerProfiles(pub HashMap<u32, GameProfile>);
+pub struct PlayerProfiles(pub HashMap<MinecraftEntityId, GameProfile>);
 
 impl PlayerProfilePlugin {
     pub fn handle_add_entity_packets(

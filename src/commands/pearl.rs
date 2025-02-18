@@ -8,7 +8,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Automatically pull pearls remotely.
+/// Automatically pull the closest stasis chamber at a `location`
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct PearlCommandPlugin;
 
@@ -25,15 +25,15 @@ impl Plugin for PearlCommandPlugin {
             Self::handle_pearl_cmd_events
                 .ambiguous_with_all()
                 .before(AutoPearlPlugin::handle_goto_pearl_events)
-                .before(MinecraftChatPlugin::handle_send_msg_events)
-                .after(MinecraftChatPlugin::handle_chat_received_events),
+                .before(MinecraftParserPlugin::handle_send_msg_events)
+                .after(MinecraftParserPlugin::handle_chat_received_events),
         );
     }
 }
 
 impl PearlCommandPlugin {
     #[allow(clippy::too_many_lines)]
-    #[cfg_attr(not(feature = "discord"), allow(unused_variables))]
+    #[cfg_attr(not(feature = "bot"), allow(unused_variables))]
     pub fn handle_pearl_cmd_events(
         mut cmd_events: EventReader<CmdEvent>,
         mut msg_events: EventWriter<MsgEvent>,
@@ -78,7 +78,7 @@ impl PearlCommandPlugin {
             let uuid = match event.sender {
                 #[cfg(feature = "api")]
                 CmdSender::ApiServer(uuid) => uuid,
-                #[cfg(feature = "discord")]
+                #[cfg(feature = "bot")]
                 CmdSender::Discord(user_id) => {
                     let Some(username) = event.args.pop_front() else {
                         msg_event.content = str!("Missing player name");
@@ -145,7 +145,7 @@ impl PearlCommandPlugin {
                                 cmd_events.clear();
                                 return;
                             }
-                            #[cfg(feature = "discord")]
+                            #[cfg(feature = "bot")]
                             CmdSource::Discord(_) => {
                                 msg_events.send(msg_event);
                                 cmd_events.clear();

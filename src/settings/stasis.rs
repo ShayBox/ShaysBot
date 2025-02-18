@@ -9,20 +9,29 @@ use anyhow::{bail, Context, Result};
 use azalea::{
     app::{App, Plugin},
     prelude::*,
+    world::MinecraftEntityId,
     BlockPos,
 };
-use derive_new::new as New;
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;
 use uuid::Uuid;
 
+/// Global Stasis Chambers
+pub struct StasisChambersPlugin;
+
+impl Plugin for StasisChambersPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(StasisChambers::load().expect("Failed to load stasis chambers"));
+    }
+}
+
 #[serde_as]
-#[derive(Clone, Default, Deserialize, Serialize, New)]
+#[derive(Clone, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct StasisChamber {
     #[serde_as(as = "DisplayFromStr")]
     pub block_pos:  BlockPos,
-    pub entity_id:  u32,
+    pub entity_id:  MinecraftEntityId,
     pub owner_uuid: Uuid,
     pub location:   String,
 }
@@ -80,14 +89,5 @@ impl StasisChambers {
         file.write_all(buf)?;
 
         Ok(())
-    }
-}
-
-/// Handle global stasis chambers.
-pub struct StasisChambersPlugin;
-
-impl Plugin for StasisChambersPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(StasisChambers::load().expect("Failed to load stasis chambers"));
     }
 }

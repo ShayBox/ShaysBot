@@ -13,9 +13,10 @@ use crate::prelude::*;
 #[derive(Default, Resource)]
 pub struct ApiServer(Option<Server>);
 
-pub struct ApiServerPlugin;
+/// Local HTTP API command parsing integration
+pub struct HttpApiParserPlugin;
 
-impl Plugin for ApiServerPlugin {
+impl Plugin for HttpApiParserPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ApiServer::default())
             .add_systems(Startup, Self::handle_startup)
@@ -23,16 +24,16 @@ impl Plugin for ApiServerPlugin {
                 Update,
                 (
                     Self::handle_api_requests
-                        .before(MinecraftChatPlugin::handle_chat_received_events),
+                        .before(MinecraftParserPlugin::handle_chat_received_events),
                     Self::handle_send_msg_events,
                 ),
             );
     }
 }
 
-impl ApiServerPlugin {
+impl HttpApiParserPlugin {
     pub fn handle_startup(mut api_server: ResMut<ApiServer>, settings: Res<GlobalSettings>) {
-        match Server::http(settings.api.bind_addr.clone()) {
+        match Server::http(settings.http_api.bind_addr.clone()) {
             Ok(server) => {
                 info!("API Server @ {}", server.server_addr());
                 api_server.0 = Some(server);
