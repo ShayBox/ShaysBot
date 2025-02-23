@@ -25,6 +25,7 @@ bounded-counter = { version = "0.1", features = ["deref", "deref_mut"] }
 chrono = "0.4"
 derive_more = { version = "2", features = ["full"] }
 fastrand = "2"
+itertools = "0.14"
 lazy-regex = "3"
 ncr = { git = "https://github.com/Shays-Forks/ncr-rs", features = ["cfb8", "ecb", "gcm"] }
 parking_lot = "0.12"

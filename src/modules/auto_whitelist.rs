@@ -1,6 +1,6 @@
 use azalea::{
     app::{App, Plugin, Update},
-    packet_handling::game::PacketEvent,
+    packet::game::ReceivePacketEvent,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
 };
@@ -12,13 +12,19 @@ pub struct AutoWhitelistPlugin;
 
 impl Plugin for AutoWhitelistPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::handle_add_entity_packets);
+        app.add_systems(
+            Update,
+            Self::handle_add_entity_packets
+                .before(MinecraftParserPlugin::handle_chat_received_events)
+                .before(MinecraftParserPlugin::handle_send_msg_events)
+                .before(AutoLeavePlugin::handle_add_entity_packets),
+        );
     }
 }
 
 impl AutoWhitelistPlugin {
     pub fn handle_add_entity_packets(
-        mut packet_events: EventReader<PacketEvent>,
+        mut packet_events: EventReader<ReceivePacketEvent>,
         mut global_settings: ResMut<GlobalSettings>,
     ) {
         for event in packet_events.read() {
@@ -35,7 +41,7 @@ impl AutoWhitelistPlugin {
             }
 
             if global_settings.whitelist_in_range {
-                debug!("Adding {} to whitelist", packet.uuid);
+                info!("Adding {} to whitelist", packet.uuid);
                 global_settings.users.insert(packet.uuid, User::default());
             }
         }

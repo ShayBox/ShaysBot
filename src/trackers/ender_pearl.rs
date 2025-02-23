@@ -4,7 +4,7 @@ use azalea::{
     ecs::prelude::*,
     entity::{metadata::Player, Position},
     events::packet_listener,
-    packet_handling::game::PacketEvent,
+    packet::game::ReceivePacketEvent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
@@ -36,12 +36,12 @@ impl Plugin for EnderPearlPlugin {
 }
 
 #[derive(Clone, Event)]
-pub struct ResendPacketEvent(PacketEvent);
+pub struct ResendPacketEvent(ReceivePacketEvent);
 
 impl EnderPearlPlugin {
     pub fn handle_resend_packets(
         mut resend_packet_events: EventReader<ResendPacketEvent>,
-        mut packet_events: EventWriter<PacketEvent>,
+        mut packet_events: EventWriter<ReceivePacketEvent>,
     ) {
         for event in resend_packet_events.read().cloned() {
             packet_events.send(event.0);
@@ -53,7 +53,7 @@ impl EnderPearlPlugin {
     /// Will panic of `Settings::save` fails.
     #[allow(clippy::cognitive_complexity)]
     pub fn handle_add_entity_packet(
-        mut packet_events: EventReader<PacketEvent>,
+        mut packet_events: EventReader<ReceivePacketEvent>,
         mut query: Query<(&InstanceHolder, &LocalSettings)>,
         mut pearl_goto_events: EventWriter<PearlGotoEvent>,
         mut resend_packet_events: EventWriter<ResendPacketEvent>,
@@ -150,7 +150,7 @@ impl EnderPearlPlugin {
     /// # Panics
     /// Will panic of `Settings::save` fails.
     pub fn handle_block_update_packets(
-        mut packet_events: EventReader<PacketEvent>,
+        mut packet_events: EventReader<ReceivePacketEvent>,
         mut stasis_chambers: ResMut<StasisChambers>,
     ) {
         for event in packet_events.read() {
@@ -182,7 +182,7 @@ impl EnderPearlPlugin {
     /// # Panics
     /// Will panic of `Settings::save` fails.
     pub fn handle_remove_entities_packets(
-        mut packet_events: EventReader<PacketEvent>,
+        mut packet_events: EventReader<ReceivePacketEvent>,
         mut player_positions: Query<&Position>,
         mut stasis_chambers: ResMut<StasisChambers>,
         global_settings: Res<GlobalSettings>,

@@ -158,7 +158,7 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -
                 continue; /* AutoReconnect: Disabled */
             }
 
-            debug!("AutoReconnecting on {}", account.username);
+            info!("AutoReconnecting on {}", account.username);
             if let Err(reason) = swarm.add_with_opts(account, state.clone(), join_opts).await {
                 warn!("[{bot_name}] Failed to AutoReconnect: {reason}");
                 info!("[{bot_name}] AutoReconnecting in 30s...");

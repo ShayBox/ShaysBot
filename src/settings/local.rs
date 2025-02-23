@@ -152,7 +152,7 @@ pub struct AutoLeave {
 
     /// Stay disconnected if `ZenithProxy` disconnects us and force disconnect through `ZenithProxy`
     #[default(false)]
-    pub zenith_proxy: bool,
+    pub grim_disconnect: bool,
 
     /// Automatically leave to re-queue on 2B2T when another bot at the same location enters visual range
     #[default(false)]

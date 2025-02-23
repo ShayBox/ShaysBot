@@ -6,14 +6,12 @@ use std::{
 };
 
 use azalea::{
-    TabList,
     app::{App, Plugin, Update},
-    chat::{ChatKind, ChatReceivedEvent, SendChatKindEvent, handle_send_chat_event},
+    chat::{handle_send_chat_event, handler::SendChatKindEvent, ChatKind, ChatReceivedEvent},
     ecs::prelude::*,
+    TabList,
 };
 use ncr::{
-    AesKey,
-    NcrError,
     encoding::{
         Base64Encoding,
         Base64rEncoding,
@@ -24,6 +22,8 @@ use ncr::{
     },
     encryption::{Cfb8Encryption, EcbEncryption, Encryption, GcmEncryption},
     utils::{prepend_header, trim_header},
+    AesKey,
+    NcrError,
 };
 
 use crate::prelude::*;
@@ -150,7 +150,7 @@ impl MinecraftParserPlugin {
                 continue; /* Player Offline */
             };
 
-            debug!("Command Response: {}", event.content);
+            info!("Command Response: {}", event.content);
             if local_settings.anti_spam.enabled {
                 if let Ok(duration) = SystemTime::now().duration_since(UNIX_EPOCH) {
                     let _ = write!(event.content, " [{}]", duration.as_secs());

@@ -1,15 +1,17 @@
 use azalea::{
-    app::{App, Plugin, Update},
+    app::{App, Plugin, PreUpdate, Update},
     disconnect::DisconnectEvent,
     ecs::prelude::*,
     events::disconnect_listener,
-    packet_handling::game::{PacketEvent, SendPacketEvent},
+    packet::game::{ReceivePacketEvent, SendPacketEvent},
     protocol::packets::game::{ClientboundGamePacket, ServerboundGamePacket, ServerboundPong},
+    raw_connection::RawConnection,
     registry::EntityKind,
     FormattedText,
     GameProfileComponent,
     TabList,
 };
+use itertools::Itertools;
 
 use crate::prelude::*;
 
@@ -20,34 +22,34 @@ pub struct AutoLeavePlugin;
 
 impl Plugin for AutoLeavePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(SwarmState::default()).add_systems(
-            Update,
-            (
-                Self::handle_add_entity_packets.before(disconnect_listener),
-                Self::handle_disconnect_events,
-                Self::handle_ping_packets,
-            )
-                .chain(),
-        );
+        app.insert_resource(SwarmState::default())
+            .add_systems(PreUpdate, Self::handle_ping_packets)
+            .add_systems(
+                Update,
+                (
+                    Self::handle_add_entity_packets,
+                    Self::handle_disconnect_events,
+                    Self::handle_requeue,
+                )
+                    .chain()
+                    .before(disconnect_listener),
+            );
     }
 }
 
 #[derive(Component)]
-pub struct ForceDisconnect;
-
-#[derive(Component)]
-pub struct SkipDisconnect;
+pub struct GrimDisconnect;
 
 impl AutoLeavePlugin {
     #[allow(clippy::cognitive_complexity)]
     pub fn handle_disconnect_events(
         mut events: EventReader<DisconnectEvent>,
-        mut query: Query<(&GameProfileComponent, &LocalSettings)>,
+        mut query: Query<&GameProfileComponent>,
         mut commands: Commands,
         swarm_state: Res<SwarmState>,
     ) {
         for event in events.read() {
-            let Ok((game_profile, local_settings)) = query.get_mut(event.entity) else {
+            let Ok(game_profile) = query.get_mut(event.entity) else {
                 continue;
             };
 
@@ -58,9 +60,7 @@ impl AutoLeavePlugin {
             let username = &game_profile.name;
             info!("[{username}] Disconnect Reason: {reason}");
 
-            let auto_reconnect = if local_settings.auto_leave.zenith_proxy
-                && str!(reason).starts_with(ZENITH_PREFIX)
-            {
+            let auto_reconnect = if str!(reason).starts_with(ZENITH_PREFIX) {
                 info!("[{username}] AutoReconnect Disabled: Zenith Proxy");
                 (false, 5)
             } else if str!(reason).starts_with(LEAVE_PREFIX) {
@@ -74,7 +74,7 @@ impl AutoLeavePlugin {
                 (true, 5)
             };
 
-            commands.entity(event.entity).remove::<ForceDisconnect>();
+            commands.entity(event.entity).remove::<GrimDisconnect>();
             swarm_state
                 .auto_reconnect
                 .write()
@@ -83,12 +83,9 @@ impl AutoLeavePlugin {
     }
 
     pub fn handle_add_entity_packets(
-        mut packet_events: EventReader<PacketEvent>,
+        mut packet_events: EventReader<ReceivePacketEvent>,
         mut disconnect_events: EventWriter<DisconnectEvent>,
-        mut commands: Commands,
-        local_players: Query<(Entity, &GameProfileComponent, &LocalSettings)>,
         query: Query<(&TabList, &GameProfileComponent, &LocalSettings)>,
-        skip_disconnect: Query<&SkipDisconnect>,
         global_settings: Res<GlobalSettings>,
     ) {
         for event in packet_events.read() {
@@ -109,30 +106,6 @@ impl AutoLeavePlugin {
             };
 
             let username = &game_profile.name;
-
-            if local_settings.auto_leave.auto_requeue {
-                let local_location = &local_settings.auto_pearl.location;
-                if let Some((entity, _, _)) = local_players.iter().find(|(_, profile, settings)| {
-                    let location = &settings.auto_pearl.location;
-                    &profile.uuid == uuid && location == local_location
-                }) {
-                    if skip_disconnect.contains(event.entity) {
-                        commands.entity(event.entity).remove::<SkipDisconnect>();
-                    } else {
-                        commands.entity(entity).insert(SkipDisconnect);
-                        if local_settings.auto_leave.zenith_proxy {
-                            info!("[{username}] Forcefully re-queueing...");
-                            commands.entity(event.entity).insert(ForceDisconnect);
-                        } else {
-                            disconnect_events.send(DisconnectEvent {
-                                entity: event.entity,
-                                reason: Some(FormattedText::from("Automatically re-queueing")),
-                            });
-                        }
-                    }
-                }
-            }
-
             if global_settings.whitelist_only
                 && local_settings.auto_leave.unknown_player
                 && !global_settings.users.contains_key(uuid)
@@ -151,9 +124,9 @@ impl AutoLeavePlugin {
     }
 
     pub fn handle_ping_packets(
-        mut packet_events: EventReader<PacketEvent>,
+        mut packet_events: EventReader<ReceivePacketEvent>,
         mut send_packet_events: EventWriter<SendPacketEvent>,
-        query: Query<&ForceDisconnect>,
+        query: Query<&GrimDisconnect>,
     ) {
         for event in packet_events.read() {
             let ClientboundGamePacket::Ping(packet) = event.packet.as_ref() else {
@@ -169,5 +142,33 @@ impl AutoLeavePlugin {
                 packet:  ServerboundGamePacket::Pong(ServerboundPong { id: packet.id }),
             });
         }
+    }
+
+    pub fn handle_requeue(
+        query: Query<(Entity, &GameTicks, &LocalSettings), With<RawConnection>>,
+        mut disconnect_events: EventWriter<DisconnectEvent>,
+        mut commands: Commands,
+    ) {
+        query
+            .iter()
+            .sorted_by_key(|(_, ticks, _)| ticks.0)
+            .chunk_by(|(_, _, settings)| &settings.auto_pearl.location)
+            .into_iter()
+            .for_each(|(_, group)| {
+                for (i, (entity, _, settings)) in group.enumerate() {
+                    if i == 0 {
+                        continue;
+                    }
+
+                    if settings.auto_leave.grim_disconnect {
+                        commands.entity(entity).insert(GrimDisconnect);
+                    } else {
+                        disconnect_events.send(DisconnectEvent {
+                            entity,
+                            reason: Some(FormattedText::from("Re-queueing...")),
+                        });
+                    }
+                }
+            });
     }
 }

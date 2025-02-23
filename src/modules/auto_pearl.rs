@@ -8,7 +8,7 @@ use azalea::{
     interact::handle_swing_arm_event,
     inventory::InventorySet,
     mining::MiningSet,
-    packet_handling::game::{handle_send_packet_event, SendPacketEvent},
+    packet::game::{handle_outgoing_packets, SendPacketEvent},
     pathfinder::{
         astar::PathfinderTimeout,
         goals::RadiusGoal,
@@ -49,7 +49,7 @@ impl Plugin for AutoPearlPlugin {
                         .before(goto_listener)
                         .after(handle_receive_chunk_events),
                     Self::handle_pull_pearl_events
-                        .before(handle_send_packet_event)
+                        .before(handle_outgoing_packets)
                         .before(handle_swing_arm_event)
                         .after(InventorySet)
                         .after(PhysicsSet)

@@ -11,7 +11,7 @@ use azalea::{
         InventorySet,
     },
     mining::continue_mining_block,
-    packet_handling::game::{handle_send_packet_event, SendPacketEvent},
+    packet::game::{handle_outgoing_packets, SendPacketEvent},
     physics::PhysicsSet,
     prelude::*,
     protocol::packets::game::{
@@ -34,7 +34,7 @@ impl Plugin for AutoEatPlugin {
             GameTick,
             Self::handle_auto_eat
                 .after(GameTickPlugin::handle_game_ticks)
-                .before(handle_send_packet_event)
+                .before(handle_outgoing_packets)
                 .before(continue_mining_block)
                 .before(InventorySet)
                 .before(PhysicsSet),

@@ -4,7 +4,7 @@ use azalea::{
     app::{App, Plugin, PostUpdate, Update},
     auth::game_profile::GameProfile,
     ecs::prelude::*,
-    packet_handling::game::PacketEvent,
+    packet::game::ReceivePacketEvent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
@@ -28,7 +28,7 @@ pub struct PlayerProfiles(pub HashMap<MinecraftEntityId, GameProfile>);
 
 impl PlayerProfilePlugin {
     pub fn handle_add_entity_packets(
-        mut packet_events: EventReader<PacketEvent>,
+        mut packet_events: EventReader<ReceivePacketEvent>,
         mut player_profiles: ResMut<PlayerProfiles>,
         mut query_profiles: Query<&mut PlayerProfiles>,
         mut commands: Commands,
@@ -66,7 +66,7 @@ impl PlayerProfilePlugin {
     }
 
     pub fn handle_remove_entities_packets(
-        mut packet_events: EventReader<PacketEvent>,
+        mut packet_events: EventReader<ReceivePacketEvent>,
         mut player_profiles: ResMut<PlayerProfiles>,
         mut query: Query<&mut PlayerProfiles>,
     ) {
