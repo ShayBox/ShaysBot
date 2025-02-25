@@ -145,18 +145,23 @@ impl AutoLeavePlugin {
     }
 
     pub fn handle_requeue(
-        query: Query<(Entity, &GameTicks, &LocalSettings), With<RawConnection>>,
+        query: Query<(Entity, &GameTicks, &LocalSettings, &TabList), With<RawConnection>>,
         mut disconnect_events: EventWriter<DisconnectEvent>,
         mut commands: Commands,
     ) {
         query
             .iter()
-            .sorted_by_key(|(_, ticks, _)| ticks.0)
-            .chunk_by(|(_, _, settings)| &settings.auto_pearl.location)
+            .filter(|(_, _, _, tab_list)| tab_list.len() > 1)
+            .sorted_by_key(|(_, ticks, _, _)| ticks.0)
+            .chunk_by(|(_, _, settings, _)| &settings.auto_pearl.location)
             .into_iter()
             .for_each(|(_, group)| {
-                for (i, (entity, _, settings)) in group.enumerate() {
+                for (i, (entity, _, settings, _)) in group.enumerate() {
                     if i == 0 {
+                        continue;
+                    }
+
+                    if !settings.auto_leave.auto_requeue {
                         continue;
                     }
 
