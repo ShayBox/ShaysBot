@@ -11,6 +11,7 @@ use azalea::{
         Inventory,
     },
     nearest_entity::EntityFinder,
+    pathfinder::Pathfinder,
     physics::PhysicsSet,
     prelude::*,
     registry::Item,
@@ -39,19 +40,19 @@ impl AutoKillPlugin {
     /// # Panics
     /// Will panic if ?
     pub fn handle_auto_kill(
-        mut query: Query<(Entity, &LocalSettings, &GameTicks, &Inventory)>,
+        mut query: Query<(Entity, &LocalSettings, &GameTicks, &Inventory, &Pathfinder)>,
         entities: EntityFinder<With<AbstractMonster>>,
         targets: Query<(&MinecraftEntityId, &Position, Option<&EyeHeight>)>,
         mut container_click_events: EventWriter<ContainerClickEvent>,
         mut look_at_events: EventWriter<LookAtEvent>,
         mut attack_events: EventWriter<AttackEvent>,
     ) {
-        for (entity, local_settings, game_ticks, inventory) in &mut query {
+        for (entity, local_settings, game_ticks, inventory, pathfinder) in &mut query {
             if !local_settings.auto_kill.enabled {
                 continue;
             }
 
-            if game_ticks.0 % local_settings.auto_kill.delay_ticks != 0 {
+            if let Some(_goal) = &pathfinder.goal {
                 continue;
             }
 
@@ -62,6 +63,17 @@ impl AutoKillPlugin {
             let Ok((target_id, target_pos, target_eye_height)) = targets.get(target) else {
                 continue;
             };
+
+            let mut position = **target_pos;
+            if let Some(eye_height) = target_eye_height {
+                position.y += f64::from(**eye_height);
+            }
+
+            look_at_events.send(LookAtEvent { entity, position });
+
+            if game_ticks.0 % local_settings.auto_kill.delay_ticks != 0 {
+                continue;
+            }
 
             let held_kind = inventory.held_item().kind();
             if local_settings.auto_kill.auto_weapon && !WEAPON_ITEMS.contains_key(&held_kind) {
@@ -94,13 +106,7 @@ impl AutoKillPlugin {
                     });
                 }
             }
-
-            let mut position = **target_pos;
-            if let Some(eye_height) = target_eye_height {
-                position.y += f64::from(**eye_height);
-            }
-
-            look_at_events.send(LookAtEvent { entity, position });
+            
             attack_events.send(AttackEvent {
                 entity,
                 target: *target_id,

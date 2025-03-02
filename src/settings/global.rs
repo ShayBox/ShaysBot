@@ -137,7 +137,7 @@ impl GlobalSettings {
     pub fn load() -> Result<Self> {
         let path = Self::path()?;
         match File::open(&path) {
-            Err(error) if error.kind() == ErrorKind::NotFound => Self::default().save(),
+            Err(error) if error.kind() == ErrorKind::NotFound => Ok(Self::default()),
             Err(error) => bail!(error),
             Ok(mut file) => {
                 let mut text = String::new();
@@ -151,7 +151,7 @@ impl GlobalSettings {
 
     /// # Errors
     /// Will return `Err` if `File::open`, `File::read_to_string`, `File::rewind`, or `toml::from_str` fails.
-    pub fn save(self) -> Result<Self> {
+    pub fn save(&self) -> Result<()> {
         let path = Self::path()?;
         let mut file = File::options()
             .write(true)
@@ -163,6 +163,6 @@ impl GlobalSettings {
         let buf = text.as_bytes();
         file.write_all(buf)?;
 
-        Ok(self)
+        Ok(())
     }
 }

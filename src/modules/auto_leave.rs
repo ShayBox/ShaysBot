@@ -61,17 +61,17 @@ impl AutoLeavePlugin {
             info!("[{username}] Disconnect Reason: {reason}");
 
             let auto_reconnect = if str!(reason).starts_with(ZENITH_PREFIX) {
-                info!("[{username}] AutoReconnect Disabled: Zenith Proxy");
-                (false, 5)
+                info!("[{username}] AutoReconnect Disabled: ZenithProxy AutoDisconnect");
+                (true, 10)
             } else if str!(reason).starts_with(LEAVE_PREFIX) {
                 info!("[{username}] AutoReconnect Disabled: Leave Command");
-                (false, 5)
+                (false, 10)
             } else if str!(reason).starts_with("Connection throttled") {
                 info!("[{username}] AutoReconnected too fast, waiting 30s...");
                 (true, 30)
             } else {
-                info!("[{username}] AutoReconnecting in 5s...");
-                (true, 5)
+                info!("[{username}] AutoReconnecting in 10s...");
+                (true, 10)
             };
 
             commands.entity(event.entity).remove::<GrimDisconnect>();

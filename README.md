@@ -47,6 +47,11 @@ Compiled with [GitHub Actions](.github/workflows/release.yml) using the [**Debug
 Prerequisites:
 
 - 2GIB of RAM/SWAP
+- Update
+    - ArchLinux: `sudo pacman -Syu`
+    - Debian/Ubuntu: `sudo apt update && sudo apt upgrade`
+    - Fedora: `sudo dnf upgrade`
+    - Other: Ask [Google], [ChatGPT], or [Deepseek]
 - LLVM (Clang/LLD)
     - Windows: `winget install -e --id LLVM.LLVM` or [Visual Studio]
     - ArchLinux: `sudo pacman -S base-devel clang lld`
@@ -64,6 +69,21 @@ Troubleshooting:
 
 - No space left on device - Your /tmp directory is too small or full
     - `sudo mount -o remount,size=1G /tmp && rm -rf /tmp/cargo-install*`
+
+Tmux Helper Script:
+You may want to use tmux or screen to keep it running,  
+Here's a helper script I use to make it easier.
+
+```bash
+#!/usr/bin/env bash
+
+if ! tmux has-session -t ShaysBot 2>/dev/null
+then
+    tmux new -d -s ShaysBot "RUST_LOG=shaysbot=debug,info ~/.cargo/bin/shaysbot"
+fi
+
+tmux attach -t ShaysBot
+```
 
 ### Install (Recommended) - Compiled Locally
 

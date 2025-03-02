@@ -76,7 +76,9 @@ pub fn check_for_updates() -> Result<bool> {
 /// Will return `Err` if `ClientBuilder::start` fails.
 #[allow(clippy::future_not_send)]
 pub async fn start() -> Result<()> {
-    let global_settings = GlobalSettings::load()?.save()?;
+    let global_settings = GlobalSettings::load()?;
+    global_settings.save()?; /* Save settings on first-run */
+
     let mut client = SwarmBuilder::new()
         .set_swarm_handler(swarm_handler)
         .add_plugins((

@@ -43,6 +43,9 @@ impl AutoWhitelistPlugin {
             if global_settings.whitelist_in_range {
                 info!("Adding {} to whitelist", packet.uuid);
                 global_settings.users.insert(packet.uuid, User::default());
+                if let Err(error) = global_settings.save() {
+                    error!("Failed to save global settings: {error}");
+                }
             }
         }
     }
