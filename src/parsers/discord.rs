@@ -53,26 +53,34 @@ impl DiscordParserPlugin {
                     .iter()
                     .any(|(_, user)| user.discord_id == str!(message.author.id))
             {
-                let http = event.ctx.http.clone();
-                let prefix = settings.command_prefix.clone();
-                let user_id = str!(message.author.id);
-                tokio::spawn(async move {
-                    let content = [
-                            str!("Your Discord and Minecraft accounts are not currently linked."),
-                            format!("To link via in-game, message the bot the following command: `{prefix}whitelist link {user_id}`"),
-                            format!("To link via Discord, run the following command with your `auth.aristois.net` code `{prefix}whitelist link <code>`"),
-                        ];
+                let is_whitelist_link = matches!(
+                    (cmd, args.front().map(String::as_str)),
+                    (Cmds::Whitelist(_), Some("link"))
+                );
 
-                    let map = json!({
-                        "content": content.join("\n"),
+                if !is_whitelist_link {
+                    let http = event.ctx.http.clone();
+                    let prefix = settings.command_prefix.clone();
+                    let user_id = str!(message.author.id);
+
+                    tokio::spawn(async move {
+                        let content = format!(
+                            "Your Discord and Minecraft accounts are not currently linked.\n\
+                            To link via in-game, message the bot the following command: `{prefix}whitelist link {user_id}`\n\
+                            To link via Discord, run the following command with your `auth.aristois.net` code `{prefix}whitelist link <code>`"
+                        );
+
+                        let map = json!({ "content": content });
+
+                        if let Err(error) =
+                            http.send_message(message.channel_id, vec![], &map).await
+                        {
+                            error!("{error}");
+                        }
                     });
 
-                    if let Err(error) = http.send_message(message.channel_id, vec![], &map).await {
-                        error!("{error}");
-                    };
-                });
-
-                continue;
+                    continue;
+                }
             }
 
             let mut cmd_event = CmdEvent {

@@ -29,6 +29,7 @@ impl Plugin for AutoLeavePlugin {
                 (
                     Self::handle_add_entity_packets,
                     Self::handle_disconnect_events,
+                    Self::handle_transfer_packets,
                     Self::handle_requeue,
                 )
                     .chain()
@@ -120,6 +121,31 @@ impl AutoLeavePlugin {
                     reason: Some(FormattedText::from(reason)),
                 });
             }
+        }
+    }
+
+    pub fn handle_transfer_packets(
+        mut packet_events: EventReader<ReceivePacketEvent>,
+        mut disconnect_events: EventWriter<DisconnectEvent>,
+        query: Query<&GameProfileComponent>,
+    ) {
+        for event in packet_events.read() {
+            let ClientboundGamePacket::Transfer(_) = event.packet.as_ref() else {
+                continue;
+            };
+
+            let Ok(game_profile) = query.get(event.entity) else {
+                continue;
+            };
+
+            let username = &game_profile.name;
+            let reason = "Received transfer packet, disconnecting...";
+            info!("[{username}] {reason}");
+
+            disconnect_events.send(DisconnectEvent {
+                entity: event.entity,
+                reason: Some(FormattedText::from(reason)),
+            });
         }
     }
 
