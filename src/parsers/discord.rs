@@ -51,7 +51,7 @@ impl DiscordParserPlugin {
                 && !settings
                     .users
                     .iter()
-                    .any(|(_, user)| user.discord_id == str!(message.author.id))
+                    .any(|(_, user)| user.discord_id == message.author.id)
             {
                 let is_whitelist_link = matches!(
                     (cmd, args.front().map(String::as_str)),
@@ -70,10 +70,13 @@ impl DiscordParserPlugin {
                             To link via Discord, run the following command with your `auth.aristois.net` code `{prefix}whitelist link <code>`"
                         );
 
-                        let map = json!({ "content": content });
-
-                        if let Err(error) =
-                            http.send_message(message.channel_id, vec![], &map).await
+                        if let Err(error) = http
+                            .send_message(
+                                message.channel_id,
+                                vec![],
+                                &json!({ "content": content }),
+                            )
+                            .await
                         {
                             error!("{error}");
                         }

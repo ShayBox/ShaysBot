@@ -104,7 +104,8 @@ impl PearlCommandPlugin {
                             return; /* Not Whitelisted */
                         };
 
-                        if ![str!(user_id), str!("*")].contains(&user.discord_id) {
+                        /* Hacky way to allow any Discord account to pearl a Minecraft account */
+                        if ![str!(user_id), str!("*")].contains(&user.discord_id.to_string()) {
                             msg_event.content = str!("That account isn't linked to you");
                             msg_event.status = 403;
                             msg_events.send(msg_event);

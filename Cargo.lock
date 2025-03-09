@@ -3469,7 +3469,7 @@ dependencies = [
 
 [[package]]
 name = "shaysbot"
-version = "0.15.5"
+version = "0.15.6"
 dependencies = [
  "anyhow",
  "azalea",

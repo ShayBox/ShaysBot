@@ -100,7 +100,7 @@ fn handle_add(
         (409, str!("Already whitelisted"))
     } else {
         settings.users.entry(*uuid).or_default();
-        settings.clone().save().expect("Failed to save settings");
+        settings.save().expect("Failed to save settings");
 
         (200, format!("Successfully added: {}", info.profile.name))
     }
@@ -121,7 +121,7 @@ fn handle_remove(
 
     if settings.users.contains_key(uuid) {
         settings.users.remove(uuid);
-        settings.clone().save().expect("Failed to save settings");
+        settings.save().expect("Failed to save settings");
 
         (200, format!("Successfully removed: {}", info.profile.name))
     } else {
@@ -131,14 +131,18 @@ fn handle_remove(
 
 fn handle_link(
     settings: &mut ResMut<GlobalSettings>,
-    discord_id: Option<String>,
+    first_arg: Option<String>,
     sender: &CmdSender,
 ) -> (u16, String) {
     match sender {
         #[cfg(feature = "api")]
         CmdSender::ApiServer(uuid) => {
-            let Some(discord_id) = discord_id else {
+            let Some(discord_id) = first_arg else {
                 return (404, str!("Missing Discord user id"));
+            };
+
+            let Ok(discord_id) = discord_id.parse() else {
+                return (404, str!("Invalid Discord user id"));
             };
 
             settings
@@ -149,17 +153,17 @@ fn handle_link(
                     discord_id,
                     ..Default::default()
                 });
-            settings.clone().save().expect("Failed to save settings");
+            settings.save().expect("Failed to save settings");
 
             (200, str!("Successfully linked discord"))
         }
         #[cfg(feature = "bot")]
-        CmdSender::Discord(_) => {
-            let Some(discord_id) = discord_id else {
+        CmdSender::Discord(discord_id) => {
+            let Some(link_id) = first_arg else {
                 return (404, str!("Missing auth code (Join: auth.aristois.net)"));
             };
 
-            let path = format!("https://auth.aristois.net/token/{discord_id}");
+            let path = format!("https://auth.aristois.net/token/{link_id}");
             let Ok(mut response) = ureq::get(&path).call() else {
                 return (406, str!("Invalid auth code (Join: auth.aristois.net)"));
             };
@@ -181,16 +185,20 @@ fn handle_link(
                 .entry(uuid)
                 .and_modify(|user| user.discord_id.clone_from(&discord_id))
                 .or_insert_with(|| User {
-                    discord_id,
+                    discord_id: discord_id.clone(),
                     ..Default::default()
                 });
-            settings.clone().save().expect("Failed to save settings");
+            settings.save().expect("Failed to save settings");
 
             (200, str!("Successfully linked"))
         }
         CmdSender::Minecraft(uuid) => {
-            let Some(discord_id) = discord_id else {
+            let Some(discord_id) = first_arg else {
                 return (404, str!("Missing Discord user id"));
+            };
+
+            let Ok(discord_id) = discord_id.parse() else {
+                return (404, str!("Invalid Discord user id"));
             };
 
             settings
@@ -201,7 +209,7 @@ fn handle_link(
                     discord_id,
                     ..Default::default()
                 });
-            settings.clone().save().expect("Failed to save settings");
+            settings.save().expect("Failed to save settings");
 
             (200, str!("Successfully linked"))
         }
@@ -231,7 +239,7 @@ fn handle_set(
                     api_password,
                     ..Default::default()
                 });
-            settings.clone().save().expect("Failed to save settings");
+            settings.save().expect("Failed to save settings");
 
             (200, str!("Successfully updated password"))
         }
