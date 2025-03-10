@@ -6,6 +6,8 @@ use azalea::{
 };
 #[cfg(feature = "bot")]
 use serde::Deserialize;
+#[cfg(feature = "bot")]
+use serenity::all::UserId;
 use uuid::Uuid;
 
 use crate::prelude::*;
@@ -65,8 +67,10 @@ impl WhitelistCommandPlugin {
             let discord_id = args.pop_front();
             let (status, content) = match action.as_ref() {
                 "add" => handle_add(&mut settings, discord_id, &tab_list),
+                #[cfg(feature = "bot")]
                 "link" => handle_link(&mut settings, discord_id, &event.sender),
                 "remove" => handle_remove(&mut settings, discord_id, &tab_list),
+                #[cfg(feature = "api")]
                 "set" => handle_set(&mut settings, discord_id, &event.sender),
                 _ => (
                     406,
@@ -129,6 +133,7 @@ fn handle_remove(
     }
 }
 
+#[cfg(feature = "bot")]
 fn handle_link(
     settings: &mut ResMut<GlobalSettings>,
     first_arg: Option<String>,
@@ -141,23 +146,22 @@ fn handle_link(
                 return (404, str!("Missing Discord user id"));
             };
 
-            let Ok(discord_id) = discord_id.parse() else {
+            let Ok(discord_id) = discord_id.parse::<UserId>() else {
                 return (404, str!("Invalid Discord user id"));
             };
 
             settings
                 .users
                 .entry(*uuid)
-                .and_modify(|user| user.discord_id.clone_from(&discord_id))
+                .and_modify(|user| user.discord_id = discord_id.to_string())
                 .or_insert_with(|| User {
-                    discord_id,
+                    discord_id: discord_id.to_string(),
                     ..Default::default()
                 });
             settings.save().expect("Failed to save settings");
 
             (200, str!("Successfully linked discord"))
         }
-        #[cfg(feature = "bot")]
         CmdSender::Discord(discord_id) => {
             let Some(link_id) = first_arg else {
                 return (404, str!("Missing auth code (Join: auth.aristois.net)"));
@@ -183,9 +187,9 @@ fn handle_link(
             settings
                 .users
                 .entry(uuid)
-                .and_modify(|user| user.discord_id.clone_from(&discord_id))
+                .and_modify(|user| user.discord_id = discord_id.to_string())
                 .or_insert_with(|| User {
-                    discord_id: discord_id.clone(),
+                    discord_id: discord_id.to_string(),
                     ..Default::default()
                 });
             settings.save().expect("Failed to save settings");
@@ -197,16 +201,16 @@ fn handle_link(
                 return (404, str!("Missing Discord user id"));
             };
 
-            let Ok(discord_id) = discord_id.parse() else {
+            let Ok(discord_id) = discord_id.parse::<UserId>() else {
                 return (404, str!("Invalid Discord user id"));
             };
 
             settings
                 .users
                 .entry(*uuid)
-                .and_modify(|user| user.discord_id.clone_from(&discord_id))
+                .and_modify(|user| user.discord_id = discord_id.to_string())
                 .or_insert_with(|| User {
-                    discord_id,
+                    discord_id: discord_id.to_string(),
                     ..Default::default()
                 });
             settings.save().expect("Failed to save settings");
@@ -216,13 +220,13 @@ fn handle_link(
     }
 }
 
+#[cfg(feature = "api")]
 fn handle_set(
     settings: &mut ResMut<GlobalSettings>,
     api_password: Option<String>,
     sender: &CmdSender,
 ) -> (u16, String) {
     match sender {
-        #[cfg(feature = "api")]
         CmdSender::ApiServer(_) => (500, str!("You can't update your API password on the API")),
         #[cfg(feature = "bot")]
         CmdSender::Discord(_) => (500, str!("You can't update your API password on Discord")),

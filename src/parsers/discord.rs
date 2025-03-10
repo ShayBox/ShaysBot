@@ -51,7 +51,7 @@ impl DiscordParserPlugin {
                 && !settings
                     .users
                     .iter()
-                    .any(|(_, user)| user.discord_id == message.author.id)
+                    .any(|(_, user)| user.discord_id == message.author.id.to_string())
             {
                 let is_whitelist_link = matches!(
                     (cmd, args.front().map(String::as_str)),

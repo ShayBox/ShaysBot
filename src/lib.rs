@@ -28,8 +28,7 @@ use anyhow::{bail, Result};
 use azalea::{ecs::prelude::*, prelude::*, swarm::prelude::*};
 use azalea_viaversion::ViaVersionPlugin;
 #[cfg(feature = "bot")]
-use bevy_discord::config::DiscordBotConfig;
-use bevy_discord::DiscordPluginGroup;
+use bevy_discord::{config::DiscordBotConfig, DiscordPluginGroup};
 use parking_lot::RwLock;
 use semver::Version;
 #[cfg(feature = "bot")]

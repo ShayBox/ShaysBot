@@ -15,7 +15,6 @@ use azalea::{
 use serde::{Deserialize, Serialize};
 use serde_tuple::{Deserialize_tuple as DeserializeTuple, Serialize_tuple as SerializeTuple};
 use serde_with::DurationSeconds;
-use serenity::all::UserId;
 use smart_default::SmartDefault;
 use uuid::Uuid;
 
@@ -106,7 +105,7 @@ pub struct ChatEncryption {
 #[serde_as]
 #[derive(Clone, Default, Eq, PartialEq, DeserializeTuple, SerializeTuple)]
 pub struct User {
-    pub discord_id:   UserId,
+    pub discord_id:   String,
     pub api_password: String,
 }
 
