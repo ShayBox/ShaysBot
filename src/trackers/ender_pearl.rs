@@ -82,9 +82,8 @@ impl EnderPearlPlugin {
             let owner_uuid = if packet.data == 0 {
                 info!("Unknown player's pearl at {block_pos}");
                 Uuid::max() /* Owner is offline */
-            } else if let Some((_, profile)) = player_profiles
-                .iter()
-                .find(|(id, _)| i64::from(id.0) == i64::from(packet.data))
+            } else if let Some((_, profile)) =
+                player_profiles.iter().find(|(id, _)| id.0 == packet.data)
             {
                 info!("{}'s pearl at {block_pos}", profile.name);
                 profile.uuid /* Owner is in visual range */
