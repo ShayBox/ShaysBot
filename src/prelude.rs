@@ -1,7 +1,7 @@
 #[cfg(feature = "api")]
 pub use super::parsers::http_api::*;
 pub use super::{
-    commands::{join::*, leave::*, pearl::*, playtime::*, seen::*, whitelist::*, *},
+    commands::{interact::*, join::*, leave::*, pearl::*, playtime::*, seen::*, whitelist::*, *},
     modules::{
         anti_afk::*,
         auto_eat::*,

@@ -28,6 +28,7 @@ pub trait Cmd {
 /// Compile time checked list of commands
 #[derive(Clone, Copy, Debug, Eq, PartialEq, EnumIter)]
 pub enum Cmds {
+    Interact(InteractCommandPlugin),
     Join(JoinCommandPlugin),
     Leave(LeaveCommandPlugin),
     Pearl(PearlCommandPlugin),
@@ -40,6 +41,7 @@ impl Cmds {
     #[must_use]
     pub fn find(alias: &str) -> Option<Self> {
         Self::iter().find(|cmds| match cmds {
+            Self::Interact(cmd) => cmd.aliases().contains(&alias),
             Self::Join(cmd) => cmd.aliases().contains(&alias),
             Self::Leave(cmd) => cmd.aliases().contains(&alias),
             Self::Pearl(cmd) => cmd.aliases().contains(&alias),

@@ -115,6 +115,7 @@ You can manually override with either: `--debug` or `--release`
 
 ### Commands
 
+- [**Interact**](src/commands/interact.rs) - Send an interact block packet at the given coordinates
 - [**Join**](src/commands/join.rs) - Connect an account to the server by enabling `AutoReconnect`
 - [**Leave**](src/commands/leave.rs) - Disconnect an account from the server and disable `AutoReconnect`
 - [**Pearl**](src/commands/pearl.rs) - Automatically pull the closest stasis chamber at a `location`

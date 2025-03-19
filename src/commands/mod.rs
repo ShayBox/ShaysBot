@@ -1,3 +1,4 @@
+pub mod interact;
 pub mod join;
 pub mod leave;
 pub mod pearl;
@@ -14,6 +15,7 @@ pub struct CommandsPluginGroup;
 impl PluginGroup for CommandsPluginGroup {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
+            .add(InteractCommandPlugin)
             .add(JoinCommandPlugin)
             .add(LeaveCommandPlugin)
             .add(PearlCommandPlugin)
