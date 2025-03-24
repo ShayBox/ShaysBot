@@ -132,7 +132,6 @@ pub struct SwarmState {
 /// Will return `Err` if `Swarm::add_with_opts` fails.
 pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -> Result<()> {
     match event {
-        SwarmEvent::Login => {}
         SwarmEvent::Init => swarm.ecs_lock.lock().insert_resource(state),
         SwarmEvent::Chat(chat_packet) => {
             let message = chat_packet.message();
@@ -170,6 +169,7 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -
 
             break;
         },
+        _ => {}
     }
 
     Ok(())

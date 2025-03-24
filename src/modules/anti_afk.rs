@@ -4,6 +4,7 @@ use azalea::{
     interact::{handle_swing_arm_event, SwingArmEvent},
     mining::continue_mining_block,
     prelude::*,
+    ClientInformation,
 };
 
 use crate::prelude::*;
@@ -25,10 +26,10 @@ impl Plugin for AntiAfkPlugin {
 
 impl AntiAfkPlugin {
     pub fn handle_anti_afk(
-        query: Query<(Entity, &LocalSettings, &GameTicks)>,
+        mut query: Query<(Entity, &LocalSettings, &GameTicks, &mut ClientInformation)>,
         mut swing_arm_events: EventWriter<SwingArmEvent>,
     ) {
-        for (entity, local_settings, game_ticks) in query.iter() {
+        for (entity, local_settings, game_ticks, mut client_information) in &mut query {
             if !local_settings.anti_afk.enabled {
                 continue;
             }
@@ -38,6 +39,7 @@ impl AntiAfkPlugin {
             }
 
             trace!("Anti-Afk Swing Arm Event");
+            client_information.view_distance = 2;
             swing_arm_events.send(SwingArmEvent { entity });
         }
     }

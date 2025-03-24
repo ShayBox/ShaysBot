@@ -103,6 +103,9 @@ pub struct AntiAfk {
     #[default(1234)]
     #[serde_as(as = "DisplayFromStr")]
     pub delay_ticks: u128,
+
+    #[default(12)]
+    pub view_distance: u8,
 }
 
 #[serde_as]
