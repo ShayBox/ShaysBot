@@ -1,9 +1,9 @@
 use azalea::{
-    BlockPos,
-    TabList,
     app::{App, Plugin, Update},
     ecs::prelude::*,
     entity::Position,
+    BlockPos,
+    TabList,
 };
 
 use crate::prelude::*;
@@ -194,8 +194,8 @@ impl PearlCommandPlugin {
                 return;
             };
 
-            if distance > global_settings.pearl_view_distance {
-                msg_event.content = format!("Closest pearl is {distance} blocks away.");
+            if distance > global_settings.pearl_view_distance * 4 {
+                msg_event.content = str!("Closest pearl is too far away.");
                 msg_event.status = 500;
                 msg_events.send(msg_event);
                 cmd_events.clear();

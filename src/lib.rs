@@ -25,7 +25,15 @@ pub mod trackers;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::{bail, Result};
-use azalea::{ecs::prelude::*, prelude::*, swarm::prelude::*};
+use azalea::{
+    app::{PluginGroup, PluginGroupBuilder},
+    ecs::prelude::*,
+    pong::PongPlugin,
+    prelude::*,
+    swarm::{prelude::*, DefaultSwarmPlugins},
+    DefaultBotPlugins,
+    DefaultPlugins,
+};
 use azalea_viaversion::ViaVersionPlugin;
 #[cfg(feature = "bot")]
 use bevy_discord::{config::DiscordBotConfig, DiscordPluginGroup};
@@ -78,9 +86,12 @@ pub async fn start() -> Result<()> {
     let global_settings = GlobalSettings::load()?;
     global_settings.save()?; /* Save settings on first-run */
 
-    let mut client = SwarmBuilder::new()
+    let mut client = SwarmBuilder::new_without_plugins()
         .set_swarm_handler(swarm_handler)
         .add_plugins((
+            PluginGroupBuilder::disable::<PongPlugin>(DefaultPlugins.build()),
+            DefaultBotPlugins,
+            DefaultSwarmPlugins,
             CommandsPluginGroup,
             MinecraftParserPlugin,
             ModulesPluginGroup,
