@@ -151,8 +151,8 @@ impl AutoLeavePlugin {
 
     pub fn handle_ping_packets(
         mut packet_events: EventReader<ReceivePacketEvent>,
-        mut send_packet_events: EventWriter<SendPacketEvent>,
         query: Query<&GrimDisconnect>,
+        mut commands: Commands,
     ) {
         for event in packet_events.read() {
             let ClientboundGamePacket::Ping(packet) = event.packet.as_ref() else {
@@ -163,7 +163,7 @@ impl AutoLeavePlugin {
                 continue;
             }
 
-            send_packet_events.send(SendPacketEvent {
+            commands.trigger(SendPacketEvent {
                 sent_by: event.entity,
                 packet:  ServerboundGamePacket::Pong(ServerboundPong { id: packet.id }),
             });

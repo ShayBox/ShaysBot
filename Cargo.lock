@@ -202,7 +202,7 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 [[package]]
 name = "azalea"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-auth",
  "azalea-block",
@@ -240,7 +240,7 @@ dependencies = [
 [[package]]
 name = "azalea-auth"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-buf",
  "azalea-crypto",
@@ -260,7 +260,7 @@ dependencies = [
 [[package]]
 name = "azalea-block"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-block-macros",
  "azalea-buf",
@@ -270,7 +270,7 @@ dependencies = [
 [[package]]
 name = "azalea-block-macros"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -280,7 +280,7 @@ dependencies = [
 [[package]]
 name = "azalea-brigadier"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-buf",
  "azalea-chat",
@@ -290,7 +290,7 @@ dependencies = [
 [[package]]
 name = "azalea-buf"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-buf-macros",
  "byteorder",
@@ -304,7 +304,7 @@ dependencies = [
 [[package]]
 name = "azalea-buf-macros"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -314,7 +314,7 @@ dependencies = [
 [[package]]
 name = "azalea-chat"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-buf",
  "azalea-language",
@@ -328,7 +328,7 @@ dependencies = [
 [[package]]
 name = "azalea-client"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-auth",
  "azalea-block",
@@ -362,7 +362,7 @@ dependencies = [
 [[package]]
 name = "azalea-core"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-buf",
  "azalea-chat",
@@ -379,7 +379,7 @@ dependencies = [
 [[package]]
 name = "azalea-crypto"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "aes",
  "azalea-buf",
@@ -396,7 +396,7 @@ dependencies = [
 [[package]]
 name = "azalea-entity"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-block",
  "azalea-buf",
@@ -420,7 +420,7 @@ dependencies = [
 [[package]]
 name = "azalea-inventory"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-buf",
  "azalea-chat",
@@ -436,7 +436,7 @@ dependencies = [
 [[package]]
 name = "azalea-inventory-macros"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -446,7 +446,7 @@ dependencies = [
 [[package]]
 name = "azalea-language"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "compact_str",
  "serde",
@@ -456,7 +456,7 @@ dependencies = [
 [[package]]
 name = "azalea-physics"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-block",
  "azalea-core",
@@ -473,7 +473,7 @@ dependencies = [
 [[package]]
 name = "azalea-protocol"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "async-recursion",
  "azalea-auth",
@@ -507,7 +507,7 @@ dependencies = [
 [[package]]
 name = "azalea-protocol-macros"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -517,7 +517,7 @@ dependencies = [
 [[package]]
 name = "azalea-registry"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-buf",
  "azalea-registry-macros",
@@ -528,7 +528,7 @@ dependencies = [
 [[package]]
 name = "azalea-registry-macros"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "quote",
  "syn 2.0.100",
@@ -554,7 +554,7 @@ dependencies = [
 [[package]]
 name = "azalea-world"
 version = "0.11.0+mc1.21.4"
-source = "git+https://github.com/Shays-Forks/azalea#b769a06515e9b80e49b7ccbd9a6d81559f69fa9e"
+source = "git+https://github.com/Shays-Forks/azalea#608410eae6c04c6fae65982c0fef533d80a66100"
 dependencies = [
  "azalea-block",
  "azalea-buf",
@@ -1472,6 +1472,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11faaf5a5236997af9848be0bef4db95824b1d534ebc64d0f0c6cf3e67bd38dc"
 dependencies = [
  "crc32fast",
+ "libz-rs-sys",
  "miniz_oxide",
 ]
 
@@ -2259,6 +2260,15 @@ checksum = "3302702afa434ffa30847a83305f0a69d6abd74293b6554c18ec85c7ef30c980"
 dependencies = [
  "anyhow",
  "version_check",
+]
+
+[[package]]
+name = "libz-rs-sys"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "902bc563b5d65ad9bba616b490842ef0651066a1a1dc3ce1087113ffcb873c8d"
+dependencies = [
+ "zlib-rs",
 ]
 
 [[package]]
@@ -3521,7 +3531,7 @@ dependencies = [
 
 [[package]]
 name = "shaysbot"
-version = "0.15.11"
+version = "0.15.12"
 dependencies = [
  "anyhow",
  "azalea",
@@ -5057,3 +5067,9 @@ dependencies = [
  "quote",
  "syn 2.0.100",
 ]
+
+[[package]]
+name = "zlib-rs"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b20717f0917c908dc63de2e44e97f1e6b126ca58d0e391cee86d504eb8fbd05"
