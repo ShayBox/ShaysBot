@@ -1,9 +1,9 @@
 use azalea::{
+    BlockPos,
+    TabList,
     app::{App, Plugin, Update},
     ecs::prelude::*,
     entity::Position,
-    BlockPos,
-    TabList,
 };
 
 use crate::prelude::*;
@@ -175,7 +175,7 @@ impl PearlCommandPlugin {
                 });
 
             let count = player_chambers.clone().count().saturating_sub(1);
-            let Some((chamber, _)) = player_chambers.min_by_key(|(chamber, distance)| {
+            let Some((chamber, distance)) = player_chambers.min_by_key(|(chamber, distance)| {
                 let shared_count = stasis_chambers
                     .0
                     .values()
@@ -193,6 +193,14 @@ impl PearlCommandPlugin {
                 cmd_events.clear();
                 return;
             };
+
+            if distance > global_settings.pearl_view_distance {
+                msg_event.content = format!("Closest pearl is {distance} blocks away.");
+                msg_event.status = 500;
+                msg_events.send(msg_event);
+                cmd_events.clear();
+                return;
+            }
 
             msg_event.status = 200;
             msg_event.content = match count {
