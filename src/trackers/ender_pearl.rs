@@ -74,7 +74,6 @@ impl EnderPearlPlugin {
                 continue;
             }
 
-            trace!("Fishdar: {packet:#?}");
             let Some(block_pos) = find_block_pos(packet.position, holder, "_trapdoor") else {
                 continue;
             };
@@ -92,6 +91,7 @@ impl EnderPearlPlugin {
                 continue; /* Owner is not in visual range */
             };
 
+            debug!("Fishdar: {packet:#?}");
             let new_chamber = StasisChamber {
                 block_pos,
                 entity_id: packet.id,

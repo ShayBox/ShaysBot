@@ -56,7 +56,7 @@ impl AutoKillPlugin {
                 continue;
             }
 
-            let Some(target) = entities.nearest_to_entity(entity, 4.20) else {
+            let Some(target) = entities.nearest_to_entity(entity, 3.2) else {
                 continue;
             };
 
@@ -106,7 +106,7 @@ impl AutoKillPlugin {
                     });
                 }
             }
-            
+
             attack_events.send(AttackEvent {
                 entity,
                 target: *target_id,
