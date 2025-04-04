@@ -175,17 +175,20 @@ impl PearlCommandPlugin {
                 });
 
             let count = player_chambers.clone().count().saturating_sub(1);
-            let Some((chamber, distance)) = player_chambers.min_by_key(|(chamber, distance)| {
-                let shared_count = stasis_chambers
-                    .0
-                    .values()
-                    .filter(|c| c.block_pos == chamber.block_pos)
-                    .filter(|c| c.owner_uuid != chamber.owner_uuid)
-                    .count();
+            let Some((chamber, _distance)) = player_chambers
+                .filter(|(_, distance)| *distance <= global_settings.pearl_view_distance * 4)
+                .min_by_key(|(chamber, distance)| {
+                    let shared_count = stasis_chambers
+                        .0
+                        .values()
+                        .filter(|c| c.block_pos == chamber.block_pos)
+                        .filter(|c| c.owner_uuid != chamber.owner_uuid)
+                        .count();
 
-                // First compare by shared count, then by distance
-                (shared_count, *distance)
-            }) else {
+                    // First compare by shared count, then by distance
+                    (shared_count, *distance)
+                })
+            else {
                 let location = &local_settings.auto_pearl.location;
                 msg_event.content = format!("Pearl not found at {location}");
                 msg_event.status = 404;
@@ -193,14 +196,6 @@ impl PearlCommandPlugin {
                 cmd_events.clear();
                 return;
             };
-
-            if distance > global_settings.pearl_view_distance * 4 {
-                msg_event.content = str!("Closest pearl is too far away.");
-                msg_event.status = 500;
-                msg_events.send(msg_event);
-                cmd_events.clear();
-                return;
-            }
 
             msg_event.status = 200;
             msg_event.content = match count {
