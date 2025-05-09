@@ -34,9 +34,11 @@ use azalea::{
     DefaultBotPlugins,
     DefaultPlugins,
 };
+#[cfg(feature = "via")]
 use azalea_viaversion::ViaVersionPlugin;
 #[cfg(feature = "bot")]
-use bevy_discord::{config::DiscordBotConfig, DiscordPluginGroup};
+use bevy_discord::config::DiscordBotConfig;
+use bevy_discord::DiscordBotPlugin;
 use parking_lot::RwLock;
 use semver::Version;
 #[cfg(feature = "bot")]
@@ -86,6 +88,7 @@ pub async fn start() -> Result<()> {
     let global_settings = GlobalSettings::load()?;
     global_settings.save()?; /* Save settings on first-run */
 
+    #[allow(unused_mut)]
     let mut client = SwarmBuilder::new_without_plugins()
         .set_swarm_handler(swarm_handler)
         .add_plugins((
@@ -115,18 +118,19 @@ pub async fn start() -> Result<()> {
     #[cfg(feature = "bot")]
     if !global_settings.discord_token.is_empty() {
         let gateway_intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
-        let bot_config = DiscordBotConfig::default()
+        let configuration = DiscordBotConfig::default()
             .gateway_intents(gateway_intents)
             .token(global_settings.discord_token.clone());
 
         client = client.add_plugins((
-            DiscordPluginGroup { bot_config },
+            DiscordBotPlugin::new(configuration),
             DiscordParserPlugin,
             DiscordLoggerPlugin,
         ));
     }
 
     /* ViaProxy for multi-version compatibility */
+    #[cfg(feature = "via")]
     if !global_settings.server_version.is_empty() {
         client = client.add_plugins(ViaVersionPlugin::start(&global_settings.server_version).await);
     }

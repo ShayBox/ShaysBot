@@ -1,6 +1,6 @@
 use azalea::{
     app::{App, Plugin, Update},
-    packet::game::ReceivePacketEvent,
+    packet::game::ReceiveGamePacketEvent,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
 };
@@ -24,7 +24,7 @@ impl Plugin for AutoWhitelistPlugin {
 
 impl AutoWhitelistPlugin {
     pub fn handle_add_entity_packets(
-        mut packet_events: EventReader<ReceivePacketEvent>,
+        mut packet_events: EventReader<ReceiveGamePacketEvent>,
         mut global_settings: ResMut<GlobalSettings>,
     ) {
         for event in packet_events.read() {

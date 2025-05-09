@@ -8,7 +8,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Automatically pull the closest stasis chamber at a `location`
+/// Automatically pull the closest stasis chamber at a `location`.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct PearlCommandPlugin;
 
@@ -83,7 +83,7 @@ impl PearlCommandPlugin {
                     let Some(username) = event.args.pop_front() else {
                         msg_event.content = str!("Missing player name");
                         msg_event.status = 404;
-                        msg_events.send(msg_event);
+                        msg_events.write(msg_event);
                         cmd_events.clear();
                         return;
                     };
@@ -93,7 +93,7 @@ impl PearlCommandPlugin {
                     }) else {
                         msg_event.content = format!("{username} is not online");
                         msg_event.status = 404;
-                        msg_events.send(msg_event);
+                        msg_events.write(msg_event);
                         cmd_events.clear();
                         return;
                     };
@@ -104,11 +104,11 @@ impl PearlCommandPlugin {
                             return; /* Not Whitelisted */
                         };
 
-                        /* Hacky way to allow any Discord account to pearl a Minecraft account */
+                        /* Hacky way to allow any Discord account to pearl a Minecraft account. */
                         if ![str!(user_id), str!("*")].contains(&user.discord_id.to_string()) {
                             msg_event.content = str!("That account isn't linked to you");
                             msg_event.status = 403;
-                            msg_events.send(msg_event);
+                            msg_events.write(msg_event);
                             cmd_events.clear();
                             return;
                         }
@@ -142,13 +142,13 @@ impl PearlCommandPlugin {
                         match event.source {
                             #[cfg(feature = "api")]
                             CmdSource::ApiServer(_) => {
-                                msg_events.send(msg_event);
+                                msg_events.write(msg_event);
                                 cmd_events.clear();
                                 return;
                             }
                             #[cfg(feature = "bot")]
                             CmdSource::Discord(_) => {
-                                msg_events.send(msg_event);
+                                msg_events.write(msg_event);
                                 cmd_events.clear();
                                 return;
                             }
@@ -192,7 +192,7 @@ impl PearlCommandPlugin {
                 let location = &local_settings.auto_pearl.location;
                 msg_event.content = format!("Pearl not found at {location}");
                 msg_event.status = 404;
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 cmd_events.clear();
                 return;
             };
@@ -204,8 +204,8 @@ impl PearlCommandPlugin {
                 c => format!("I'm on my way, you have {c} more pearls."),
             };
 
-            msg_events.send(msg_event);
-            pearl_events.send(PearlGotoEvent(PearlEvent {
+            msg_events.write(msg_event);
+            pearl_events.write(PearlGotoEvent(PearlEvent {
                 entity,
                 idle_goal: local_settings.auto_pearl.idle_goal.clone(),
                 block_pos: chamber.block_pos,

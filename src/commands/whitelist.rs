@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 use crate::prelude::*;
 
-/// Add or remove players from the whitelist or link their Discord
+/// Add or remove players from the whitelist or link their Discord.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WhitelistCommandPlugin;
 
@@ -60,7 +60,7 @@ impl WhitelistCommandPlugin {
             let Some(action) = args.pop_front() else {
                 msg_event.content = str!("Missing action | Actions: add, remove, link, & set");
                 msg_event.status = 404;
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             };
 
@@ -80,7 +80,7 @@ impl WhitelistCommandPlugin {
 
             msg_event.content = content;
             msg_event.status = status;
-            msg_events.send(msg_event);
+            msg_events.write(msg_event);
         }
 
         cmd_events.clear();

@@ -33,7 +33,7 @@ use uuid::Uuid;
 
 use crate::prelude::*;
 
-/// Automatically goto and pull player stasis chambers
+/// Automatically goto and pull player stasis chambers.
 pub struct AutoPearlPlugin;
 
 impl Plugin for AutoPearlPlugin {
@@ -94,12 +94,12 @@ impl AutoPearlPlugin {
 
             if let Some(event) = pearl_pending_events.goto.pop() {
                 debug!("Resending {event:#?}");
-                pearl_goto_events.send(event);
+                pearl_goto_events.write(event);
             }
 
             if let Some(event) = pearl_pending_events.pull.pop() {
                 debug!("Resending {event:#?}");
-                pearl_pull_events.send(event);
+                pearl_pull_events.write(event);
             }
         }
     }
@@ -123,7 +123,7 @@ impl AutoPearlPlugin {
 
             let pos = event.block_pos.to_vec3_floored();
             let goal = RadiusGoal { radius: 3.0, pos };
-            goto_events.send(GotoEvent {
+            goto_events.write(GotoEvent {
                 entity:        event.entity,
                 goal:          Arc::new(goal),
                 successors_fn: default_move,
@@ -132,7 +132,7 @@ impl AutoPearlPlugin {
                 max_timeout:   PathfinderTimeout::Time(Duration::from_secs(10)),
             });
 
-            pearl_pull_events.send(PearlPullEvent(event.0));
+            pearl_pull_events.write(PearlPullEvent(event.0));
         }
     }
 
@@ -174,13 +174,13 @@ impl AutoPearlPlugin {
                 sequence:  0,
             });
 
-            send_packet_events.send(SendPacketEvent {
+            send_packet_events.write(SendPacketEvent {
                 sent_by: event.entity,
                 packet,
             });
 
             if event.idle_goal != IdleGoal::default() {
-                goto_events.send(GotoEvent {
+                goto_events.write(GotoEvent {
                     entity:        event.entity,
                     goal:          Arc::new(RadiusGoal {
                         pos:    event.idle_goal.coords,

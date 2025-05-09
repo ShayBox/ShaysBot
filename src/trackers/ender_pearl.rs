@@ -4,7 +4,7 @@ use azalea::{
     ecs::prelude::*,
     entity::{metadata::Player, Position},
     events::packet_listener,
-    packet::game::ReceivePacketEvent,
+    packet::game::ReceiveGamePacketEvent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
@@ -36,24 +36,24 @@ impl Plugin for EnderPearlPlugin {
 }
 
 #[derive(Clone, Event)]
-pub struct ResendPacketEvent(ReceivePacketEvent);
+pub struct ResendPacketEvent(ReceiveGamePacketEvent);
 
 impl EnderPearlPlugin {
     pub fn handle_resend_packets(
         mut resend_packet_events: EventReader<ResendPacketEvent>,
-        mut packet_events: EventWriter<ReceivePacketEvent>,
+        mut packet_events: EventWriter<ReceiveGamePacketEvent>,
     ) {
         for event in resend_packet_events.read().cloned() {
-            packet_events.send(event.0);
+            packet_events.write(event.0);
         }
     }
 
     /// # Panics
-    /// Will panic if `MinecraftEntityId` is out of bounds.
+    /// Will panic if `MinecraftEntityId` out of bounds.
     /// Will panic of `Settings::save` fails.
     #[allow(clippy::cognitive_complexity)]
     pub fn handle_add_entity_packet(
-        mut packet_events: EventReader<ReceivePacketEvent>,
+        mut packet_events: EventReader<ReceiveGamePacketEvent>,
         mut query: Query<(&InstanceHolder, &LocalSettings)>,
         mut pearl_goto_events: EventWriter<PearlGotoEvent>,
         mut resend_packet_events: EventWriter<ResendPacketEvent>,
@@ -80,15 +80,15 @@ impl EnderPearlPlugin {
 
             let owner_uuid = if packet.data == 0 {
                 info!("Unknown player's pearl at {block_pos}");
-                Uuid::max() /* Owner is offline */
+                Uuid::max() /* Owner offline */
             } else if let Some((_, profile)) =
                 player_profiles.iter().find(|(id, _)| id.0 == packet.data)
             {
                 info!("{}'s pearl at {block_pos}", profile.name);
-                profile.uuid /* Owner is in visual range */
+                profile.uuid /* Owner in visual range */
             } else {
-                resend_packet_events.send(ResendPacketEvent(event));
-                continue; /* Owner is not in visual range */
+                resend_packet_events.write(ResendPacketEvent(event));
+                continue; /* Owner not in visual range */
             };
 
             debug!("Fishdar: {packet:#?}");
@@ -127,7 +127,7 @@ impl EnderPearlPlugin {
 
             debug!("Count: {count} | Limit: {limit}");
             if count > limit {
-                msg_events.send(MsgEvent {
+                msg_events.write(MsgEvent {
                     entity: Some(event.entity),
                     sender: CmdSender::Minecraft(owner_uuid),
                     source: CmdSource::Minecraft(None),
@@ -136,7 +136,7 @@ impl EnderPearlPlugin {
                         "Your free trial has expired, please purchase WinRAR license: Max {limit} pearls"
                     ),
                 });
-                pearl_goto_events.send(PearlGotoEvent(PearlEvent {
+                pearl_goto_events.write(PearlGotoEvent(PearlEvent {
                     entity: event.entity,
                     idle_goal: local_settings.auto_pearl.idle_goal.clone(),
                     block_pos,
@@ -149,7 +149,7 @@ impl EnderPearlPlugin {
     /// # Panics
     /// Will panic of `Settings::save` fails.
     pub fn handle_block_update_packets(
-        mut packet_events: EventReader<ReceivePacketEvent>,
+        mut packet_events: EventReader<ReceiveGamePacketEvent>,
         mut stasis_chambers: ResMut<StasisChambers>,
     ) {
         for event in packet_events.read() {
@@ -181,7 +181,7 @@ impl EnderPearlPlugin {
     /// # Panics
     /// Will panic of `Settings::save` fails.
     pub fn handle_remove_entities_packets(
-        mut packet_events: EventReader<ReceivePacketEvent>,
+        mut packet_events: EventReader<ReceiveGamePacketEvent>,
         mut player_positions: Query<&Position>,
         mut stasis_chambers: ResMut<StasisChambers>,
         global_settings: Res<GlobalSettings>,

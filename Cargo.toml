@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.15.15"
+version = "0.15.16"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2024"
 description = "My personal Minecraft bot using Azalea"
@@ -17,10 +17,12 @@ azalea = { git = "https://github.com/Shays-Forks/azalea" }
 
 [dependencies]
 anyhow = "1"
-azalea = { git = "https://github.com/azalea-rs/azalea", default-features = false, features = ["serde"] }
-azalea-viaversion = { git = "https://github.com/azalea-rs/azalea-viaversion" }
+azalea = { git = "https://github.com/azalea-rs/azalea", default-features = false, features = ["packet-event", "serde"] }
+azalea-viaversion = { git = "https://github.com/azalea-rs/azalea-viaversion", optional = true }
+#azalea-viaversion = { path = "../azalea-viaversion", optional = true }
 base64 = "0.22"
-bevy-discord = { version = "0.6.0-rc.1", features = ["bot"], optional = true }
+bevy-discord = { git = "https://github.com/AS1100K/bevy-discord", features = ["bot"], optional = true }
+#bevy-discord = { version = "0.6.0-rc.1", features = ["bot"], optional = true }
 bounded-counter = { version = "0.1", features = ["deref", "deref_mut"] }
 chrono = "0.4"
 derive_more = { version = "2", features = ["full"] }
@@ -48,9 +50,10 @@ ureq = { version = "3", features = ["json"] }
 uuid = "1"
 
 [features]
-default = ["api", "bot"]
+default = ["api", "bot", "via"]
 api = ["dep:tiny_http"]
 bot = ["dep:bevy-discord", "dep:serenity"]
+via = ["dep:azalea-viaversion"]
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }

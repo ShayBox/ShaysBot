@@ -1,11 +1,11 @@
 use std::{collections::VecDeque, io::Read, str::FromStr, sync::Mutex};
 
 use azalea::{
+    TabList,
     app::{App, Plugin, Startup, Update},
     ecs::prelude::*,
-    TabList,
 };
-use base64::{prelude::BASE64_STANDARD, Engine};
+use base64::{Engine, prelude::BASE64_STANDARD};
 use tiny_http::{Header, Request, Response, Server};
 
 use crate::prelude::*;
@@ -143,7 +143,7 @@ impl HttpApiParserPlugin {
             source: CmdSource::ApiServer(Arc::new(Mutex::new(Some(request)))),
         };
 
-        cmd_events.send_batch(std::iter::once(cmd_event.clone()).chain(query.iter().map(
+        cmd_events.write_batch(std::iter::once(cmd_event.clone()).chain(query.iter().map(
             |entity| {
                 cmd_event.entity = Some(entity);
                 cmd_event.clone()

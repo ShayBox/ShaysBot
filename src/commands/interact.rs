@@ -1,3 +1,4 @@
+use anyhow::Result;
 use azalea::{
     app::{App, Plugin, Update},
     ecs::prelude::*,
@@ -52,7 +53,7 @@ impl InteractCommandPlugin {
 
             if event.args.len() < 3 {
                 msg_event.content = str!("Missing coordinate");
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             }
 
@@ -65,12 +66,12 @@ impl InteractCommandPlugin {
                 BlockPos::new(coords[0], coords[1], coords[2])
             } else {
                 msg_event.content = str!("Invalid coordinate");
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             };
 
-            block_interact_events.send(BlockInteractEvent { entity, position });
-            msg_events.send(msg_event);
+            block_interact_events.write(BlockInteractEvent { entity, position });
+            msg_events.write(msg_event);
         }
 
         cmd_events.clear();

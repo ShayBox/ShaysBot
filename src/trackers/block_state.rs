@@ -4,7 +4,7 @@ use azalea::{
     app::{App, Plugin, PostUpdate, Update},
     blocks::BlockState,
     ecs::prelude::*,
-    packet::game::ReceivePacketEvent,
+    packet::game::ReceiveGamePacketEvent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     BlockPos,
@@ -26,7 +26,7 @@ pub struct BlockStates(pub HashMap<BlockPos, BlockState>);
 
 impl BlockStatePlugin {
     pub fn handle_block_update_packets(
-        mut packet_events: EventReader<ReceivePacketEvent>,
+        mut packet_events: EventReader<ReceiveGamePacketEvent>,
         mut block_states: ResMut<BlockStates>,
         mut query: Query<&mut BlockStates>,
         mut commands: Commands,
@@ -51,7 +51,7 @@ impl BlockStatePlugin {
     }
 
     pub fn handle_block_break_packets(
-        mut packet_events: EventReader<ReceivePacketEvent>,
+        mut packet_events: EventReader<ReceiveGamePacketEvent>,
         mut block_states: ResMut<BlockStates>,
         mut query: Query<&mut BlockStates>,
     ) {

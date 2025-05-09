@@ -268,7 +268,7 @@ impl LocalSettings {
 
 /// # Errors
 /// Will return `Err` if settings fails to load.
-pub async fn load_settings(mut swarm: Swarm) -> Result<()> {
+pub async fn load_settings(swarm: Swarm) -> Result<()> {
     let path = LocalSettings::path()?;
     if !path.exists() {
         tokio::fs::create_dir(&path).await?;

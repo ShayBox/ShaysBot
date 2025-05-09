@@ -95,7 +95,7 @@ impl DiscordParserPlugin {
                 sender: CmdSender::Discord(message.author.id),
             };
 
-            cmd_events.send_batch(std::iter::once(cmd_event.clone()).chain(query.iter().map(
+            cmd_events.write_batch(std::iter::once(cmd_event.clone()).chain(query.iter().map(
                 |entity| {
                     cmd_event.entity = Some(entity);
                     cmd_event.clone()

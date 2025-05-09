@@ -69,7 +69,7 @@ impl AutoKillPlugin {
                 position.y += f64::from(**eye_height);
             }
 
-            look_at_events.send(LookAtEvent { entity, position });
+            look_at_events.write(LookAtEvent { entity, position });
 
             if game_ticks.0 % local_settings.auto_kill.delay_ticks != 0 {
                 continue;
@@ -96,7 +96,7 @@ impl AutoKillPlugin {
                         "Swapping Weapon from {slot} to {}",
                         inventory.selected_hotbar_slot
                     );
-                    container_click_events.send(ContainerClickEvent {
+                    container_click_events.write(ContainerClickEvent {
                         entity,
                         window_id: inventory.id,
                         operation: ClickOperation::Swap(SwapClick {
@@ -107,7 +107,7 @@ impl AutoKillPlugin {
                 }
             }
 
-            attack_events.send(AttackEvent {
+            attack_events.write(AttackEvent {
                 entity,
                 target: *target_id,
             });

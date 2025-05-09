@@ -5,7 +5,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Connect an account to the server by enabling `AutoReconnect`
+/// Connect an account to the server by enabling `AutoReconnect`.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct JoinCommandPlugin;
 
@@ -49,13 +49,13 @@ impl JoinCommandPlugin {
             let Some(bot_name) = event.args.iter().next() else {
                 msg_event.content = str!("[404] Missing bot name");
                 msg_event.status = 404;
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             };
 
             msg_event.content = format!("[202] Enabling AutoReconnect for {bot_name}");
             msg_event.status = 202;
-            msg_events.send(msg_event);
+            msg_events.write(msg_event);
             swarm_state
                 .auto_reconnect
                 .write()

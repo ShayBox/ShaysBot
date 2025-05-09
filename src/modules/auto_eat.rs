@@ -54,7 +54,7 @@ type QueryFilter = (With<Player>, With<LocalEntity>);
 
 impl AutoEatPlugin {
     /// # Panics
-    /// Will panic if the slot is larger than u16 (impossible?)
+    /// Will panic when the slot larger than u16 (impossible?)
     pub fn handle_auto_eat(
         mut query: Query<QueryData, QueryFilter>,
         mut packet_events: EventWriter<SendPacketEvent>,
@@ -97,7 +97,7 @@ impl AutoEatPlugin {
                         "Swapping Food from {slot} to {}",
                         inventory.selected_hotbar_slot
                     );
-                    container_click_events.send(ContainerClickEvent {
+                    container_click_events.write(ContainerClickEvent {
                         entity,
                         window_id: inventory.id,
                         operation: ClickOperation::Swap(SwapClick {
@@ -115,7 +115,7 @@ impl AutoEatPlugin {
                 sequence: 0,
             });
 
-            packet_events.send(SendPacketEvent {
+            packet_events.write(SendPacketEvent {
                 sent_by: entity,
                 packet,
             });

@@ -1,11 +1,12 @@
 use azalea::{
     app::{App, Plugin, PreUpdate, Update},
+    auto_reconnect::start_rejoin_on_disconnect,
+    connection::RawConnection,
     disconnect::DisconnectEvent,
     ecs::prelude::*,
     events::disconnect_listener,
-    packet::game::{ReceivePacketEvent, SendPacketEvent},
+    packet::game::{ReceiveGamePacketEvent, SendPacketEvent},
     protocol::packets::game::{ClientboundGamePacket, ServerboundGamePacket, ServerboundPong},
-    raw_connection::RawConnection,
     registry::EntityKind,
     FormattedText,
     GameProfileComponent,
@@ -33,7 +34,8 @@ impl Plugin for AutoLeavePlugin {
                     Self::handle_requeue,
                 )
                     .chain()
-                    .before(disconnect_listener),
+                    .before(disconnect_listener)
+                    .before(start_rejoin_on_disconnect),
             );
     }
 }
@@ -84,7 +86,7 @@ impl AutoLeavePlugin {
     }
 
     pub fn handle_add_entity_packets(
-        mut packet_events: EventReader<ReceivePacketEvent>,
+        mut packet_events: EventReader<ReceiveGamePacketEvent>,
         mut disconnect_events: EventWriter<DisconnectEvent>,
         query: Query<(&TabList, &GameProfileComponent, &LocalSettings)>,
         global_settings: Res<GlobalSettings>,
@@ -116,7 +118,7 @@ impl AutoLeavePlugin {
                 info!("[{username}] {reason}");
                 info!("[{username}] Disabling AutoReconnect");
 
-                disconnect_events.send(DisconnectEvent {
+                disconnect_events.write(DisconnectEvent {
                     entity: event.entity,
                     reason: Some(FormattedText::from(reason)),
                 });
@@ -125,7 +127,7 @@ impl AutoLeavePlugin {
     }
 
     pub fn handle_transfer_packets(
-        mut packet_events: EventReader<ReceivePacketEvent>,
+        mut packet_events: EventReader<ReceiveGamePacketEvent>,
         mut disconnect_events: EventWriter<DisconnectEvent>,
         query: Query<&GameProfileComponent>,
     ) {
@@ -142,7 +144,7 @@ impl AutoLeavePlugin {
             let reason = "Received transfer packet, disconnecting...";
             info!("[{username}] {reason}");
 
-            disconnect_events.send(DisconnectEvent {
+            disconnect_events.write(DisconnectEvent {
                 entity: event.entity,
                 reason: Some(FormattedText::from(reason)),
             });
@@ -150,7 +152,7 @@ impl AutoLeavePlugin {
     }
 
     pub fn handle_ping_packets(
-        mut packet_events: EventReader<ReceivePacketEvent>,
+        mut packet_events: EventReader<ReceiveGamePacketEvent>,
         query: Query<&GrimDisconnect>,
         mut commands: Commands,
     ) {
@@ -194,7 +196,7 @@ impl AutoLeavePlugin {
                     if settings.auto_leave.grim_disconnect {
                         commands.entity(entity).insert(GrimDisconnect);
                     } else {
-                        disconnect_events.send(DisconnectEvent {
+                        disconnect_events.write(DisconnectEvent {
                             entity,
                             reason: Some(FormattedText::from("Re-queueing...")),
                         });

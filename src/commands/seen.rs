@@ -10,7 +10,7 @@ use ureq::{config::Config, Agent};
 
 use crate::prelude::*;
 
-/// Fetch a players first and last seen time using <https://2b2t.vc>
+/// Fetch a players first and last seen time using <https://2b2t.vc>.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct SeenCommandPlugin;
 
@@ -53,7 +53,7 @@ impl SeenCommandPlugin {
             let Some(player_name) = event.args.iter().next() else {
                 msg_event.content = str!("Missing player name");
                 msg_event.status = 400;
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             };
 
@@ -69,7 +69,7 @@ impl SeenCommandPlugin {
                 Err(error) => {
                     msg_event.content = format!("Error: {error}");
                     msg_event.status = 500;
-                    msg_events.send(msg_event);
+                    msg_events.write(msg_event);
                     error!("{error}");
                     return;
                 }
@@ -78,21 +78,21 @@ impl SeenCommandPlugin {
             if response.status() == 204 {
                 msg_event.content = format!("Player not found: {player_name}");
                 msg_event.status = 204;
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             }
 
             let Ok(json) = response.body_mut().read_json::<Json>() else {
                 msg_event.content = str!("Failed to parse JSON");
                 msg_event.status = 500;
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             };
 
             let (Some(first), Some(last)) = (json.first_seen, json.last_seen) else {
                 msg_event.content = str!("Player has never joined");
                 msg_event.status = 200;
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             };
 
@@ -101,7 +101,7 @@ impl SeenCommandPlugin {
                 first.format("%Y-%m-%d"),
                 last.format("%Y-%m-%d %H:%M")
             );
-            msg_events.send(msg_event);
+            msg_events.write(msg_event);
         }
 
         cmd_events.clear();

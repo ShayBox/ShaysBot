@@ -55,7 +55,7 @@ impl AutoTotemPlugin {
                 continue;
             };
 
-            container_click_events.send(ContainerClickEvent {
+            container_click_events.write(ContainerClickEvent {
                 entity,
                 window_id: inventory.id,
                 operation: ClickOperation::Swap(SwapClick {

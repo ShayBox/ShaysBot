@@ -52,7 +52,7 @@ impl PlaytimeCommandPlugin {
             let Some(player_name) = event.args.iter().next() else {
                 msg_event.content = str!("Missing player name");
                 msg_event.status = 404;
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             };
 
@@ -68,7 +68,7 @@ impl PlaytimeCommandPlugin {
                 Err(error) => {
                     msg_event.content = format!("Player not found: {player_name}");
                     msg_event.status = 404;
-                    msg_events.send(msg_event);
+                    msg_events.write(msg_event);
                     error!("{error}");
                     return;
                 }
@@ -77,14 +77,14 @@ impl PlaytimeCommandPlugin {
             if response.status() == 204 {
                 msg_event.content = format!("Player not found: {player_name}");
                 msg_event.status = 204;
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             }
 
             let Ok(json) = response.body_mut().read_json::<Json>() else {
                 msg_event.content = str!("Failed to parse JSON");
                 msg_event.status = 500;
-                msg_events.send(msg_event);
+                msg_events.write(msg_event);
                 return;
             };
 
@@ -95,7 +95,7 @@ impl PlaytimeCommandPlugin {
                 duration.as_secs() / 60 % 60,
                 duration.as_secs() % 60
             );
-            msg_events.send(msg_event);
+            msg_events.write(msg_event);
         }
 
         cmd_events.clear();

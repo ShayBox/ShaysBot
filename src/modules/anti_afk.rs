@@ -11,7 +11,7 @@ use azalea::{
 
 use crate::prelude::*;
 
-/// Automatically swing arm to avoid being kicked
+/// Automatically swing arm to avoid being kicked.
 pub struct AntiAfkPlugin;
 
 impl Plugin for AntiAfkPlugin {
@@ -49,15 +49,15 @@ impl AntiAfkPlugin {
             }
 
             client_information.view_distance = local_settings.anti_afk.view_distance;
-            send_packet_events.send(SendPacketEvent {
+            send_packet_events.write(SendPacketEvent {
                 sent_by: entity,
                 packet:  ServerboundGamePacket::ClientInformation(ServerboundClientInformation {
-                    information: client_information.clone(),
+                    client_information: client_information.clone(),
                 }),
             });
 
             trace!("Anti-Afk Swing Arm Event");
-            swing_arm_events.send(SwingArmEvent { entity });
+            swing_arm_events.write(SwingArmEvent { entity });
         }
     }
 }

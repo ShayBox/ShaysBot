@@ -5,6 +5,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use anyhow::Result;
 use azalea::{
     app::{App, Plugin, Update},
     chat::{handle_send_chat_event, handler::SendChatKindEvent, ChatKind, ChatReceivedEvent},
@@ -115,7 +116,7 @@ impl MinecraftParserPlugin {
             });
         }
 
-        cmd_events.send_batch(events);
+        cmd_events.write_batch(events);
     }
 
     pub fn handle_send_msg_events(
@@ -158,7 +159,7 @@ impl MinecraftParserPlugin {
             }
 
             try_encrypt(&mut event.content, &settings.chat, type_encryption);
-            chat_kind_events.send(SendChatKindEvent {
+            chat_kind_events.write(SendChatKindEvent {
                 content: format!("w {username} {}", event.content),
                 entity,
                 kind: ChatKind::Command,
