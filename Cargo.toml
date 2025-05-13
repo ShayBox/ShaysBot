@@ -21,8 +21,7 @@ azalea = { git = "https://github.com/azalea-rs/azalea", default-features = false
 azalea-viaversion = { git = "https://github.com/azalea-rs/azalea-viaversion", optional = true }
 #azalea-viaversion = { path = "../azalea-viaversion", optional = true }
 base64 = "0.22"
-bevy-discord = { git = "https://github.com/AS1100K/bevy-discord", features = ["bot"], optional = true }
-#bevy-discord = { version = "0.6.0-rc.1", features = ["bot"], optional = true }
+bevy-discord = { version = "0.6.0", features = ["bot"], optional = true }
 bounded-counter = { version = "0.1", features = ["deref", "deref_mut"] }
 chrono = "0.4"
 derive_more = { version = "2", features = ["full"] }
