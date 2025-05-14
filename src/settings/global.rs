@@ -44,8 +44,8 @@ pub struct GlobalSettings {
     pub discord_token: String,
 
     /// Minecraft server ender pearl view distance in blocks.
-    /// It is better to under-estimate than to over-estimate.
-    #[default(64)] /* Vanilla/Spigot/Paper/Folia Default */
+    /// Better to under-estimate than to over-estimate.
+    #[default(60)] /* Vanilla/Spigot/Paper/Folia Default */
     pub pearl_view_distance: i32,
 
     /// Minecraft server address.
