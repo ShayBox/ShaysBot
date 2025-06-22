@@ -1,11 +1,11 @@
 use std::{collections::VecDeque, io::Read, str::FromStr, sync::Mutex};
 
 use azalea::{
-    TabList,
     app::{App, Plugin, Startup, Update},
     ecs::prelude::*,
+    local_player::TabList,
 };
-use base64::{Engine, prelude::BASE64_STANDARD};
+use base64::{prelude::BASE64_STANDARD, Engine};
 use tiny_http::{Header, Request, Response, Server};
 
 use crate::prelude::*;

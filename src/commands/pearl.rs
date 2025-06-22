@@ -2,8 +2,8 @@ use azalea::{
     app::{App, Plugin, Update},
     ecs::prelude::*,
     entity::Position,
+    local_player::TabList,
     BlockPos,
-    TabList,
 };
 
 use crate::prelude::*;

@@ -1,14 +1,14 @@
 use azalea::{
     app::{App, Plugin, Update},
-    blocks::Block,
+    blocks::BlockTrait,
     disconnect::DisconnectEvent,
     ecs::prelude::*,
+    local_player::TabList,
     packet::{game::ReceiveGamePacketEvent, login::ReceiveLoginPacketEvent},
+    player::GameProfileComponent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
-    GameProfileComponent,
-    TabList,
 };
 use bevy_discord::res::DiscordHttpResource;
 use serenity::{
@@ -141,7 +141,7 @@ impl DiscordLoggerPlugin {
                 return; /* Missing Channel ID */
             }
 
-            let block = Box::<dyn Block>::from(*block_state);
+            let block = Box::<dyn BlockTrait>::from(*block_state);
             if block.id().ends_with("shulker_box") {
                 let block_name = block.as_registry_block();
                 let username = game_profile.name.clone();
@@ -174,7 +174,7 @@ impl DiscordLoggerPlugin {
                 return; /* Missing Channel ID */
             }
 
-            let block = Box::<dyn Block>::from(packet.block_state);
+            let block = Box::<dyn BlockTrait>::from(packet.block_state);
             if block.id().ends_with("shulker_box") {
                 let block_name = block.as_registry_block();
                 let username = game_profile.name.clone();

@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.15.17"
+version = "0.15.18"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2024"
 description = "My personal Minecraft bot using Azalea"
@@ -42,7 +42,7 @@ strum = { version = "0.27", features = ["derive"] }
 terminal-link = "0.1"
 tiny_http = { version = "0.12", optional = true }
 tokio = { version = "1", features = ["full"] }
-toml = "0.8"
+toml = "0.9"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 ureq = { version = "3", features = ["json"] }

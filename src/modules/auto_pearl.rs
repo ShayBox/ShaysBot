@@ -1,22 +1,14 @@
-use std::sync::Arc;
-
 use azalea::{
     app::{App, Plugin, Update},
-    chunks::handle_receive_chunk_events,
+    chunks::handle_receive_chunk_event,
     core::direction::Direction,
     ecs::prelude::*,
     interact::handle_swing_arm_event,
     inventory::InventorySet,
+    local_player::TabList,
     mining::MiningSet,
     packet::game::{handle_outgoing_packets, SendPacketEvent},
-    pathfinder::{
-        astar::PathfinderTimeout,
-        goals::RadiusGoal,
-        goto_listener,
-        moves::default_move,
-        GotoEvent,
-        Pathfinder,
-    },
+    pathfinder::{goals::RadiusGoal, goto_listener, GotoEvent, Pathfinder},
     physics::PhysicsSet,
     prelude::*,
     protocol::packets::game::{
@@ -26,7 +18,6 @@ use azalea::{
         ServerboundUseItemOn,
     },
     BlockPos,
-    TabList,
     Vec3,
 };
 use uuid::Uuid;
@@ -47,7 +38,7 @@ impl Plugin for AutoPearlPlugin {
                     Self::handle_resend_pearl_events,
                     Self::handle_goto_pearl_events
                         .before(goto_listener)
-                        .after(handle_receive_chunk_events),
+                        .after(handle_receive_chunk_event),
                     Self::handle_pull_pearl_events
                         .before(handle_outgoing_packets)
                         .before(handle_swing_arm_event)
@@ -122,15 +113,11 @@ impl AutoPearlPlugin {
             }
 
             let pos = event.block_pos.to_vec3_floored();
-            let goal = RadiusGoal { radius: 3.0, pos };
-            goto_events.write(GotoEvent {
-                entity:        event.entity,
-                goal:          Arc::new(goal),
-                successors_fn: default_move,
-                allow_mining:  false,
-                min_timeout:   PathfinderTimeout::Time(Duration::from_secs(10)),
-                max_timeout:   PathfinderTimeout::Time(Duration::from_secs(10)),
-            });
+            goto_events.write(
+                GotoEvent::new(event.entity, RadiusGoal { radius: 3.0, pos })
+                    .with_allow_mining(false)
+                    .with_retry_on_no_path(false),
+            );
 
             pearl_pull_events.write(PearlPullEvent(event.0));
         }
@@ -171,7 +158,7 @@ impl AutoPearlPlugin {
                     inside:       false,
                     world_border: false,
                 },
-                sequence:  0,
+                seq:       0,
             });
 
             send_packet_events.write(SendPacketEvent {
@@ -179,18 +166,16 @@ impl AutoPearlPlugin {
                 packet,
             });
 
+            let goal = RadiusGoal {
+                pos:    event.idle_goal.coords,
+                radius: event.idle_goal.radius + 1.0,
+            };
             if event.idle_goal != IdleGoal::default() {
-                goto_events.write(GotoEvent {
-                    entity:        event.entity,
-                    goal:          Arc::new(RadiusGoal {
-                        pos:    event.idle_goal.coords,
-                        radius: event.idle_goal.radius + 1.0,
-                    }),
-                    successors_fn: default_move,
-                    allow_mining:  false,
-                    min_timeout:   PathfinderTimeout::Time(Duration::from_secs(10)),
-                    max_timeout:   PathfinderTimeout::Time(Duration::from_secs(10)),
-                });
+                goto_events.write(
+                    GotoEvent::new(event.entity, goal)
+                        .with_allow_mining(false)
+                        .with_retry_on_no_path(false),
+                );
             }
         }
     }

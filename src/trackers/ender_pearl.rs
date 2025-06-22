@@ -1,17 +1,17 @@
 use azalea::{
     app::{App, Plugin, PostUpdate},
-    blocks::{properties::Open, Block},
+    blocks::{properties::Open, BlockTrait},
     ecs::prelude::*,
     entity::{metadata::Player, Position},
     events::packet_listener,
+    local_player::InstanceHolder,
     packet::game::ReceiveGamePacketEvent,
+    player::GameProfileComponent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
     world::MinecraftEntityId,
     BlockPos,
-    GameProfileComponent,
-    InstanceHolder,
     Vec3,
 };
 use uuid::Uuid;
@@ -200,7 +200,7 @@ impl EnderPearlPlugin {
 
             stasis_chambers.0.retain(|_, chamber| {
                 let chamber_pos = chamber.block_pos.to_vec3_floored();
-                let distance_sqr = chamber_pos.distance_squared_to(position);
+                let distance_sqr = chamber_pos.distance_squared_to(**position);
 
                 !(packet.entity_ids.contains(&chamber.entity_id)
                     && distance_sqr <= view_distance_sqr)
@@ -224,11 +224,11 @@ pub fn find_block_pos(position: Vec3, holder: &InstanceHolder, pat: &str) -> Opt
     let max_y = position.y.ceil() as i32 + 5;
     for y in min_y..max_y {
         let pos = BlockPos::new(x, y, z);
-        let Some(state) = instance.get_block_state(&pos) else {
+        let Some(state) = instance.get_block_state(pos) else {
             continue;
         };
 
-        if Box::<dyn Block>::from(state).id().ends_with(pat) {
+        if Box::<dyn BlockTrait>::from(state).id().ends_with(pat) {
             return Some(pos);
         }
     }

@@ -10,6 +10,7 @@ use azalea::{
         Inventory,
         InventorySet,
     },
+    local_player::Hunger,
     mining::continue_mining_block,
     packet::game::{handle_outgoing_packets, SendPacketEvent},
     physics::PhysicsSet,
@@ -20,7 +21,6 @@ use azalea::{
         ServerboundUseItem,
     },
     registry::Item,
-    Hunger,
 };
 
 use crate::prelude::*;
@@ -109,10 +109,10 @@ impl AutoEatPlugin {
             }
 
             let packet = ServerboundGamePacket::UseItem(ServerboundUseItem {
-                hand:     InteractionHand::MainHand,
-                pitch:    direction.x_rot,
-                yaw:      direction.y_rot,
-                sequence: 0,
+                hand:  InteractionHand::MainHand,
+                x_rot: direction.x_rot(),
+                y_rot: direction.y_rot(),
+                seq:   0,
             });
 
             packet_events.write(SendPacketEvent {

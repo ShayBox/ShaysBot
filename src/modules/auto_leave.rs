@@ -1,16 +1,16 @@
 use azalea::{
-    app::{App, Plugin, PreUpdate, Update},
+    app::{App, Plugin, Update},
     auto_reconnect::start_rejoin_on_disconnect,
     connection::RawConnection,
     disconnect::DisconnectEvent,
     ecs::prelude::*,
     events::disconnect_listener,
-    packet::game::{ReceiveGamePacketEvent, SendPacketEvent},
+    local_player::TabList,
+    packet::game::{PingEvent, ReceiveGamePacketEvent, SendPacketEvent},
+    player::GameProfileComponent,
     protocol::packets::game::{ClientboundGamePacket, ServerboundGamePacket, ServerboundPong},
     registry::EntityKind,
     FormattedText,
-    GameProfileComponent,
-    TabList,
 };
 use itertools::Itertools;
 
@@ -24,7 +24,7 @@ pub struct AutoLeavePlugin;
 impl Plugin for AutoLeavePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(SwarmState::default())
-            .add_systems(PreUpdate, Self::handle_ping_packets)
+            .add_observer(Self::handle_ping_packets)
             .add_systems(
                 Update,
                 (
@@ -152,24 +152,18 @@ impl AutoLeavePlugin {
     }
 
     pub fn handle_ping_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        trigger: Trigger<PingEvent>,
         query: Query<&GrimDisconnect>,
         mut commands: Commands,
     ) {
-        for event in packet_events.read() {
-            let ClientboundGamePacket::Ping(packet) = event.packet.as_ref() else {
-                continue;
-            };
-
-            if query.get(event.entity).is_ok() {
-                continue;
-            }
-
-            commands.trigger(SendPacketEvent {
-                sent_by: event.entity,
-                packet:  ServerboundGamePacket::Pong(ServerboundPong { id: packet.id }),
-            });
+        if query.get(trigger.target()).is_ok() {
+            return;
         }
+
+        commands.trigger(SendPacketEvent {
+            sent_by: trigger.target(),
+            packet:  ServerboundGamePacket::Pong(ServerboundPong { id: trigger.0.id }),
+        });
     }
 
     pub fn handle_requeue(

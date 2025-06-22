@@ -10,7 +10,7 @@ use azalea::{
     app::{App, Plugin, Update},
     chat::{handle_send_chat_event, handler::SendChatKindEvent, ChatKind, ChatReceivedEvent},
     ecs::prelude::*,
-    TabList,
+    local_player::TabList,
 };
 use ncr::{
     encoding::{

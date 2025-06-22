@@ -1,8 +1,8 @@
 use azalea::{
     app::{App, Plugin, Update},
     ecs::prelude::*,
-    PlayerInfo,
-    TabList,
+    local_player::TabList,
+    player::PlayerInfo,
 };
 #[cfg(feature = "bot")]
 use serde::Deserialize;

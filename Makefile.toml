@@ -1,0 +1,9 @@
+[tasks.build-aarch64]
+command = "cross"
+args = ["build", "--release", "--target", "aarch64-unknown-linux-gnu"]
+
+[tasks.upload-vps]
+dependencies = ["build-aarch64"]
+script = '''
+scp target/aarch64-unknown-linux-gnu/release/shaysbot pearl@vps:/home/pearl/.local/bin/shaysbot
+'''

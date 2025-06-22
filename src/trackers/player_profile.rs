@@ -4,12 +4,12 @@ use azalea::{
     app::{App, Plugin, PostUpdate, Update},
     auth::game_profile::GameProfile,
     ecs::prelude::*,
+    local_player::TabList,
     packet::game::ReceiveGamePacketEvent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
     world::MinecraftEntityId,
-    TabList,
 };
 
 /// Tracks player profiles for visual range

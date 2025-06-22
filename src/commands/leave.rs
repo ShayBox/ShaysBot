@@ -2,7 +2,7 @@ use azalea::{
     app::{App, Plugin, Update},
     disconnect::DisconnectEvent,
     ecs::prelude::*,
-    GameProfileComponent,
+    player::GameProfileComponent,
 };
 
 use crate::prelude::*;

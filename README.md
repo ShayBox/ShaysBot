@@ -46,7 +46,7 @@ Compiled with [GitHub Actions](.github/workflows/release.yml) using the [**Debug
 
 Prerequisites:
 
-- 2GIB of RAM/SWAP
+- 2GIB of RAM/SWAP (To build locally, much less to run)
 - Update
     - ArchLinux: `sudo pacman -Syu`
     - Debian/Ubuntu: `sudo apt update && sudo apt upgrade`

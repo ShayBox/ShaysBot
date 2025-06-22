@@ -15,7 +15,6 @@ use azalea::{
     physics::PhysicsSet,
     prelude::*,
     registry::Item,
-    world::MinecraftEntityId,
     LookAtEvent,
 };
 
@@ -42,7 +41,7 @@ impl AutoKillPlugin {
     pub fn handle_auto_kill(
         mut query: Query<(Entity, &LocalSettings, &GameTicks, &Inventory, &Pathfinder)>,
         entities: EntityFinder<With<AbstractMonster>>,
-        targets: Query<(&MinecraftEntityId, &Position, Option<&EyeHeight>)>,
+        targets: Query<(&Position, Option<&EyeHeight>)>,
         mut container_click_events: EventWriter<ContainerClickEvent>,
         mut look_at_events: EventWriter<LookAtEvent>,
         mut attack_events: EventWriter<AttackEvent>,
@@ -60,7 +59,7 @@ impl AutoKillPlugin {
                 continue;
             };
 
-            let Ok((target_id, target_pos, target_eye_height)) = targets.get(target) else {
+            let Ok((target_pos, target_eye_height)) = targets.get(target) else {
                 continue;
             };
 
@@ -107,10 +106,7 @@ impl AutoKillPlugin {
                 }
             }
 
-            attack_events.write(AttackEvent {
-                entity,
-                target: *target_id,
-            });
+            attack_events.write(AttackEvent { entity, target });
         }
     }
 }

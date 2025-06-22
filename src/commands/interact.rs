@@ -2,7 +2,8 @@ use anyhow::Result;
 use azalea::{
     app::{App, Plugin, Update},
     ecs::prelude::*,
-    interact::BlockInteractEvent,
+    interact::StartUseItemEvent,
+    protocol::packets::game::s_interact::InteractionHand,
     BlockPos,
 };
 
@@ -36,7 +37,7 @@ impl InteractCommandPlugin {
     pub fn handle_interact_cmd_events(
         mut cmd_events: EventReader<CmdEvent>,
         mut msg_events: EventWriter<MsgEvent>,
-        mut block_interact_events: EventWriter<BlockInteractEvent>,
+        mut block_interact_events: EventWriter<StartUseItemEvent>,
     ) {
         for event in cmd_events.read().cloned() {
             let (Cmds::Interact(_plugin), Some(entity)) = (event.cmd, event.entity) else {
@@ -70,7 +71,11 @@ impl InteractCommandPlugin {
                 return;
             };
 
-            block_interact_events.write(BlockInteractEvent { entity, position });
+            block_interact_events.write(StartUseItemEvent {
+                entity,
+                hand: InteractionHand::MainHand,
+                force_block: Some(position),
+            });
             msg_events.write(msg_event);
         }
 
