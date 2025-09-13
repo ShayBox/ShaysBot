@@ -4,7 +4,7 @@ use azalea::{
     app::{App, Plugin},
     attack::AttackEvent,
     ecs::prelude::*,
-    entity::{metadata::AbstractMonster, EyeHeight, Position},
+    entity::{dimensions::EntityDimensions, metadata::AbstractMonster, Position},
     inventory::{
         operations::{ClickOperation, SwapClick},
         ContainerClickEvent,
@@ -41,7 +41,7 @@ impl AutoKillPlugin {
     pub fn handle_auto_kill(
         mut query: Query<(Entity, &LocalSettings, &GameTicks, &Inventory, &Pathfinder)>,
         entities: EntityFinder<With<AbstractMonster>>,
-        targets: Query<(&Position, Option<&EyeHeight>)>,
+        targets: Query<(&Position, Option<&EntityDimensions>)>,
         mut container_click_events: EventWriter<ContainerClickEvent>,
         mut look_at_events: EventWriter<LookAtEvent>,
         mut attack_events: EventWriter<AttackEvent>,
@@ -59,13 +59,13 @@ impl AutoKillPlugin {
                 continue;
             };
 
-            let Ok((target_pos, target_eye_height)) = targets.get(target) else {
+            let Ok((target_pos, target_entity_dimensions)) = targets.get(target) else {
                 continue;
             };
 
             let mut position = **target_pos;
-            if let Some(eye_height) = target_eye_height {
-                position.y += f64::from(**eye_height);
+            if let Some(entity_dimensions) = target_entity_dimensions {
+                position.y += f64::from(entity_dimensions.eye_height);
             }
 
             look_at_events.write(LookAtEvent { entity, position });

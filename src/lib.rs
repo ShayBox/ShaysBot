@@ -26,7 +26,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use anyhow::{bail, Result};
 use azalea::{
-    app::{PluginGroup, PluginGroupBuilder},
+    app::{AppExit, PluginGroup, PluginGroupBuilder},
     ecs::prelude::*,
     pong::PongPlugin,
     prelude::*,
@@ -135,7 +135,11 @@ pub async fn start() -> Result<()> {
         client = client.add_plugins(ViaVersionPlugin::start(&global_settings.server_version).await);
     }
 
-    client.start(global_settings.server_address).await?
+    if let AppExit::Error(error) = client.start(global_settings.server_address).await? {
+        bail!(error)
+    }
+
+    Ok(())
 }
 
 #[derive(Clone, Component, Resource, SmartDefault)]

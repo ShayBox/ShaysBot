@@ -1,7 +1,7 @@
 use azalea::{
     app::{App, Plugin},
     ecs::prelude::*,
-    entity::{metadata::Player, EyeHeight, Position},
+    entity::{dimensions::EntityDimensions, metadata::Player, Position},
     nearest_entity::EntityFinder,
     pathfinder::Pathfinder,
     physics::PhysicsSet,
@@ -24,7 +24,7 @@ impl AutoLookPlugin {
     pub fn handle_auto_look(
         mut query: Query<(Entity, &Pathfinder, &GameTicks, &LocalSettings)>,
         entities: EntityFinder<With<Player>>,
-        targets: Query<(&Position, Option<&EyeHeight>)>,
+        targets: Query<(&Position, Option<&EntityDimensions>)>,
         mut look_at_events: EventWriter<LookAtEvent>,
     ) {
         for (entity, pathfinder, game_ticks, local_settings) in &mut query {
@@ -44,13 +44,13 @@ impl AutoLookPlugin {
                 continue;
             };
 
-            let Ok((target_pos, target_eye_height)) = targets.get(target) else {
+            let Ok((target_pos, target_entity_dimensions)) = targets.get(target) else {
                 continue;
             };
 
             let mut position = **target_pos;
-            if let Some(eye_height) = target_eye_height {
-                position.y += f64::from(**eye_height);
+            if let Some(entity_dimensions) = target_entity_dimensions {
+                position.y += f64::from(entity_dimensions.eye_height);
             }
 
             look_at_events.write(LookAtEvent { entity, position });

@@ -8,7 +8,7 @@ use azalea::{
     local_player::TabList,
     mining::MiningSet,
     packet::game::{handle_outgoing_packets, SendPacketEvent},
-    pathfinder::{goals::RadiusGoal, goto_listener, GotoEvent, Pathfinder},
+    pathfinder::{goals::RadiusGoal, goto_listener, GotoEvent, Pathfinder, PathfinderOpts},
     physics::PhysicsSet,
     prelude::*,
     protocol::packets::game::{
@@ -113,11 +113,13 @@ impl AutoPearlPlugin {
             }
 
             let pos = event.block_pos.to_vec3_floored();
-            goto_events.write(
-                GotoEvent::new(event.entity, RadiusGoal { radius: 3.0, pos })
-                    .with_allow_mining(false)
-                    .with_retry_on_no_path(false),
-            );
+            goto_events.write(GotoEvent::new(
+                event.entity,
+                RadiusGoal { radius: 3.0, pos },
+                PathfinderOpts::default()
+                    .allow_mining(false)
+                    .retry_on_no_path(false),
+            ));
 
             pearl_pull_events.write(PearlPullEvent(event.0));
         }
@@ -171,11 +173,13 @@ impl AutoPearlPlugin {
                 radius: event.idle_goal.radius + 1.0,
             };
             if event.idle_goal != IdleGoal::default() {
-                goto_events.write(
-                    GotoEvent::new(event.entity, goal)
-                        .with_allow_mining(false)
-                        .with_retry_on_no_path(false),
-                );
+                goto_events.write(GotoEvent::new(
+                    event.entity,
+                    goal,
+                    PathfinderOpts::default()
+                        .allow_mining(false)
+                        .retry_on_no_path(false),
+                ));
             }
         }
     }
