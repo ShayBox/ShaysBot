@@ -24,21 +24,21 @@ pub mod trackers;
 
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use azalea::{
+    DefaultPlugins,
     app::{AppExit, PluginGroup, PluginGroupBuilder},
+    bot::DefaultBotPlugins,
     ecs::prelude::*,
     pong::PongPlugin,
     prelude::*,
-    swarm::{prelude::*, DefaultSwarmPlugins},
-    DefaultBotPlugins,
-    DefaultPlugins,
+    swarm::{DefaultSwarmPlugins, prelude::*},
 };
 #[cfg(feature = "via")]
 use azalea_viaversion::ViaVersionPlugin;
+use bevy_discord::DiscordBotPlugin;
 #[cfg(feature = "bot")]
 use bevy_discord::config::DiscordBotConfig;
-use bevy_discord::DiscordBotPlugin;
 use parking_lot::RwLock;
 use semver::Version;
 #[cfg(feature = "bot")]

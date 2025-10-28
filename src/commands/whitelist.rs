@@ -38,8 +38,8 @@ impl WhitelistCommandPlugin {
     /// # Panics
     /// Will panic if `DeriveTomlConfig::save` fails.
     pub fn handle_whitelist_cmd_events(
-        mut cmd_events: EventReader<CmdEvent>,
-        mut msg_events: EventWriter<MsgEvent>,
+        mut cmd_events: MessageReader<CmdEvent>,
+        mut msg_events: MessageWriter<MsgEvent>,
         mut settings: ResMut<GlobalSettings>,
         tab_list: Res<TabList>,
     ) {

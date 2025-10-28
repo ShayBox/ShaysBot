@@ -70,7 +70,7 @@ pub enum CmdSource {
     Minecraft(Option<EncryptionType>),
 }
 
-#[derive(Clone, Debug, Event)]
+#[derive(Clone, Debug, Message)]
 pub struct CmdEvent {
     /// Optional command arguments
     pub args:    VecDeque<String>,
@@ -81,7 +81,7 @@ pub struct CmdEvent {
     pub source:  CmdSource,
 }
 
-#[derive(Clone, Debug, Event)]
+#[derive(Clone, Debug, Message)]
 pub struct MsgEvent {
     pub content: String,
     pub entity:  Option<Entity>,

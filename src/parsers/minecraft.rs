@@ -8,11 +8,13 @@ use std::{
 use anyhow::Result;
 use azalea::{
     app::{App, Plugin, Update},
-    chat::{handle_send_chat_event, handler::SendChatKindEvent, ChatKind, ChatReceivedEvent},
+    chat::{ChatKind, ChatReceivedEvent, handle_send_chat_event, handler::SendChatKindEvent},
     ecs::prelude::*,
     local_player::TabList,
 };
 use ncr::{
+    AesKey,
+    NcrError,
     encoding::{
         Base64Encoding,
         Base64rEncoding,
@@ -23,8 +25,6 @@ use ncr::{
     },
     encryption::{Cfb8Encryption, EcbEncryption, Encryption, GcmEncryption},
     utils::{prepend_header, trim_header},
-    AesKey,
-    NcrError,
 };
 
 use crate::prelude::*;
@@ -35,8 +35,8 @@ pub struct MinecraftParserPlugin;
 impl Plugin for MinecraftParserPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(CmdCooldown::default())
-            .add_event::<CmdEvent>()
-            .add_event::<MsgEvent>()
+            .add_message::<CmdEvent>()
+            .add_message::<MsgEvent>()
             .add_systems(
                 Update,
                 (
@@ -50,8 +50,8 @@ impl Plugin for MinecraftParserPlugin {
 
 impl MinecraftParserPlugin {
     pub fn handle_chat_received_events(
-        mut chat_received_events: EventReader<ChatReceivedEvent>,
-        mut cmd_events: EventWriter<CmdEvent>,
+        mut chat_received_events: MessageReader<ChatReceivedEvent>,
+        mut cmd_events: MessageWriter<CmdEvent>,
         mut cooldown: ResMut<CmdCooldown>,
         query: Query<&TabList>,
         settings: Res<GlobalSettings>,
@@ -120,8 +120,8 @@ impl MinecraftParserPlugin {
     }
 
     pub fn handle_send_msg_events(
-        mut chat_kind_events: EventWriter<SendChatKindEvent>,
-        mut msg_events: EventReader<MsgEvent>,
+        mut chat_kind_events: MessageWriter<SendChatKindEvent>,
+        mut msg_events: MessageReader<MsgEvent>,
         query: Query<(&TabList, &LocalSettings)>,
         settings: Res<GlobalSettings>,
     ) {

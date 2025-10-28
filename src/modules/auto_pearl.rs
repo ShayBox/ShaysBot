@@ -1,24 +1,24 @@
 use azalea::{
+    BlockPos,
+    Vec3,
     app::{App, Plugin, Update},
     chunks::handle_receive_chunk_event,
     core::direction::Direction,
     ecs::prelude::*,
-    interact::handle_swing_arm_event,
-    inventory::InventorySet,
+    interact::handle_swing_arm_trigger,
+    inventory::InventorySystems,
     local_player::TabList,
-    mining::MiningSet,
-    packet::game::{handle_outgoing_packets, SendPacketEvent},
-    pathfinder::{goals::RadiusGoal, goto_listener, GotoEvent, Pathfinder, PathfinderOpts},
-    physics::PhysicsSet,
+    mining::MiningSystems,
+    packet::game::{SendGamePacketEvent, handle_outgoing_packets_observer},
+    pathfinder::{GotoEvent, Pathfinder, PathfinderOpts, goals::RadiusGoal, goto_listener},
+    physics::PhysicsSystems,
     prelude::*,
     protocol::packets::game::{
-        s_interact::InteractionHand,
-        s_use_item_on::BlockHit,
         ServerboundGamePacket,
         ServerboundUseItemOn,
+        s_interact::InteractionHand,
+        s_use_item_on::BlockHit,
     },
-    BlockPos,
-    Vec3,
 };
 use uuid::Uuid;
 
@@ -30,8 +30,8 @@ pub struct AutoPearlPlugin;
 impl Plugin for AutoPearlPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ResendPearlEvents::default())
-            .add_event::<PearlGotoEvent>()
-            .add_event::<PearlPullEvent>()
+            .add_message::<PearlGotoEvent>()
+            .add_message::<PearlPullEvent>()
             .add_systems(
                 Update,
                 (
@@ -40,11 +40,11 @@ impl Plugin for AutoPearlPlugin {
                         .before(goto_listener)
                         .after(handle_receive_chunk_event),
                     Self::handle_pull_pearl_events
-                        .before(handle_outgoing_packets)
-                        .before(handle_swing_arm_event)
-                        .after(InventorySet)
-                        .after(PhysicsSet)
-                        .after(MiningSet),
+                        .before(handle_outgoing_packets_observer)
+                        .before(handle_swing_arm_trigger)
+                        .after(InventorySystems)
+                        .after(PhysicsSystems)
+                        .after(MiningSystems),
                 )
                     .chain(),
             );
@@ -59,10 +59,10 @@ pub struct PearlEvent {
     pub owner_uuid: Uuid,
 }
 
-#[derive(Clone, Debug, Deref, DerefMut, Event)]
+#[derive(Clone, Debug, Deref, DerefMut, Message)]
 pub struct PearlGotoEvent(pub PearlEvent);
 
-#[derive(Clone, Debug, Deref, DerefMut, Event)]
+#[derive(Clone, Debug, Deref, DerefMut, Message)]
 pub struct PearlPullEvent(pub PearlEvent);
 
 #[derive(Default, Resource)]
@@ -73,8 +73,8 @@ pub struct ResendPearlEvents {
 
 impl AutoPearlPlugin {
     pub fn handle_resend_pearl_events(
-        mut pearl_goto_events: EventWriter<PearlGotoEvent>,
-        mut pearl_pull_events: EventWriter<PearlPullEvent>,
+        mut pearl_goto_events: MessageWriter<PearlGotoEvent>,
+        mut pearl_pull_events: MessageWriter<PearlPullEvent>,
         mut pearl_pending_events: ResMut<ResendPearlEvents>,
         mut query: Query<&Pathfinder>,
     ) {
@@ -96,9 +96,9 @@ impl AutoPearlPlugin {
     }
 
     pub fn handle_goto_pearl_events(
-        mut goto_events: EventWriter<GotoEvent>,
-        mut pearl_goto_events: EventReader<PearlGotoEvent>,
-        mut pearl_pull_events: EventWriter<PearlPullEvent>,
+        mut goto_events: MessageWriter<GotoEvent>,
+        mut pearl_goto_events: MessageReader<PearlGotoEvent>,
+        mut pearl_pull_events: MessageWriter<PearlPullEvent>,
         mut pearl_pending_events: ResMut<ResendPearlEvents>,
         mut query: Query<&Pathfinder>,
     ) {
@@ -126,10 +126,10 @@ impl AutoPearlPlugin {
     }
 
     pub fn handle_pull_pearl_events(
-        mut goto_events: EventWriter<GotoEvent>,
+        mut goto_events: MessageWriter<GotoEvent>,
         mut pearl_pending_events: ResMut<ResendPearlEvents>,
-        mut pearl_pull_events: EventReader<PearlPullEvent>,
-        mut send_packet_events: EventWriter<SendPacketEvent>,
+        mut pearl_pull_events: MessageReader<PearlPullEvent>,
+        mut commands: Commands,
         mut query: Query<(&Pathfinder, &TabList)>,
     ) {
         for event in pearl_pull_events.read().cloned() {
@@ -163,7 +163,7 @@ impl AutoPearlPlugin {
                 seq:       0,
             });
 
-            send_packet_events.write(SendPacketEvent {
+            commands.trigger(SendGamePacketEvent {
                 sent_by: event.entity,
                 packet,
             });

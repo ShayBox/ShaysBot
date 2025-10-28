@@ -2,11 +2,11 @@ use azalea::{
     app::{App, Plugin},
     ecs::prelude::*,
     inventory::{
-        handle_container_click_event,
-        operations::{ClickOperation, SwapClick},
         ContainerClickEvent,
         Inventory,
         Menu,
+        handle_container_click_event,
+        operations::{ClickOperation, SwapClick},
     },
     prelude::*,
     registry::Item,
@@ -32,7 +32,7 @@ impl Plugin for AutoTotemPlugin {
 impl AutoTotemPlugin {
     pub fn handle_auto_totem(
         mut query: Query<(Entity, &Inventory, &GameTicks)>,
-        mut container_click_events: EventWriter<ContainerClickEvent>,
+        mut commands: Commands,
     ) {
         for (entity, inventory, game_ticks) in &mut query {
             if game_ticks.0 % 2 == 0 {
@@ -55,7 +55,7 @@ impl AutoTotemPlugin {
                 continue;
             };
 
-            container_click_events.write(ContainerClickEvent {
+            commands.trigger(ContainerClickEvent {
                 entity,
                 window_id: inventory.id,
                 operation: ClickOperation::Swap(SwapClick {

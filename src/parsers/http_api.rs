@@ -5,7 +5,7 @@ use azalea::{
     ecs::prelude::*,
     local_player::TabList,
 };
-use base64::{prelude::BASE64_STANDARD, Engine};
+use base64::{Engine, prelude::BASE64_STANDARD};
 use tiny_http::{Header, Request, Response, Server};
 
 use crate::prelude::*;
@@ -47,7 +47,7 @@ impl HttpApiParserPlugin {
     /// # Panics
     /// Will panic if `Header::from_str` fails.
     pub fn handle_api_requests(
-        mut cmd_events: EventWriter<CmdEvent>,
+        mut cmd_events: MessageWriter<CmdEvent>,
         query: Query<Entity>,
         api_server: ResMut<ApiServer>,
         settings: Res<GlobalSettings>,
@@ -151,7 +151,7 @@ impl HttpApiParserPlugin {
         )));
     }
 
-    pub fn handle_send_msg_events(mut msg_events: EventReader<MsgEvent>) {
+    pub fn handle_send_msg_events(mut msg_events: MessageReader<MsgEvent>) {
         for event in msg_events.read().cloned() {
             #[rustfmt::skip]
             let (

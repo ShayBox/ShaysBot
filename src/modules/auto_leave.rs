@@ -1,4 +1,5 @@
 use azalea::{
+    FormattedText,
     app::{App, Plugin, Update},
     auto_reconnect::start_rejoin_on_disconnect,
     connection::RawConnection,
@@ -6,11 +7,10 @@ use azalea::{
     ecs::prelude::*,
     events::disconnect_listener,
     local_player::TabList,
-    packet::game::{PingEvent, ReceiveGamePacketEvent, SendPacketEvent},
+    packet::game::{GamePingEvent, ReceiveGamePacketEvent, SendGamePacketEvent},
     player::GameProfileComponent,
-    protocol::packets::game::{ClientboundGamePacket, ServerboundGamePacket, ServerboundPong},
+    protocol::packets::game::{ClientboundGamePacket, ServerboundPong},
     registry::EntityKind,
-    FormattedText,
 };
 use itertools::Itertools;
 
@@ -46,7 +46,7 @@ pub struct GrimDisconnect;
 impl AutoLeavePlugin {
     #[allow(clippy::cognitive_complexity)]
     pub fn handle_disconnect_events(
-        mut events: EventReader<DisconnectEvent>,
+        mut events: MessageReader<DisconnectEvent>,
         mut query: Query<&GameProfileComponent>,
         mut commands: Commands,
         swarm_state: Res<SwarmState>,
@@ -86,8 +86,8 @@ impl AutoLeavePlugin {
     }
 
     pub fn handle_add_entity_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
-        mut disconnect_events: EventWriter<DisconnectEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
+        mut disconnect_events: MessageWriter<DisconnectEvent>,
         query: Query<(&TabList, &GameProfileComponent, &LocalSettings)>,
         global_settings: Res<GlobalSettings>,
     ) {
@@ -127,8 +127,8 @@ impl AutoLeavePlugin {
     }
 
     pub fn handle_transfer_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
-        mut disconnect_events: EventWriter<DisconnectEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
+        mut disconnect_events: MessageWriter<DisconnectEvent>,
         query: Query<&GameProfileComponent>,
     ) {
         for event in packet_events.read() {
@@ -152,23 +152,23 @@ impl AutoLeavePlugin {
     }
 
     pub fn handle_ping_packets(
-        trigger: Trigger<PingEvent>,
+        ping: On<GamePingEvent>,
         query: Query<&GrimDisconnect>,
         mut commands: Commands,
     ) {
-        if query.get(trigger.target()).is_ok() {
+        if query.get(ping.entity).is_ok() {
             return;
         }
 
-        commands.trigger(SendPacketEvent {
-            sent_by: trigger.target(),
-            packet:  ServerboundGamePacket::Pong(ServerboundPong { id: trigger.0.id }),
-        });
+        commands.trigger(SendGamePacketEvent::new(
+            ping.entity,
+            ServerboundPong { id: ping.packet.id },
+        ));
     }
 
     pub fn handle_requeue(
         query: Query<(Entity, &GameTicks, &LocalSettings, &TabList), With<RawConnection>>,
-        mut disconnect_events: EventWriter<DisconnectEvent>,
+        mut disconnect_events: MessageWriter<DisconnectEvent>,
         mut commands: Commands,
     ) {
         query

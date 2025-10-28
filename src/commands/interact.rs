@@ -1,10 +1,10 @@
 use anyhow::Result;
 use azalea::{
+    BlockPos,
     app::{App, Plugin, Update},
     ecs::prelude::*,
     interact::StartUseItemEvent,
     protocol::packets::game::s_interact::InteractionHand,
-    BlockPos,
 };
 
 use crate::prelude::*;
@@ -35,9 +35,9 @@ impl Plugin for InteractCommandPlugin {
 // TODO: Add separate Interaction config to store named locations
 impl InteractCommandPlugin {
     pub fn handle_interact_cmd_events(
-        mut cmd_events: EventReader<CmdEvent>,
-        mut msg_events: EventWriter<MsgEvent>,
-        mut block_interact_events: EventWriter<StartUseItemEvent>,
+        mut cmd_events: MessageReader<CmdEvent>,
+        mut msg_events: MessageWriter<MsgEvent>,
+        mut block_interact_events: MessageWriter<StartUseItemEvent>,
     ) {
         for event in cmd_events.read().cloned() {
             let (Cmds::Interact(_plugin), Some(entity)) = (event.cmd, event.entity) else {

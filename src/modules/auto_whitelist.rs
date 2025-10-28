@@ -24,7 +24,7 @@ impl Plugin for AutoWhitelistPlugin {
 
 impl AutoWhitelistPlugin {
     pub fn handle_add_entity_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         mut global_settings: ResMut<GlobalSettings>,
     ) {
         for event in packet_events.read() {

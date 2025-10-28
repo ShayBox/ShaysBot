@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 use azalea::{
+    BlockPos,
     app::{App, Plugin, PostUpdate, Update},
     blocks::BlockState,
     ecs::prelude::*,
     packet::game::ReceiveGamePacketEvent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
-    BlockPos,
 };
 
 /// Tracks block states for trapdoor closes
@@ -26,7 +26,7 @@ pub struct BlockStates(pub HashMap<BlockPos, BlockState>);
 
 impl BlockStatePlugin {
     pub fn handle_block_update_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         mut block_states: ResMut<BlockStates>,
         mut query: Query<&mut BlockStates>,
         mut commands: Commands,
@@ -51,7 +51,7 @@ impl BlockStatePlugin {
     }
 
     pub fn handle_block_break_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         mut block_states: ResMut<BlockStates>,
         mut query: Query<&mut BlockStates>,
     ) {

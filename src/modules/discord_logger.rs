@@ -76,7 +76,7 @@ impl DiscordLoggerPlugin {
     }
 
     fn handle_add_entity_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         query: Query<(&TabList, &LocalSettings, &GameProfileComponent)>,
         discord: Option<Res<DiscordHttpResource>>,
     ) {
@@ -115,7 +115,7 @@ impl DiscordLoggerPlugin {
     }
 
     fn handle_block_break_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         query: Query<(&BlockStates, &LocalSettings, &GameProfileComponent)>,
         discord: Option<Res<DiscordHttpResource>>,
     ) {
@@ -152,7 +152,7 @@ impl DiscordLoggerPlugin {
     }
 
     fn handle_block_update_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         query: Query<(&LocalSettings, &GameProfileComponent)>,
         discord: Option<Res<DiscordHttpResource>>,
     ) {
@@ -185,7 +185,7 @@ impl DiscordLoggerPlugin {
     }
 
     pub fn handle_disconnect_events(
-        mut events: EventReader<DisconnectEvent>,
+        mut events: MessageReader<DisconnectEvent>,
         query: Query<(&LocalSettings, &GameProfileComponent)>,
         discord: Option<Res<DiscordHttpResource>>,
     ) {
@@ -218,7 +218,7 @@ impl DiscordLoggerPlugin {
     }
 
     fn handle_login_packets(
-        mut events: EventReader<ReceiveLoginPacketEvent>,
+        mut events: MessageReader<ReceiveLoginPacketEvent>,
         query: Query<(&LocalSettings, &GameProfileComponent)>,
         discord: Option<Res<DiscordHttpResource>>,
     ) {
@@ -243,7 +243,7 @@ impl DiscordLoggerPlugin {
     }
 
     fn handle_player_info_remove_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         query: Query<(&PlayerProfiles, &LocalSettings, &GameProfileComponent)>,
         discord: Option<Res<DiscordHttpResource>>,
     ) {
@@ -284,7 +284,7 @@ impl DiscordLoggerPlugin {
     }
 
     fn handle_player_info_update_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         query: Query<(&PlayerProfiles, &LocalSettings, &GameProfileComponent)>,
         discord: Option<Res<DiscordHttpResource>>,
     ) {
@@ -327,7 +327,7 @@ impl DiscordLoggerPlugin {
     }
 
     fn handle_remove_entities_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         query: Query<(&PlayerProfiles, &LocalSettings, &GameProfileComponent)>,
         discord: Option<Res<DiscordHttpResource>>,
     ) {

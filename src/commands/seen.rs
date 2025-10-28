@@ -6,7 +6,7 @@ use azalea::{
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
-use ureq::{config::Config, Agent};
+use ureq::{Agent, config::Config};
 
 use crate::prelude::*;
 
@@ -34,8 +34,8 @@ impl Plugin for SeenCommandPlugin {
 
 impl SeenCommandPlugin {
     pub fn handle_seen_cmd_events(
-        mut cmd_events: EventReader<CmdEvent>,
-        mut msg_events: EventWriter<MsgEvent>,
+        mut cmd_events: MessageReader<CmdEvent>,
+        mut msg_events: MessageWriter<MsgEvent>,
     ) {
         if let Some(event) = cmd_events.read().next() {
             let Cmds::Seen(_plugin) = event.cmd else {

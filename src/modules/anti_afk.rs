@@ -1,12 +1,12 @@
 use azalea::{
+    ClientInformation,
     app::{App, Plugin, Startup},
     ecs::prelude::*,
-    interact::{handle_swing_arm_event, SwingArmEvent},
+    interact::{SwingArmEvent, handle_swing_arm_trigger},
     mining::continue_mining_block,
-    packet::game::SendPacketEvent,
+    packet::game::SendGamePacketEvent,
     prelude::*,
     protocol::packets::game::{ServerboundClientInformation, ServerboundGamePacket},
-    ClientInformation,
 };
 
 use crate::prelude::*;
@@ -20,7 +20,7 @@ impl Plugin for AntiAfkPlugin {
             .add_systems(
                 GameTick,
                 Self::handle_anti_afk
-                    .before(handle_swing_arm_event)
+                    .before(handle_swing_arm_trigger)
                     .after(continue_mining_block)
                     .after(GameTickPlugin::handle_game_ticks),
             );
@@ -36,8 +36,7 @@ impl AntiAfkPlugin {
 
     pub fn handle_anti_afk(
         mut query: Query<(Entity, &LocalSettings, &GameTicks, &mut ClientInformation)>,
-        mut send_packet_events: EventWriter<SendPacketEvent>,
-        mut swing_arm_events: EventWriter<SwingArmEvent>,
+        mut commands: Commands,
     ) {
         for (entity, local_settings, game_ticks, mut client_information) in &mut query {
             if !local_settings.anti_afk.enabled {
@@ -49,7 +48,7 @@ impl AntiAfkPlugin {
             }
 
             client_information.view_distance = local_settings.anti_afk.view_distance;
-            send_packet_events.write(SendPacketEvent {
+            commands.trigger(SendGamePacketEvent {
                 sent_by: entity,
                 packet:  ServerboundGamePacket::ClientInformation(ServerboundClientInformation {
                     client_information: client_information.clone(),
@@ -57,7 +56,7 @@ impl AntiAfkPlugin {
             });
 
             trace!("Anti-Afk Swing Arm Event");
-            swing_arm_events.write(SwingArmEvent { entity });
+            commands.trigger(SwingArmEvent { entity });
         }
     }
 }

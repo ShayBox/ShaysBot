@@ -1,7 +1,7 @@
 use azalea::{
     app::{App, Plugin},
     ecs::prelude::*,
-    entity::{metadata::Player, LocalEntity},
+    entity::{LocalEntity, metadata::Player},
     prelude::*,
 };
 use bounded_counter::BoundedCounter;

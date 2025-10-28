@@ -1,9 +1,9 @@
 use azalea::{
+    BlockPos,
     app::{App, Plugin, Update},
     ecs::prelude::*,
     entity::Position,
     local_player::TabList,
-    BlockPos,
 };
 
 use crate::prelude::*;
@@ -35,9 +35,9 @@ impl PearlCommandPlugin {
     #[allow(clippy::too_many_lines)]
     #[cfg_attr(not(feature = "bot"), allow(unused_variables))]
     pub fn handle_pearl_cmd_events(
-        mut cmd_events: EventReader<CmdEvent>,
-        mut msg_events: EventWriter<MsgEvent>,
-        mut pearl_events: EventWriter<PearlGotoEvent>,
+        mut cmd_events: MessageReader<CmdEvent>,
+        mut msg_events: MessageWriter<MsgEvent>,
+        mut pearl_events: MessageWriter<PearlGotoEvent>,
         query: Query<(&TabList, &Position, &LocalSettings)>,
         settings: Query<&LocalSettings>,
         global_settings: Res<GlobalSettings>,

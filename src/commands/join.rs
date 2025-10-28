@@ -29,8 +29,8 @@ impl Plugin for JoinCommandPlugin {
 
 impl JoinCommandPlugin {
     pub fn handle_join_cmd_events(
-        mut cmd_events: EventReader<CmdEvent>,
-        mut msg_events: EventWriter<MsgEvent>,
+        mut cmd_events: MessageReader<CmdEvent>,
+        mut msg_events: MessageWriter<MsgEvent>,
         swarm_state: Res<SwarmState>,
     ) {
         if let Some(event) = cmd_events.read().next() {

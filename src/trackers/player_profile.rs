@@ -28,7 +28,7 @@ pub struct PlayerProfiles(pub HashMap<MinecraftEntityId, GameProfile>);
 
 impl PlayerProfilePlugin {
     pub fn handle_add_entity_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         mut player_profiles: ResMut<PlayerProfiles>,
         mut query_profiles: Query<&mut PlayerProfiles>,
         mut commands: Commands,
@@ -66,7 +66,7 @@ impl PlayerProfilePlugin {
     }
 
     pub fn handle_remove_entities_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         mut player_profiles: ResMut<PlayerProfiles>,
         mut query: Query<&mut PlayerProfiles>,
     ) {

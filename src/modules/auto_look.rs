@@ -1,12 +1,12 @@
 use azalea::{
     app::{App, Plugin},
+    bot::LookAtEvent,
     ecs::prelude::*,
-    entity::{dimensions::EntityDimensions, metadata::Player, Position},
+    entity::{Position, dimensions::EntityDimensions, metadata::Player},
     nearest_entity::EntityFinder,
     pathfinder::Pathfinder,
-    physics::PhysicsSet,
+    physics::PhysicsSystems,
     prelude::*,
-    LookAtEvent,
 };
 
 use crate::prelude::{GameTicks, LocalSettings};
@@ -16,7 +16,7 @@ pub struct AutoLookPlugin;
 
 impl Plugin for AutoLookPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(GameTick, Self::handle_auto_look.before(PhysicsSet));
+        app.add_systems(GameTick, Self::handle_auto_look.before(PhysicsSystems));
     }
 }
 
@@ -25,7 +25,7 @@ impl AutoLookPlugin {
         mut query: Query<(Entity, &Pathfinder, &GameTicks, &LocalSettings)>,
         entities: EntityFinder<With<Player>>,
         targets: Query<(&Position, Option<&EntityDimensions>)>,
-        mut look_at_events: EventWriter<LookAtEvent>,
+        mut look_at_events: MessageWriter<LookAtEvent>,
     ) {
         for (entity, pathfinder, game_ticks, local_settings) in &mut query {
             if !local_settings.auto_look.enabled {

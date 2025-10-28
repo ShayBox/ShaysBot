@@ -3,19 +3,19 @@ use std::{cmp::Ordering, sync::LazyLock};
 use azalea::{
     app::{App, Plugin},
     attack::AttackEvent,
+    bot::LookAtEvent,
     ecs::prelude::*,
-    entity::{dimensions::EntityDimensions, metadata::AbstractMonster, Position},
+    entity::{Position, dimensions::EntityDimensions, metadata::AbstractMonster},
     inventory::{
-        operations::{ClickOperation, SwapClick},
         ContainerClickEvent,
         Inventory,
+        operations::{ClickOperation, SwapClick},
     },
     nearest_entity::EntityFinder,
     pathfinder::Pathfinder,
-    physics::PhysicsSet,
+    physics::PhysicsSystems,
     prelude::*,
     registry::Item,
-    LookAtEvent,
 };
 
 use crate::prelude::*;
@@ -30,7 +30,7 @@ impl Plugin for AutoKillPlugin {
             Self::handle_auto_kill
                 .after(AutoLookPlugin::handle_auto_look)
                 .before(GameTickPlugin::handle_game_ticks)
-                .before(PhysicsSet),
+                .before(PhysicsSystems),
         );
     }
 }
@@ -42,9 +42,9 @@ impl AutoKillPlugin {
         mut query: Query<(Entity, &LocalSettings, &GameTicks, &Inventory, &Pathfinder)>,
         entities: EntityFinder<With<AbstractMonster>>,
         targets: Query<(&Position, Option<&EntityDimensions>)>,
-        mut container_click_events: EventWriter<ContainerClickEvent>,
-        mut look_at_events: EventWriter<LookAtEvent>,
-        mut attack_events: EventWriter<AttackEvent>,
+        mut commands: Commands,
+        mut look_at_events: MessageWriter<LookAtEvent>,
+        mut attack_events: MessageWriter<AttackEvent>,
     ) {
         for (entity, local_settings, game_ticks, inventory, pathfinder) in &mut query {
             if !local_settings.auto_kill.enabled {
@@ -95,7 +95,7 @@ impl AutoKillPlugin {
                         "Swapping Weapon from {slot} to {}",
                         inventory.selected_hotbar_slot
                     );
-                    container_click_events.write(ContainerClickEvent {
+                    commands.trigger(ContainerClickEvent {
                         entity,
                         window_id: inventory.id,
                         operation: ClickOperation::Swap(SwapClick {

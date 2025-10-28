@@ -3,9 +3,9 @@ use std::collections::VecDeque;
 use azalea::{
     app::{App, Plugin, Update},
     ecs::prelude::*,
-    entity::{metadata::Player, LocalEntity},
+    entity::{LocalEntity, metadata::Player},
 };
-use bevy_discord::{events::bot::BMessage, res::DiscordHttpResource, DiscordSet};
+use bevy_discord::{DiscordSystems, messages::bot::DiscordMessage, res::DiscordHttpResource};
 use serenity::json::json;
 
 use crate::prelude::*;
@@ -18,8 +18,8 @@ impl Plugin for DiscordParserPlugin {
         app.add_systems(
             Update,
             (
-                Self::handle_message_events.after(DiscordSet),
-                Self::handle_send_msg_events.before(DiscordSet),
+                Self::handle_message_events.after(DiscordSystems),
+                Self::handle_send_msg_events,
             ),
         );
     }
@@ -27,8 +27,8 @@ impl Plugin for DiscordParserPlugin {
 
 impl DiscordParserPlugin {
     pub fn handle_message_events(
-        mut message_events: EventReader<BMessage>,
-        mut cmd_events: EventWriter<CmdEvent>,
+        mut message_events: MessageReader<DiscordMessage>,
+        mut cmd_events: MessageWriter<CmdEvent>,
         query: Query<Entity, (With<Player>, With<LocalEntity>)>,
         settings: Res<GlobalSettings>,
     ) {
@@ -105,7 +105,7 @@ impl DiscordParserPlugin {
     }
 
     pub fn handle_send_msg_events(
-        mut msg_events: EventReader<MsgEvent>,
+        mut msg_events: MessageReader<MsgEvent>,
         discord: Option<Res<DiscordHttpResource>>,
     ) {
         let Some(discord) = discord else {

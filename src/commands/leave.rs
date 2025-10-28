@@ -33,9 +33,9 @@ impl Plugin for LeaveCommandPlugin {
 
 impl LeaveCommandPlugin {
     pub fn handle_leave_cmd_events(
-        mut cmd_events: EventReader<CmdEvent>,
-        mut msg_events: EventWriter<MsgEvent>,
-        mut disconnect_events: EventWriter<DisconnectEvent>,
+        mut cmd_events: MessageReader<CmdEvent>,
+        mut msg_events: MessageWriter<MsgEvent>,
+        mut disconnect_events: MessageWriter<DisconnectEvent>,
         query: Query<(Entity, &GameProfileComponent)>,
     ) {
         for event in cmd_events.read().cloned() {

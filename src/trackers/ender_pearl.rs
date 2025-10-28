@@ -1,8 +1,10 @@
 use azalea::{
+    BlockPos,
+    Vec3,
     app::{App, Plugin, PostUpdate},
-    blocks::{properties::Open, BlockTrait},
+    blocks::{BlockTrait, properties::Open},
     ecs::prelude::*,
-    entity::{metadata::Player, Position},
+    entity::{Position, metadata::Player},
     events::packet_listener,
     local_player::InstanceHolder,
     packet::game::ReceiveGamePacketEvent,
@@ -11,8 +13,6 @@ use azalea::{
     protocol::packets::game::ClientboundGamePacket,
     registry::EntityKind,
     world::MinecraftEntityId,
-    BlockPos,
-    Vec3,
 };
 use uuid::Uuid;
 
@@ -23,7 +23,7 @@ pub struct EnderPearlPlugin;
 
 impl Plugin for EnderPearlPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ResendPacketEvent>().add_systems(
+        app.add_message::<ResendPacketEvent>().add_systems(
             PostUpdate,
             (
                 Self::handle_add_entity_packet,
@@ -35,13 +35,13 @@ impl Plugin for EnderPearlPlugin {
     }
 }
 
-#[derive(Clone, Event)]
+#[derive(Clone, Message)]
 pub struct ResendPacketEvent(ReceiveGamePacketEvent);
 
 impl EnderPearlPlugin {
     pub fn handle_resend_packets(
-        mut resend_packet_events: EventReader<ResendPacketEvent>,
-        mut packet_events: EventWriter<ReceiveGamePacketEvent>,
+        mut resend_packet_events: MessageReader<ResendPacketEvent>,
+        mut packet_events: MessageWriter<ReceiveGamePacketEvent>,
     ) {
         for event in resend_packet_events.read().cloned() {
             packet_events.write(event.0);
@@ -53,12 +53,12 @@ impl EnderPearlPlugin {
     /// Will panic of `Settings::save` fails.
     #[allow(clippy::cognitive_complexity)]
     pub fn handle_add_entity_packet(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         mut query: Query<(&InstanceHolder, &LocalSettings)>,
-        mut pearl_goto_events: EventWriter<PearlGotoEvent>,
-        mut resend_packet_events: EventWriter<ResendPacketEvent>,
+        mut pearl_goto_events: MessageWriter<PearlGotoEvent>,
+        mut resend_packet_events: MessageWriter<ResendPacketEvent>,
         mut stasis_chambers: ResMut<StasisChambers>,
-        mut msg_events: EventWriter<MsgEvent>,
+        mut msg_events: MessageWriter<MsgEvent>,
         player_profiles: Query<(&MinecraftEntityId, &GameProfileComponent), With<Player>>,
     ) {
         for event in packet_events.read().cloned() {
@@ -149,7 +149,7 @@ impl EnderPearlPlugin {
     /// # Panics
     /// Will panic of `Settings::save` fails.
     pub fn handle_block_update_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         mut stasis_chambers: ResMut<StasisChambers>,
     ) {
         for event in packet_events.read() {
@@ -181,7 +181,7 @@ impl EnderPearlPlugin {
     /// # Panics
     /// Will panic of `Settings::save` fails.
     pub fn handle_remove_entities_packets(
-        mut packet_events: EventReader<ReceiveGamePacketEvent>,
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
         mut player_positions: Query<&Position>,
         mut stasis_chambers: ResMut<StasisChambers>,
         global_settings: Res<GlobalSettings>,

@@ -3,22 +3,22 @@ use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 use azalea::{
     app::{App, Plugin},
     ecs::prelude::*,
-    entity::{metadata::Player, LocalEntity, LookDirection},
+    entity::{LocalEntity, LookDirection, metadata::Player},
     inventory::{
-        operations::{ClickOperation, SwapClick},
         ContainerClickEvent,
         Inventory,
-        InventorySet,
+        InventorySystems,
+        operations::{ClickOperation, SwapClick},
     },
     local_player::Hunger,
     mining::continue_mining_block,
-    packet::game::{handle_outgoing_packets, SendPacketEvent},
-    physics::PhysicsSet,
+    packet::game::{SendGamePacketEvent, handle_outgoing_packets_observer},
+    physics::PhysicsSystems,
     prelude::*,
     protocol::packets::game::{
-        s_interact::InteractionHand,
         ServerboundGamePacket,
         ServerboundUseItem,
+        s_interact::InteractionHand,
     },
     registry::Item,
 };
@@ -34,10 +34,10 @@ impl Plugin for AutoEatPlugin {
             GameTick,
             Self::handle_auto_eat
                 .after(GameTickPlugin::handle_game_ticks)
-                .before(handle_outgoing_packets)
+                .before(handle_outgoing_packets_observer)
                 .before(continue_mining_block)
-                .before(InventorySet)
-                .before(PhysicsSet),
+                .before(InventorySystems)
+                .before(PhysicsSystems),
         );
     }
 }
@@ -55,11 +55,7 @@ type QueryFilter = (With<Player>, With<LocalEntity>);
 impl AutoEatPlugin {
     /// # Panics
     /// Will panic when the slot larger than u16 (impossible?)
-    pub fn handle_auto_eat(
-        mut query: Query<QueryData, QueryFilter>,
-        mut packet_events: EventWriter<SendPacketEvent>,
-        mut container_click_events: EventWriter<ContainerClickEvent>,
-    ) {
+    pub fn handle_auto_eat(mut query: Query<QueryData, QueryFilter>, mut commands: Commands) {
         for (entity, game_ticks, hunger, inventory, direction, local_settings) in &mut query {
             if !local_settings.auto_eat.enabled {
                 continue;
@@ -97,7 +93,7 @@ impl AutoEatPlugin {
                         "Swapping Food from {slot} to {}",
                         inventory.selected_hotbar_slot
                     );
-                    container_click_events.write(ContainerClickEvent {
+                    commands.trigger(ContainerClickEvent {
                         entity,
                         window_id: inventory.id,
                         operation: ClickOperation::Swap(SwapClick {
@@ -115,7 +111,7 @@ impl AutoEatPlugin {
                 seq:   0,
             });
 
-            packet_events.write(SendPacketEvent {
+            commands.trigger(SendGamePacketEvent {
                 sent_by: entity,
                 packet,
             });

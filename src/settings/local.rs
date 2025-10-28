@@ -5,16 +5,16 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use azalea::{
-    app::{App, Plugin, Startup},
-    ecs::prelude::*,
-    prelude::*,
-    protocol::{resolver, ServerAddress},
-    swarm::Swarm,
     JoinOpts,
     NoState,
     Vec3,
+    app::{App, Plugin, Startup},
+    ecs::prelude::*,
+    prelude::*,
+    protocol::{ServerAddress, resolver},
+    swarm::Swarm,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;

@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.15.19"
+version = "0.15.20"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2024"
 description = "My personal Minecraft bot using Azalea"
@@ -15,20 +15,23 @@ license = "MIT"
 azalea = { git = "https://github.com/Shays-Forks/azalea" }
 #azalea = { path = "../azalea/azalea" }
 
+[patch.crates-io]
+ncr = { git = "https://github.com/Shays-Forks/ncr-rs", rev = "4004292" }
+
 [dependencies]
 anyhow = "1"
 azalea = { git = "https://github.com/azalea-rs/azalea", default-features = false, features = ["packet-event", "serde"] }
 azalea-viaversion = { git = "https://github.com/azalea-rs/azalea-viaversion", optional = true }
 #azalea-viaversion = { path = "../azalea-viaversion", optional = true }
 base64 = "0.22"
-bevy-discord = { version = "0.6.0", features = ["bot"], optional = true }
+bevy-discord = { version = "0.7.0", features = ["bot"], optional = true }
 bounded-counter = { version = "0.1", features = ["deref", "deref_mut"] }
 chrono = "0.4"
 derive_more = { version = "2", features = ["full"] }
 fastrand = "2"
 itertools = "0.14"
 lazy-regex = "3"
-ncr = { git = "https://github.com/Shays-Forks/ncr-rs", features = ["cfb8", "ecb", "gcm"] }
+ncr = { version = "0.1", features = ["cfb8", "ecb", "gcm"] }
 parking_lot = "0.12"
 semver = "1"
 serde = "1"
@@ -44,7 +47,7 @@ tiny_http = { version = "0.12", optional = true }
 tokio = { version = "1", features = ["full"] }
 toml = "0.9"
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 ureq = { version = "3", features = ["json"] }
 uuid = "1"
 
