@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, io::Read, str::FromStr, sync::Mutex};
+use std::{collections::VecDeque, io::Read, result::Result, str::FromStr, sync::Mutex};
 
 use azalea::{
     app::{App, Plugin, Startup, Update},
@@ -6,7 +6,9 @@ use azalea::{
     local_player::TabList,
 };
 use base64::{Engine, prelude::BASE64_STANDARD};
+use serde::{Deserialize, Serialize};
 use tiny_http::{Header, Request, Response, Server};
+use uuid::Uuid;
 
 use crate::prelude::*;
 
@@ -93,17 +95,23 @@ impl HttpApiParserPlugin {
             return;
         };
 
-        let Some(uuid) = tab_list
+        let uuid = if let Some((uuid, _info)) = tab_list
             .iter()
-            .find(|(_, player_info)| player_info.profile.name == username)
-            .map(|(uuid, _)| uuid)
-        else {
-            warn!("[API] {username} tried but isn't online");
-            send_text(request, "User isn't online", 404);
-            return;
+            .find(|(_, info)| info.profile.name.to_lowercase() == username.to_lowercase())
+        {
+            *uuid
+        } else {
+            match fetch_uuid(&username.to_lowercase()) {
+                Ok(uuid) => uuid,
+                Err((status, content)) => {
+                    warn!("[API] {username} tried but {content}!");
+                    send_text(request, &content, status);
+                    return;
+                }
+            }
         };
 
-        let Some(user) = settings.users.get(uuid) else {
+        let Some(user) = settings.users.get(&uuid) else {
             warn!("[API] {username} tried but isn't whitelisted!");
             send_text(request, "User isn't whitelisted", 404);
             return;
@@ -139,7 +147,7 @@ impl HttpApiParserPlugin {
             cmd,
             entity: None,
             message: false,
-            sender: CmdSender::ApiServer(*uuid),
+            sender: CmdSender::ApiServer(uuid),
             source: CmdSource::ApiServer(Arc::new(Mutex::new(Some(request)))),
         };
 
@@ -187,5 +195,52 @@ pub fn send_text(request: Request, text: &str, code: u16) {
 pub fn send_response<R: Read>(request: Request, response: Response<R>) {
     if let Err(error) = request.respond(response) {
         error!("[API] Error sending response: {error}");
+    }
+}
+
+const MOJANG_URL: &str = "https://api.mojang.com/users/profiles/minecraft";
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Mojang200 {
+    #[serde(rename = "id")]
+    pub uuid: String,
+    pub name: String,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct Mojang404 {
+    #[serde(rename = "errorMessage")]
+    pub error: String,
+    pub path:  String,
+}
+
+/// Fetch a Minecraft UUID from a Username
+///
+/// # Errors
+/// Will return `Err` if `ureq::get`, `Body::read_json`, `Uuid::parse_str`, or Mojang fails.
+pub fn fetch_uuid(username: &str) -> Result<Uuid, (u16, String)> {
+    let url = format!("{MOJANG_URL}/{username}");
+    let response = ureq::get(&url)
+        .call()
+        .map_err(|_| (500, "Mojang request failed.".to_string()))?;
+
+    let status = response.status();
+    let mut body = response.into_body();
+
+    match status.as_u16() {
+        200 => {
+            let resp = body
+                .read_json::<Mojang200>()
+                .map_err(|_| (500, "Mojang parsing json failed.".to_string()))?;
+            Uuid::parse_str(&resp.uuid)
+                .map_err(|_| (500, format!("Mojang parsing uuid failed: {}", resp.uuid)))
+        }
+        404 => {
+            let resp = body
+                .read_json::<Mojang404>()
+                .map_err(|_| (500, "Mojang parsing json failed.".to_string()))?;
+            Err((404, resp.error))
+        }
+        code => Err((code, format!("Mojang Error: {code}"))),
     }
 }

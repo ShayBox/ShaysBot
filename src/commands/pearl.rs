@@ -1,9 +1,9 @@
 use azalea::{
-    BlockPos,
     app::{App, Plugin, Update},
     ecs::prelude::*,
     entity::Position,
     local_player::TabList,
+    BlockPos,
 };
 
 use crate::prelude::*;
@@ -81,40 +81,47 @@ impl PearlCommandPlugin {
                 #[cfg(feature = "bot")]
                 CmdSender::Discord(user_id) => {
                     let Some(username) = event.args.pop_front() else {
-                        msg_event.content = str!("Missing player name");
                         msg_event.status = 404;
+                        msg_event.content = str!("Missing player name");
                         msg_events.write(msg_event);
                         cmd_events.clear();
                         return;
                     };
 
-                    let Some((uuid, _info)) = tab_list.iter().find(|(_, info)| {
+                    let uuid = if let Some((uuid, _info)) = tab_list.iter().find(|(_, info)| {
                         info.profile.name.to_lowercase() == username.to_lowercase()
-                    }) else {
-                        msg_event.content = format!("{username} is not online");
-                        msg_event.status = 404;
-                        msg_events.write(msg_event);
-                        cmd_events.clear();
-                        return;
+                    }) {
+                        *uuid
+                    } else {
+                        match fetch_uuid(&username.to_lowercase()) {
+                            Ok(uuid) => uuid,
+                            Err((status, content)) => {
+                                msg_event.status = status;
+                                msg_event.content = content;
+                                msg_events.write(msg_event);
+                                cmd_events.clear();
+                                return;
+                            }
+                        }
                     };
 
                     if global_settings.whitelist_only {
-                        let Some(user) = global_settings.users.get(uuid) else {
+                        let Some(user) = global_settings.users.get(&uuid) else {
                             cmd_events.clear();
                             return; /* Not Whitelisted */
                         };
 
                         /* Hacky way to allow any Discord account to pearl a Minecraft account. */
                         if ![str!(user_id), str!("*")].contains(&user.discord_id.to_string()) {
-                            msg_event.content = str!("That account isn't linked to you");
                             msg_event.status = 403;
+                            msg_event.content = str!("That account isn't linked to you");
                             msg_events.write(msg_event);
                             cmd_events.clear();
                             return;
                         }
                     }
 
-                    *uuid
+                    uuid
                 }
                 #[allow(irrefutable_let_patterns)]
                 CmdSender::Minecraft(uuid) => uuid,
@@ -190,8 +197,8 @@ impl PearlCommandPlugin {
                 })
             else {
                 let location = &local_settings.auto_pearl.location;
-                msg_event.content = format!("Pearl not found at {location}");
                 msg_event.status = 404;
+                msg_event.content = format!("Pearl not found at {location}");
                 msg_events.write(msg_event);
                 cmd_events.clear();
                 return;
