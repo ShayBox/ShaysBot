@@ -3,7 +3,6 @@ ARG ALPINE_IMAGE_VERSION="3.22.2"
 ARG TARGET_PLATFORM="unknowntarget"
 ARG USER="shay"
 ARG UID="1000"
-ARG GID="1000"
 
 # Because we can't use variable expansion in `RUN --mount=from=`, we use this to alias the image
 FROM rust:${RUST_IMAGE_VERSION} AS build_base
@@ -33,12 +32,8 @@ ARG GID
 WORKDIR /config
 
 RUN <<EOF
-    addgroup \
-        --gid "${GID}" \
-        "${USER}"
     adduser \
         --disabled-password \
-        --ingroup shay \
         --no-create-home \
         --uid "${UID}" \
         "${USER}"
