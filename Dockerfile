@@ -46,12 +46,5 @@ RUN <<EOF
 EOF
 USER ${USER}
 
-# Create default config files, so a bind mount to their locations will work out-of-the-box.
-COPY \
-    --chown=${UID}:${GID} \
-    ./example-config /config
-COPY \
-    --from=build \
-    --chown=${UID}:${GID} \
-    /build/shaysbot /usr/local/bin/shaysbot
-ENTRYPOINT [ "shaysbot" ]
+COPY --from=build /build/shaysbot /usr/local/bin/shaysbot
+CMD [ "shaysbot" ]
