@@ -1,0 +1,50 @@
+services:
+  bot:
+    restart: unless-stopped
+    image: shaysbot:latest  # replace with a versioned tag!
+    volumes:
+      - ./config:/config  # create this directory first!
+  
+  
+  # ZenithProxy (below) is optional -- uncomment to enable it
+
+  # proxy:
+  #   image: ghcr.io/rfresh2/zenithproxy:latest  # replace with a versioned tag!
+  #   ports:
+  #     - '25565:25565'
+  #   environment:
+  #     # The port that ZenithProxy will be connectable on.
+  #     ZENITH_PORT: "25565"
+
+  #     # The host that ZenithProxy will be bound to. This can be an IP address (eg. 203.0.113.67), a
+  #     # hostname (eg. mc-proxy) or a FQDN (eg. mc.example.com)
+  #     ZENITH_IP: "localhost"
+
+  #     # The version of Minecraft Zenith will run.
+  #     # Latest version is usually supported, others are deprecated.
+  #     ZENITH_MC_VERSION: "1.21.4"
+
+  #     # The authorization token granted by Discord when configuring a Bot user.
+  #     ZENITH_DISCORD_TOKEN: "<change me>"
+
+  #     # The ID of the Discord role that should allow users to interact ZenithProxy.
+  #     ZENITH_DISCORD_ROLE_ID: "<change me>"
+
+  #     # The ID of the Discord channel in which ZenithProxy will look for commands, also referred to
+  #     # as the "Management channel".
+  #     ZENITH_DISCORD_CHANNEL_ID: "<change me>"
+
+  #     # The ChatRelay is a live feed of chat messages and/or connection messages from the server to
+  #     # a Discord channel. To enable it, set this variable to the ID of the channel you want to use
+  #     # for ChatRelay. This can't be the same as the Management channel.
+  #     # ZENITH_DISCORD_CHAT_RELAY_CHANNEL: ""
+
+  #     # Completely disable ZenithProxy's Discord integration. As Discord is the main way most users
+  #     # will interact with ZenithProxy, you probably want to leave this set to `false`.
+  #     # ZENITH_DISCORD_DISABLED: "false"
+      
+  #     # On Linux, ZenithProxy can be run as a specially optimized binary. On other platforms, it 
+  #     # must be run directly via the JVM. The former method is better, and will be chosen
+  #     # automatically by ZenithProxy if the environment supports it. You probably shouldn't override
+  #     # this unless you know what you're doing.
+  #     # ZENITH_PLATFORM: "linux"
