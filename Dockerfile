@@ -12,7 +12,7 @@ RUN apk update && apk add g++
 ####################################################################################################
 FROM build_base AS build
 ARG TARGET_PLATFORM
-WORKDIR /app
+WORKDIR /build
 
 COPY . .
 
@@ -20,9 +20,9 @@ COPY . .
 # We set `id` to separate caches by target platform so we can build for multiple architectures
 RUN \
     --mount=type=cache,target=/usr/local/cargo,from=build_base,source=/usr/local/cargo,id=${TARGET_PLATFORM}_cargohome \
-    --mount=type=cache,target=/app/target,id=${TARGET_PLATFORM}_target <<EOF
+    --mount=type=cache,target=/build/target,id=${TARGET_PLATFORM}_target <<EOF
     /usr/local/cargo/bin/cargo build --release --locked
-    cp ./target/release/shaysbot /app/shaysbot
+    cp ./target/release/shaysbot /build/shaysbot
 EOF
 
 ####################################################################################################
@@ -30,7 +30,7 @@ FROM alpine:${ALPINE_IMAGE_VERSION} AS run
 ARG USER
 ARG UID
 ARG GID
-WORKDIR /app
+WORKDIR /config
 
 RUN <<EOF
     addgroup \
@@ -42,15 +42,16 @@ RUN <<EOF
         --no-create-home \
         --uid "${UID}" \
         "${USER}"
-    chown -R "${USER}":"${USER}" /app 
+    chown -R "${USER}":"${USER}" /config 
 EOF
 USER ${USER}
 
 # Create default config files, so a bind mount to their locations will work out-of-the-box.
-COPY ./example-config/* .
-
+COPY \
+    --chown=${UID}:${GID} \
+    ./example-config /config
 COPY \
     --from=build \
     --chown=${UID}:${GID} \
-    /app/shaysbot .
-CMD ["./shaysbot"]
+    /build/shaysbot /usr/local/bin/shaysbot
+ENTRYPOINT [ "shaysbot" ]
