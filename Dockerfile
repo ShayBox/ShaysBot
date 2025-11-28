@@ -46,6 +46,9 @@ RUN <<EOF
 EOF
 USER ${USER}
 
+# Create default config files, so a bind mount to their locations will work out-of-the-box.
+COPY ./example-config/* .
+
 COPY \
     --from=build \
     --chown=${UID}:${GID} \

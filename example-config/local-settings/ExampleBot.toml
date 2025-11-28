@@ -1,0 +1,41 @@
+# For basic documentation, see https://github.com/nozxmc/ShaysBot/blob/master/src/settings/local.rs
+
+auth_mode = "offline"
+disable_responses = false
+discord_channel = "1"
+
+[anti_afk]
+enabled = true
+delay_ticks = "1234"
+view_distance = 12
+
+[anti_spam]
+enabled = true
+unix_epoch = true
+
+[auto_eat]
+enabled = true
+delay_ticks = "42"
+
+[auto_kill]
+enabled = false
+auto_weapon = true
+delay_ticks = "25"
+
+[auto_leave]
+unknown_player = false
+grim_disconnect = false
+auto_requeue = false
+
+[auto_look]
+enabled = true
+delay_ticks = "2"
+
+[auto_pearl]
+enabled = true
+location = ""
+pearl_limit = 10
+
+[auto_pearl.idle]
+coords = "0 0 0"
+radius = 0.0
