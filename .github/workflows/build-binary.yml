@@ -1,9 +1,11 @@
+name: Build binaries
+
 on:
   release:
     types: [ created ]
 
 jobs:
-  release:
+  build:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
