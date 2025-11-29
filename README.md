@@ -12,7 +12,7 @@
 
 My personal Minecraft bot written in Rust built with [Azalea].  
 Primarily designed to be a pearl bot, allowing for quick travel to different locations with multiple accounts.  
-Also featuring a Discord bot, an HTTP API for local integrations, and support for [No Chat Reports] encryption.
+Also featuring a Discord bot, an HTTP API for local integrations, a Docker image, and support for [No Chat Reports] encryption.
 
 ## How to use
 
