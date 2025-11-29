@@ -1,0 +1,5 @@
+--secret GITHUB_TOKEN
+--artifact-server-path ./.artifacts
+--matrix platform:amd64
+--eventpath ./act_event.json 
+--platform ubuntu-24.04=catthehacker/ubuntu:act-latest

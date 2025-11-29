@@ -6,6 +6,7 @@ rustfmt.toml
 
 # Builds
 target/
+.artifacts/
 
 # Documentation
 compose.example.yaml
