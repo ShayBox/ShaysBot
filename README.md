@@ -42,6 +42,17 @@ The first is the log level of the bot, the second is of dependencies.
 
 Compiled with [GitHub Actions](.github/workflows/release.yml) using the [**Debug**](#cargo-profiles) profile.
 
+### Docker
+Pull from the image `ghcr.io/ShayBox/ShaysBot`. Available tags are listed
+[here](#TODO-fix-this-when-ghcr-is-set-up). 
+
+All configuration files are in the container's working directory, `/config`. If using a bind mount
+for this directory, make sure `config` mount point on the host has the proper permissions and
+ownership set for the application to be able to access it inside the container.
+
+For an example `compose.yaml` file for use with Docker Compose, see
+[`compose.example.yaml`](./compose.example.yaml).
+
 ### Install or Develop Locally
 
 Prerequisites:
