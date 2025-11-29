@@ -72,6 +72,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ needs.meta.outputs.image_name }}
           outputs: type=registry,push-by-digest=true,name-canonical=true
+          cache-from: type=gha,scope=${{ matrix.platform }}-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}-${{ github.ref_name }}
 
       - name: Export digest
         run: |
