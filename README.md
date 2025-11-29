@@ -44,7 +44,7 @@ Compiled with [GitHub Actions](.github/workflows/release.yml) using the [**Debug
 
 ### Docker
 Pull from the image `ghcr.io/ShayBox/ShaysBot`. Available tags are listed
-[here](#TODO-fix-this-when-ghcr-is-set-up). 
+[here](https://github.com/ShayBox/ShaysBot/pkgs/container/shaysbot/versions). 
 
 All configuration files are in the container's working directory, `/config`. If using a bind mount
 for this directory, make sure `config` mount point on the host has the proper permissions and
