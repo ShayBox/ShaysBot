@@ -12,7 +12,7 @@
 
 My personal Minecraft bot written in Rust built with [Azalea].  
 Primarily designed to be a pearl bot, allowing for quick travel to different locations with multiple accounts.  
-Also featuring a Discord bot, an HTTP API for local integrations, and support for [No Chat Reports] encryption.
+Also featuring a Discord bot, an HTTP API for local integrations, a Docker image, and support for [No Chat Reports] encryption.
 
 ## How to use
 
@@ -41,6 +41,17 @@ The first is the log level of the bot, the second is of dependencies.
 ### Binaries: [Latest] | [Releases]
 
 Compiled with [GitHub Actions](.github/workflows/release.yml) using the [**Debug**](#cargo-profiles) profile.
+
+### Docker
+Pull from the image `ghcr.io/ShayBox/ShaysBot`. Available tags are listed
+[here](https://github.com/ShayBox/ShaysBot/pkgs/container/shaysbot/versions). 
+
+All configuration files are in the container's working directory, `/config`. If using a bind mount
+for this directory, make sure `config` mount point on the host has the proper permissions and
+ownership set for the application to be able to access it inside the container.
+
+For an example `compose.yaml` file for use with Docker Compose, see
+[`compose.example.yaml`](./compose.example.yaml).
 
 ### Install or Develop Locally
 

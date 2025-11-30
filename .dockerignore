@@ -1,0 +1,18 @@
+# Various config files 
+.github/
+.gitignore
+Makefile.toml
+rustfmt.toml
+
+# Builds
+target/
+.artifacts/
+
+# Documentation
+compose.example.yaml
+LICENSE
+README.md
+
+# Yes, really!
+Dockerfile
+.dockerignore
