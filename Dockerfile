@@ -1,5 +1,5 @@
 ARG RUST_IMAGE_VERSION="1.91.1-alpine3.20"
-ARG ALPINE_IMAGE_VERSION="3.22.2"
+ARG JAVA_IMAGE_VERSION="25-jre-alpine-3.22"
 ARG USER="shay"
 ARG UID="1000"
 
@@ -29,7 +29,7 @@ RUN cargo +nightly build --release --locked --bin shaysbot
 
 ####################################################################################################
 
-FROM alpine:${ALPINE_IMAGE_VERSION} AS run
+FROM eclipse-temurin:${JAVA_IMAGE_VERSION} AS run
 ARG USER
 ARG UID
 ARG GID
@@ -38,7 +38,6 @@ WORKDIR /config
 RUN <<EOF
     adduser \
         --disabled-password \
-        --no-create-home \
         --uid "${UID}" \
         "${USER}"
     chown -R "${USER}":"${USER}" /config 
