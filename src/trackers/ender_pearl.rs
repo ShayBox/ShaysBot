@@ -1,18 +1,18 @@
 use azalea::{
-    BlockPos,
-    Vec3,
     app::{App, Plugin, PostUpdate},
-    blocks::{BlockTrait, properties::Open},
+    block::{properties::Open, BlockTrait},
     ecs::prelude::*,
-    entity::{Position, metadata::Player},
+    entity::{metadata::Player, Position},
     events::packet_listener,
     local_player::InstanceHolder,
     packet::game::ReceiveGamePacketEvent,
     player::GameProfileComponent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
-    registry::EntityKind,
+    registry::builtin::EntityKind,
     world::MinecraftEntityId,
+    BlockPos,
+    Vec3,
 };
 use uuid::Uuid;
 
@@ -157,10 +157,10 @@ impl EnderPearlPlugin {
                 continue;
             };
 
-            if let Some(open) = packet.block_state.property::<Open>() {
-                if open {
-                    return;
-                }
+            if let Some(open) = packet.block_state.property::<Open>()
+                && open
+            {
+                return;
             }
 
             stasis_chambers

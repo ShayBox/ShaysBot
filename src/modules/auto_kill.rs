@@ -5,17 +5,21 @@ use azalea::{
     attack::AttackEvent,
     bot::LookAtEvent,
     ecs::prelude::*,
-    entity::{Position, dimensions::EntityDimensions, metadata::AbstractMonster},
+    entity::{
+        dimensions::EntityDimensions,
+        inventory::Inventory,
+        metadata::AbstractMonster,
+        Position,
+    },
     inventory::{
-        ContainerClickEvent,
-        Inventory,
         operations::{ClickOperation, SwapClick},
+        ContainerClickEvent,
     },
     nearest_entity::EntityFinder,
     pathfinder::Pathfinder,
     physics::PhysicsSystems,
     prelude::*,
-    registry::Item,
+    registry::builtin::ItemKind,
 };
 
 use crate::prelude::*;
@@ -111,19 +115,19 @@ impl AutoKillPlugin {
     }
 }
 
-pub static WEAPON_ITEMS: LazyLock<HashMap<Item, i32>> = LazyLock::new(|| {
+pub static WEAPON_ITEMS: LazyLock<HashMap<ItemKind, i32>> = LazyLock::new(|| {
     HashMap::from([
-        (Item::DiamondAxe, 9),
-        (Item::DiamondSword, 7),
-        (Item::GoldenAxe, 7),
-        (Item::GoldenSword, 4),
-        (Item::IronAxe, 9),
-        (Item::IronSword, 6),
-        (Item::NetheriteAxe, 10),
-        (Item::NetheriteSword, 8),
-        (Item::StoneAxe, 9),
-        (Item::StoneSword, 5),
-        (Item::WoodenAxe, 7),
-        (Item::WoodenSword, 4),
+        (ItemKind::DiamondAxe, 9),
+        (ItemKind::DiamondSword, 7),
+        (ItemKind::GoldenAxe, 7),
+        (ItemKind::GoldenSword, 4),
+        (ItemKind::IronAxe, 9),
+        (ItemKind::IronSword, 6),
+        (ItemKind::NetheriteAxe, 10),
+        (ItemKind::NetheriteSword, 8),
+        (ItemKind::StoneAxe, 9),
+        (ItemKind::StoneSword, 5),
+        (ItemKind::WoodenAxe, 7),
+        (ItemKind::WoodenSword, 4),
     ])
 });

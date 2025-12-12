@@ -2,7 +2,7 @@ use azalea::{
     app::{App, Plugin, Update},
     packet::game::ReceiveGamePacketEvent,
     protocol::packets::game::ClientboundGamePacket,
-    registry::EntityKind,
+    registry::builtin::EntityKind,
 };
 
 use crate::prelude::*;

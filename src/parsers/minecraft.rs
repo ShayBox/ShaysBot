@@ -8,13 +8,11 @@ use std::{
 use anyhow::Result;
 use azalea::{
     app::{App, Plugin, Update},
-    chat::{ChatKind, ChatReceivedEvent, handle_send_chat_event, handler::SendChatKindEvent},
+    chat::{handle_send_chat_event, handler::SendChatKindEvent, ChatKind, ChatReceivedEvent},
     ecs::prelude::*,
     local_player::TabList,
 };
 use ncr::{
-    AesKey,
-    NcrError,
     encoding::{
         Base64Encoding,
         Base64rEncoding,
@@ -25,6 +23,8 @@ use ncr::{
     },
     encryption::{Cfb8Encryption, EcbEncryption, Encryption, GcmEncryption},
     utils::{prepend_header, trim_header},
+    AesKey,
+    NcrError,
 };
 
 use crate::prelude::*;
@@ -152,11 +152,10 @@ impl MinecraftParserPlugin {
             };
 
             info!("Command Response: {}", event.content);
-            if local_settings.anti_spam.enabled {
-                if let Ok(duration) = SystemTime::now().duration_since(UNIX_EPOCH) {
+            if local_settings.anti_spam.enabled
+                && let Ok(duration) = SystemTime::now().duration_since(UNIX_EPOCH) {
                     let _ = write!(event.content, " [{}]", duration.as_secs());
                 }
-            }
 
             try_encrypt(&mut event.content, &settings.chat, type_encryption);
             chat_kind_events.write(SendChatKindEvent {
@@ -252,11 +251,10 @@ pub fn find_encryption(content: &str, key: &AesKey) -> (Option<EncryptionType>, 
         ];
 
         for encryptor in encryptors {
-            if let Ok(plaintext) = encryptor.decrypt(content, key) {
-                if let Ok(trimmed) = trim_header(&plaintext) {
+            if let Ok(plaintext) = encryptor.decrypt(content, key)
+                && let Ok(trimmed) = trim_header(&plaintext) {
                     return (Some(encryptor), String::from(trimmed));
                 }
-            }
         }
     }
 
@@ -279,9 +277,9 @@ pub fn try_encrypt(
         if let Ok(ciphertext) = encryption.encrypt(&plaintext, &key) {
             *content = ciphertext;
         }
-    } else if chat_encryption.mode == EncryptionMode::Always {
-        if let Ok(ciphertext) = Cfb8Encryption(NewBase64rEncoding).encrypt(&plaintext, &key) {
-            *content = ciphertext;
-        }
+    } else if chat_encryption.mode == EncryptionMode::Always
+        && let Ok(ciphertext) = Cfb8Encryption(NewBase64rEncoding).encrypt(&plaintext, &key)
+    {
+        *content = ciphertext;
     }
 }

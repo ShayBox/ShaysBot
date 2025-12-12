@@ -6,11 +6,11 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use azalea::{
     app::{App, Plugin},
     prelude::*,
-    protocol::ServerAddress,
+    protocol::address::ServerAddr,
 };
 use serde::{Deserialize, Serialize};
 use serde_tuple::{Deserialize_tuple as DeserializeTuple, Serialize_tuple as SerializeTuple};
@@ -49,13 +49,13 @@ pub struct GlobalSettings {
     pub pearl_view_distance: i32,
 
     /// Minecraft server address.
-    #[default(ServerAddress{
+    #[default(ServerAddr{
         host: str!("play.vengeancecraft.net"),
         port: 25565
-        })]
-    pub server_address: ServerAddress,
+    })]
+    pub server_address: ServerAddr,
 
-    /// ViaProxy server version. (Optional)
+    /// `ViaProxy` server version. (Optional)
     pub server_version: String,
 
     /// Automatically whitelist players that enter visual range.

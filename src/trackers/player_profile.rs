@@ -8,7 +8,7 @@ use azalea::{
     packet::game::ReceiveGamePacketEvent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
-    registry::EntityKind,
+    registry::builtin::EntityKind,
     world::MinecraftEntityId,
 };
 

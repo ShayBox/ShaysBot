@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 use azalea::{
-    BlockPos,
     app::{App, Plugin, PostUpdate, Update},
-    blocks::BlockState,
+    block::BlockState,
     ecs::prelude::*,
     packet::game::ReceiveGamePacketEvent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
+    BlockPos,
 };
 
 /// Tracks block states for trapdoor closes

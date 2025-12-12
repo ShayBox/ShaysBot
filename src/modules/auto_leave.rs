@@ -1,5 +1,4 @@
 use azalea::{
-    FormattedText,
     app::{App, Plugin, Update},
     auto_reconnect::start_rejoin_on_disconnect,
     connection::RawConnection,
@@ -10,7 +9,8 @@ use azalea::{
     packet::game::{GamePingEvent, ReceiveGamePacketEvent, SendGamePacketEvent},
     player::GameProfileComponent,
     protocol::packets::game::{ClientboundGamePacket, ServerboundPong},
-    registry::EntityKind,
+    registry::builtin::EntityKind,
+    FormattedText,
 };
 use itertools::Itertools;
 

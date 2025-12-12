@@ -5,16 +5,16 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use azalea::{
-    JoinOpts,
-    NoState,
-    Vec3,
     app::{App, Plugin, Startup},
     ecs::prelude::*,
     prelude::*,
-    protocol::{ServerAddress, resolver},
+    protocol::{address::ServerAddr, resolve},
     swarm::Swarm,
+    JoinOpts,
+    NoState,
+    Vec3,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;
@@ -82,7 +82,7 @@ pub struct LocalSettings {
     pub discord_channel: ChannelId,
 
     /// Minecraft account server address. (Optional)
-    pub server_address: Option<ServerAddress>,
+    pub server_address: Option<ServerAddr>,
 }
 
 #[derive(Clone, Default, Deserialize, Serialize)]
@@ -300,17 +300,17 @@ pub async fn load_settings(swarm: Swarm) -> Result<()> {
 
         tokio::time::sleep(Duration::from_secs(5)).await;
         let client = if let Some(server_address) = settings.server_address.clone() {
-            let Ok(resolved_address) = resolver::resolve_address(&server_address).await else {
+            let Ok(resolved_address) = resolve::resolve_address(&server_address).await else {
                 bail!("Failed to resolve server address")
             };
 
             let opts = JoinOpts::new()
-                .custom_address(server_address)
-                .custom_resolved_address(resolved_address);
+                .custom_server_addr(server_address)
+                .custom_socket_addr(resolved_address);
 
-            swarm.add_with_opts(&account, NoState, &opts).await?
+            swarm.add_with_opts(&account, NoState, &opts).await
         } else {
-            swarm.add(&account, NoState).await? /* Use the default server address */
+            swarm.add(&account, NoState).await /* Use the default server address */
         };
 
         let mut world = client.ecs.lock();

@@ -1,6 +1,6 @@
 use azalea::{
     app::{App, Plugin, Update},
-    blocks::BlockTrait,
+    block::BlockTrait,
     disconnect::DisconnectEvent,
     ecs::prelude::*,
     local_player::TabList,
@@ -8,7 +8,7 @@ use azalea::{
     player::GameProfileComponent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
-    registry::EntityKind,
+    registry::builtin::EntityKind,
 };
 use bevy_discord::res::DiscordHttpResource;
 use serenity::{
@@ -371,5 +371,5 @@ pub async fn send_message(content: impl ToString, channel_id: ChannelId, client:
 
     if let Err(error) = client.send_message(channel_id, vec![], &map).await {
         error!("{error}");
-    };
+    }
 }

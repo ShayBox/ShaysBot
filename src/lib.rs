@@ -24,21 +24,21 @@ pub mod trackers;
 
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use azalea::{
-    DefaultPlugins,
-    app::{AppExit, PluginGroup, PluginGroupBuilder},
+    app::{PluginGroup, PluginGroupBuilder},
     bot::DefaultBotPlugins,
     ecs::prelude::*,
     pong::PongPlugin,
     prelude::*,
-    swarm::{DefaultSwarmPlugins, prelude::*},
+    swarm::{prelude::*, DefaultSwarmPlugins},
+    DefaultPlugins,
 };
 #[cfg(feature = "via")]
 use azalea_viaversion::ViaVersionPlugin;
-use bevy_discord::DiscordBotPlugin;
 #[cfg(feature = "bot")]
 use bevy_discord::config::DiscordBotConfig;
+use bevy_discord::DiscordBotPlugin;
 use parking_lot::RwLock;
 use semver::Version;
 #[cfg(feature = "bot")]
@@ -135,10 +135,9 @@ pub async fn start() -> Result<()> {
         client = client.add_plugins(ViaVersionPlugin::start(&global_settings.server_version).await);
     }
 
-    if let AppExit::Error(error) = client.start(global_settings.server_address).await? {
-        bail!(error)
-    }
-
+    client
+        .start(global_settings.server_address.to_string())
+        .await;
     Ok(())
 }
 
@@ -178,13 +177,7 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -
             }
 
             info!("AutoReconnecting on {}", account.username);
-            if let Err(reason) = swarm.add_with_opts(account, state.clone(), join_opts).await {
-                warn!("[{bot_name}] Failed to AutoReconnect: {reason}");
-                info!("[{bot_name}] AutoReconnecting in 30s...");
-
-                state.auto_reconnect.write().entry(bot_name).or_default().1 = 30;
-                continue;
-            }
+            swarm.add_with_opts(account, state.clone(), join_opts).await;
 
             break;
         },

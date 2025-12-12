@@ -1,15 +1,15 @@
 use azalea::{
     app::{App, Plugin},
     ecs::prelude::*,
+    entity::inventory::Inventory,
     inventory::{
-        ContainerClickEvent,
-        Inventory,
-        Menu,
         handle_container_click_event,
         operations::{ClickOperation, SwapClick},
+        ContainerClickEvent,
+        Menu,
     },
     prelude::*,
-    registry::Item,
+    registry::builtin::ItemKind,
 };
 
 use crate::prelude::*;
@@ -43,13 +43,13 @@ impl AutoTotemPlugin {
                 continue;
             };
 
-            if player.offhand.kind() == Item::TotemOfUndying {
+            if player.offhand.kind() == ItemKind::TotemOfUndying {
                 continue;
             }
 
             let Some(index) = inventory.menu().slots()[8..]
                 .iter()
-                .position(|slot| slot.kind() == Item::TotemOfUndying)
+                .position(|slot| slot.kind() == ItemKind::TotemOfUndying)
                 .and_then(|index| u16::try_from(index + 8).ok())
             else {
                 continue;
