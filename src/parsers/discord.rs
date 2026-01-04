@@ -3,9 +3,9 @@ use std::collections::VecDeque;
 use azalea::{
     app::{App, Plugin, Update},
     ecs::prelude::*,
-    entity::{LocalEntity, metadata::Player},
+    entity::{metadata::Player, LocalEntity},
 };
-use bevy_discord::{DiscordSystems, messages::bot::DiscordMessage, res::DiscordHttpResource};
+use bevy_discord::{messages::bot::DiscordMessage, res::DiscordHttpResource, DiscordSystems};
 use serenity::json::json;
 
 use crate::prelude::*;
@@ -63,7 +63,7 @@ impl DiscordParserPlugin {
                     let prefix = settings.command_prefix.clone();
                     let user_id = str!(message.author.id);
 
-                    tokio::spawn(async move {
+                    tokio::task::spawn_local(async move {
                         let content = format!(
                             "Your Discord and Minecraft accounts are not currently linked.\n\
                             To link via in-game, message the bot the following command: `{prefix}whitelist link {user_id}`\n\
@@ -119,7 +119,7 @@ impl DiscordParserPlugin {
                 continue;
             };
 
-            tokio::spawn(async move {
+            tokio::task::spawn_local(async move {
                 let map = &json!({
                     "content": content,
                 });

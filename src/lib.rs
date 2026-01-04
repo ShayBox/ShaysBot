@@ -150,7 +150,7 @@ pub struct SwarmState {
 /// Will return `Err` if `Swarm::add_with_opts` fails.
 pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -> Result<()> {
     match event {
-        SwarmEvent::Init => swarm.ecs_lock.lock().insert_resource(state),
+        SwarmEvent::Init => swarm.ecs.write().insert_resource(state),
         SwarmEvent::Chat(chat_packet) => {
             let message = chat_packet.message();
             if message.to_string().contains("Position in queue: ") {
@@ -160,7 +160,7 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -
             println!("{}", message.to_ansi());
         }
         SwarmEvent::Disconnect(ref account, ref join_opts) => loop {
-            let bot_name = account.username.to_lowercase();
+            let bot_name = account.username().to_lowercase();
             let Some((rejoin, secs)) = state.auto_reconnect.read().get(&bot_name).copied() else {
                 state
                     .auto_reconnect
@@ -176,7 +176,7 @@ pub async fn swarm_handler(swarm: Swarm, event: SwarmEvent, state: SwarmState) -
                 continue; /* AutoReconnect: Disabled */
             }
 
-            info!("AutoReconnecting on {}", account.username);
+            info!("AutoReconnecting on {}", account.username());
             swarm.add_with_opts(account, state.clone(), join_opts).await;
 
             break;

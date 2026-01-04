@@ -35,7 +35,7 @@ impl LocalSettingsPlugin {
     pub fn handle_startup(swarm: Res<Swarm>) {
         let swarm = swarm.clone();
 
-        tokio::spawn(async move {
+        tokio::task::spawn_local(async move {
             if let Err(error) = load_settings(swarm).await {
                 error!("There was an error loading local settings: {error}");
                 std::process::exit(1);
@@ -313,7 +313,7 @@ pub async fn load_settings(swarm: Swarm) -> Result<()> {
             swarm.add(&account, NoState).await /* Use the default server address */
         };
 
-        let mut world = client.ecs.lock();
+        let mut world = client.ecs.write();
         world.commands().entity(client.entity).insert(settings);
     }
 

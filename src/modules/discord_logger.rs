@@ -70,7 +70,7 @@ impl DiscordLoggerPlugin {
             if check_for_updates().expect("Failed to check for updates") {
                 let version = get_remote_version().expect("Failed to check for updates");
                 let content = format!("Update: {CARGO_PKG_REPOSITORY}/releases/tag/{version}");
-                tokio::spawn(send_message(content, channel_id, discord.client()));
+                tokio::task::spawn_local(send_message(content, channel_id, discord.client()));
             }
         }
     }
@@ -110,7 +110,7 @@ impl DiscordLoggerPlugin {
             let player_name = player_info.profile.name.clone();
             let username = game_profile.name.clone();
             let content = format!("[{username}] {player_name} has entered visual range.");
-            tokio::spawn(send_message(content, channel_id, discord.client()));
+            tokio::task::spawn_local(send_message(content, channel_id, discord.client()));
         }
     }
 
@@ -146,7 +146,7 @@ impl DiscordLoggerPlugin {
                 let block_name = block.as_registry_block();
                 let username = game_profile.name.clone();
                 let content = format!("[{username}] {block_name:?} was mined in visual range.");
-                tokio::spawn(send_message(content, channel_id, discord.client()));
+                tokio::task::spawn_local(send_message(content, channel_id, discord.client()));
             }
         }
     }
@@ -179,7 +179,7 @@ impl DiscordLoggerPlugin {
                 let block_name = block.as_registry_block();
                 let username = game_profile.name.clone();
                 let content = format!("[{username}] {block_name:?} was placed in visual range.");
-                tokio::spawn(send_message(content, channel_id, discord.client()));
+                tokio::task::spawn_local(send_message(content, channel_id, discord.client()));
             }
         }
     }
@@ -213,7 +213,7 @@ impl DiscordLoggerPlugin {
             } else {
                 format!("[{username}] left the game. | {reason}")
             };
-            tokio::spawn(send_message(content, channel_id, discord.client()));
+            tokio::task::spawn_local(send_message(content, channel_id, discord.client()));
         }
     }
 
@@ -238,7 +238,7 @@ impl DiscordLoggerPlugin {
 
             let username = &game_profile.name;
             let content = format!("[{username}] joined the game.");
-            tokio::spawn(send_message(content, channel_id, discord.client()));
+            tokio::task::spawn_local(send_message(content, channel_id, discord.client()));
         }
     }
 
@@ -278,7 +278,7 @@ impl DiscordLoggerPlugin {
                 let player_name = player_profile.name.clone();
                 let username = game_profile.name.clone();
                 let content = format!("[{username}] {player_name} logged out in visual range.");
-                tokio::spawn(send_message(content, channel_id, discord.client()));
+                tokio::task::spawn_local(send_message(content, channel_id, discord.client()));
             }
         }
     }
@@ -321,7 +321,7 @@ impl DiscordLoggerPlugin {
                 let player_name = player_profile.name.clone();
                 let username = game_profile.name.clone();
                 let content = format!("[{username}] {player_name} joined in visual range.");
-                tokio::spawn(send_message(content, channel_id, discord.client()));
+                tokio::task::spawn_local(send_message(content, channel_id, discord.client()));
             }
         }
     }
@@ -358,7 +358,7 @@ impl DiscordLoggerPlugin {
                 let player_name = player_profile.name.clone();
                 let username = game_profile.name.clone();
                 let content = format!("[{username}] {player_name} has exited visual range.");
-                tokio::spawn(send_message(content, channel_id, discord.client()));
+                tokio::task::spawn_local(send_message(content, channel_id, discord.client()));
             }
         }
     }
