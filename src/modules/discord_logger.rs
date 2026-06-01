@@ -143,7 +143,7 @@ impl DiscordLoggerPlugin {
 
             let block = Box::<dyn BlockTrait>::from(*block_state);
             if block.id().ends_with("shulker_box") {
-                let block_name = block.as_registry_block();
+                let block_name = block.as_block_kind();
                 let username = game_profile.name.clone();
                 let content = format!("[{username}] {block_name:?} was mined in visual range.");
                 tokio::task::spawn_local(send_message(content, channel_id, discord.client()));
@@ -176,7 +176,7 @@ impl DiscordLoggerPlugin {
 
             let block = Box::<dyn BlockTrait>::from(packet.block_state);
             if block.id().ends_with("shulker_box") {
-                let block_name = block.as_registry_block();
+                let block_name = block.as_block_kind();
                 let username = game_profile.name.clone();
                 let content = format!("[{username}] {block_name:?} was placed in visual range.");
                 tokio::task::spawn_local(send_message(content, channel_id, discord.client()));

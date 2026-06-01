@@ -1,24 +1,23 @@
 use azalea::{
-    BlockPos,
-    Vec3,
     app::{App, Plugin, Update},
     chunks::handle_receive_chunk_event,
     core::direction::Direction,
     ecs::prelude::*,
-    interact::handle_swing_arm_trigger,
     inventory::InventorySystems,
     local_player::TabList,
     mining::MiningSystems,
-    packet::game::{SendGamePacketEvent, handle_outgoing_packets_observer},
-    pathfinder::{GotoEvent, Pathfinder, PathfinderOpts, goals::RadiusGoal, goto_listener},
+    packet::game::SendGamePacketEvent,
+    pathfinder::{goals::RadiusGoal, goto_listener, GotoEvent, Pathfinder, PathfinderOpts},
     physics::PhysicsSystems,
     prelude::*,
     protocol::packets::game::{
-        ServerboundGamePacket,
-        ServerboundUseItemOn,
         s_interact::InteractionHand,
         s_use_item_on::BlockHit,
+        ServerboundGamePacket,
+        ServerboundUseItemOn,
     },
+    BlockPos,
+    Vec3,
 };
 use uuid::Uuid;
 
@@ -40,8 +39,6 @@ impl Plugin for AutoPearlPlugin {
                         .before(goto_listener)
                         .after(handle_receive_chunk_event),
                     Self::handle_pull_pearl_events
-                        .before(handle_outgoing_packets_observer)
-                        .before(handle_swing_arm_trigger)
                         .after(InventorySystems)
                         .after(PhysicsSystems)
                         .after(MiningSystems),

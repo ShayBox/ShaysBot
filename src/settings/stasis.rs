@@ -5,12 +5,12 @@ use std::{
     path::PathBuf,
 };
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use azalea::{
-    BlockPos,
     app::{App, Plugin},
+    core::entity_id::MinecraftEntityId,
     prelude::*,
-    world::MinecraftEntityId,
+    BlockPos,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::DisplayFromStr;

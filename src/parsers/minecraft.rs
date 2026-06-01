@@ -8,7 +8,12 @@ use std::{
 use anyhow::Result;
 use azalea::{
     app::{App, Plugin, Update},
-    chat::{handle_send_chat_event, handler::SendChatKindEvent, ChatKind, ChatReceivedEvent},
+    client_chat::{
+        handle_send_chat_event,
+        handler::SendChatKindEvent,
+        ChatKind,
+        ChatReceivedEvent,
+    },
     ecs::prelude::*,
     local_player::TabList,
 };
@@ -153,9 +158,10 @@ impl MinecraftParserPlugin {
 
             info!("Command Response: {}", event.content);
             if local_settings.anti_spam.enabled
-                && let Ok(duration) = SystemTime::now().duration_since(UNIX_EPOCH) {
-                    let _ = write!(event.content, " [{}]", duration.as_secs());
-                }
+                && let Ok(duration) = SystemTime::now().duration_since(UNIX_EPOCH)
+            {
+                let _ = write!(event.content, " [{}]", duration.as_secs());
+            }
 
             try_encrypt(&mut event.content, &settings.chat, type_encryption);
             chat_kind_events.write(SendChatKindEvent {
@@ -252,9 +258,10 @@ pub fn find_encryption(content: &str, key: &AesKey) -> (Option<EncryptionType>, 
 
         for encryptor in encryptors {
             if let Ok(plaintext) = encryptor.decrypt(content, key)
-                && let Ok(trimmed) = trim_header(&plaintext) {
-                    return (Some(encryptor), String::from(trimmed));
-                }
+                && let Ok(trimmed) = trim_header(&plaintext)
+            {
+                return (Some(encryptor), String::from(trimmed));
+            }
         }
     }
 

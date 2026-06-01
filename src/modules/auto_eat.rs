@@ -11,7 +11,7 @@ use azalea::{
     },
     local_player::Hunger,
     mining::continue_mining_block,
-    packet::game::{handle_outgoing_packets_observer, SendGamePacketEvent},
+    packet::game::SendGamePacketEvent,
     physics::PhysicsSystems,
     prelude::*,
     protocol::packets::game::{
@@ -33,7 +33,6 @@ impl Plugin for AutoEatPlugin {
             GameTick,
             Self::handle_auto_eat
                 .after(GameTickPlugin::handle_game_ticks)
-                .before(handle_outgoing_packets_observer)
                 .before(continue_mining_block)
                 .before(InventorySystems)
                 .before(PhysicsSystems),

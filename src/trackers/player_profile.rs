@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use azalea::{
     app::{App, Plugin, PostUpdate, Update},
     auth::game_profile::GameProfile,
+    core::entity_id::MinecraftEntityId,
     ecs::prelude::*,
     local_player::TabList,
     packet::game::ReceiveGamePacketEvent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::builtin::EntityKind,
-    world::MinecraftEntityId,
 };
 
 /// Tracks player profiles for visual range

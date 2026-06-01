@@ -1,16 +1,16 @@
 use azalea::{
     app::{App, Plugin, PostUpdate},
     block::{properties::Open, BlockTrait},
+    core::entity_id::MinecraftEntityId,
     ecs::prelude::*,
     entity::{metadata::Player, Position},
     events::packet_listener,
-    local_player::InstanceHolder,
+    local_player::WorldHolder,
     packet::game::ReceiveGamePacketEvent,
     player::GameProfileComponent,
     prelude::*,
     protocol::packets::game::ClientboundGamePacket,
     registry::builtin::EntityKind,
-    world::MinecraftEntityId,
     BlockPos,
     Vec3,
 };
@@ -54,7 +54,7 @@ impl EnderPearlPlugin {
     #[allow(clippy::cognitive_complexity)]
     pub fn handle_add_entity_packet(
         mut packet_events: MessageReader<ReceiveGamePacketEvent>,
-        mut query: Query<(&InstanceHolder, &LocalSettings)>,
+        mut query: Query<(&WorldHolder, &LocalSettings)>,
         mut pearl_goto_events: MessageWriter<PearlGotoEvent>,
         mut resend_packet_events: MessageWriter<ResendPacketEvent>,
         mut stasis_chambers: ResMut<StasisChambers>,
@@ -215,8 +215,8 @@ impl EnderPearlPlugin {
 
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
-pub fn find_block_pos(position: Vec3, holder: &InstanceHolder, pat: &str) -> Option<BlockPos> {
-    let instance = holder.instance.read();
+pub fn find_block_pos(position: Vec3, holder: &WorldHolder, pat: &str) -> Option<BlockPos> {
+    let instance = holder.shared.read();
 
     let x = position.x.floor() as i32;
     let z = position.z.floor() as i32;

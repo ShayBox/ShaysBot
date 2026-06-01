@@ -3,9 +3,9 @@ use azalea::{
     ecs::prelude::*,
     entity::inventory::Inventory,
     inventory::{
-        handle_container_click_event,
         operations::{ClickOperation, SwapClick},
-        ContainerClickEvent,
+        ContainerClickEvent
+        ,
         Menu,
     },
     prelude::*,
@@ -23,16 +23,15 @@ impl Plugin for AutoTotemPlugin {
             GameTick,
             Self::handle_auto_totem
                 .after(AutoEatPlugin::handle_auto_eat)
-                .after(GameTickPlugin::handle_game_ticks)
-                .before(handle_container_click_event),
+                .after(GameTickPlugin::handle_game_ticks),
         );
     }
 }
 
 impl AutoTotemPlugin {
     pub fn handle_auto_totem(
-        mut query: Query<(Entity, &Inventory, &GameTicks)>,
         mut commands: Commands,
+        mut query: Query<(Entity, &Inventory, &GameTicks)>,
     ) {
         for (entity, inventory, game_ticks) in &mut query {
             if game_ticks.0 % 2 == 0 {

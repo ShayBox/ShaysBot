@@ -1,12 +1,12 @@
 use azalea::{
-    ClientInformation,
     app::{App, Plugin, Startup},
     ecs::prelude::*,
-    interact::{SwingArmEvent, handle_swing_arm_trigger},
+    interact::SwingArmEvent,
     mining::continue_mining_block,
     packet::game::SendGamePacketEvent,
     prelude::*,
     protocol::packets::game::{ServerboundClientInformation, ServerboundGamePacket},
+    ClientInformation,
 };
 
 use crate::prelude::*;
@@ -20,7 +20,6 @@ impl Plugin for AntiAfkPlugin {
             .add_systems(
                 GameTick,
                 Self::handle_anti_afk
-                    .before(handle_swing_arm_trigger)
                     .after(continue_mining_block)
                     .after(GameTickPlugin::handle_game_ticks),
             );
