@@ -144,7 +144,109 @@ You can manually override with either: `--debug` or `--release`
 - [**AutoPearl**](src/modules/auto_pearl.rs) - Automatically goto and pull player stasis chambers
 - [**AutoTotem**](src/modules/auto_totem.rs) - Automatically equip totems of undying to avoid dying
 - [**AutoWhitelist**](src/modules/auto_whitelist.rs) - Automatically whitelist players that enter range
-- [**DiscordLogger**](src/modules/discord_logger.rs) - Log events such as `Visual Range` to Discord
+- [**Logger**](src/modules/logger.rs) - Log game events to Discord via webhooks with round-robin URL distribution
+
+### Logger Configuration
+
+The logger sends game events to Discord using webhook URLs. Configure it in `global-settings.toml`:
+
+```toml
+[logger]
+# Global fallback webhook URLs (round-robin across multiple URLs for rate limit distribution)
+webhooks = [
+    "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+]
+
+[logger.event.player_join]
+enabled = true  # Log when a bot joins the game
+
+[logger.event.player_leave]
+enabled = true  # Log when a bot leaves the game
+
+[logger.event.player_enter]
+enabled = true  # Log when players enter visual range (join + add_entity)
+
+[logger.event.player_exit]
+enabled = true  # Log when players leave visual range (remove + player_info_remove)
+
+[logger.event.player_command]
+enabled = true  # Log all commands run by any source (Minecraft, Discord, API)
+
+[logger.event.player_pearl]
+enabled = true  # Log ender pearl stasis chamber pulls
+
+# Block events use a separate config with block filtering
+[logger.event.player_break]
+enabled = true  # Log blocks broken in visual range (see block filter below)
+
+[logger.event.player_place]
+enabled = true  # Log blocks placed in visual range (see block filter below)
+```
+
+#### Per-Event Webhook Overrides
+
+Each event type can optionally specify its own webhook URLs to send to a different Discord channel:
+
+```toml
+# Send pearl events to a separate "pearls" channel
+[logger.event.player_pearl]
+enabled = true
+webhooks = [
+    "https://discord.com/api/webhooks/PEARL_WEBHOOK_ID/PEARL_WEBHOOK_TOKEN",
+]
+
+# Disable player join notifications entirely
+[logger.event.player_join]
+enabled = false
+```
+
+#### Block Event Filtering
+
+Block break/place events support a configurable filter to control which blocks are logged. By default, it logs high-value blocks:
+
+**Default block list:** All shulker box colors, netherite_block, gold_block, diamond_block, emerald_block, lapis_block, redstone_block
+
+To customize the block list for break or place events:
+
+```toml
+# Only log netherite and diamond breaks
+[logger.event.player_break]
+enabled = true
+blocks = [
+    "netherite_block",
+    "diamond_block",
+]
+
+# Log all blocks placed (override with empty list to disable filtering)
+[logger.event.player_place]
+enabled = true
+```
+
+To log all block types, set an empty blocks list or use a wildcard pattern:
+
+```toml
+# Log every block break/place
+[logger.event.player_break]
+enabled = true
+blocks = [""]  # Empty string matches everything
+```
+
+#### Event Types
+
+| Event | Description |
+|-------|-------------|
+| `player_join` | When a bot joins the game |
+| `player_leave` | When a bot leaves the game (with disconnect reason) |
+| `player_enter` | When players enter visual range (both tab-list join and add-entity packets) |
+| `player_exit` | When players leave visual range (both remove-entities and player-info-remove packets) |
+| `player_command` | All commands run, with source attribution (`console`, `discord:<user_id>`, or `api`) |
+| `player_pearl` | Ender pearl stasis chamber pulls (with remaining count / over-limit warnings) |
+| `player_break` | Block break events in visual range (configurable block filter) |
+| `player_place` | Block place events in visual range (configurable block filter) |
+
+#### Round-Robin Webhooks
+
+When multiple webhook URLs are provided for an event type, messages are distributed across them using round-robin ordering. This helps avoid rate limits and provides redundancy if one webhook URL becomes invalid.
 
 ### Parsers
 

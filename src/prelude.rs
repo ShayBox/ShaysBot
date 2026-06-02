@@ -11,6 +11,7 @@ pub use super::{
         auto_pearl::*,
         auto_totem::*,
         auto_whitelist::*,
+        logger::*,
         *,
     },
     parsers::{minecraft::*, *},
@@ -19,4 +20,4 @@ pub use super::{
     *,
 };
 #[cfg(feature = "bot")]
-pub use super::{modules::discord_logger::*, parsers::discord::*};
+pub use super::parsers::discord::*;

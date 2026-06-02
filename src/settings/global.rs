@@ -40,8 +40,12 @@ pub struct GlobalSettings {
     #[serde_as(as = "DurationSeconds")]
     pub command_cooldown: Duration,
 
-    /// Discord client token for commands and events. (Optional)
+    /// Discord client token for commands and responses. (Optional)
     pub discord_token: String,
+
+    /// Logger configuration for sending game events to Discord via webhooks.
+    #[serde(default)]
+    pub logger: LoggerConfig,
 
     /// Minecraft server ender pearl view distance in blocks.
     /// Better to under-estimate than to over-estimate.
@@ -107,6 +111,115 @@ pub struct ChatEncryption {
 pub struct User {
     pub discord_id:   String,
     pub api_password: String,
+}
+
+/// Logger configuration for sending game events to Discord via webhooks.
+#[derive(Clone, Deserialize, Serialize, SmartDefault)]
+#[serde(default)]
+pub struct LoggerConfig {
+    /// Global list of webhook URLs used as the default for all event types.
+    pub webhooks: Vec<String>,
+
+    /// Per-event-type configuration.
+    #[serde(default)]
+    pub event: EventTypes,
+}
+
+/// Container for all per-event webhook configurations.
+#[derive(Clone, Deserialize, Serialize, SmartDefault)]
+#[serde(default)]
+pub struct EventTypes {
+    /// Player join events (when a bot joins the game).
+    pub player_join: WebhookEventConfig,
+
+    /// Player leave events (when a bot leaves the game).
+    pub player_leave: WebhookEventConfig,
+
+    /// Player visual range enter events.
+    pub player_enter: WebhookEventConfig,
+
+    /// Player visual range exit events.
+    pub player_exit: WebhookEventConfig,
+
+    /// Command execution events by players.
+    pub player_command: WebhookEventConfig,
+
+    /// Ender pearl pull events.
+    pub player_pearl: WebhookEventConfig,
+
+    /// Block break events in visual range.
+    pub player_break: WebhookBlockEventConfig,
+
+    /// Block place events in visual range.
+    pub player_place: WebhookBlockEventConfig,
+}
+
+/// Configuration for a single event type's webhook logging.
+#[derive(Clone, Deserialize, Serialize, SmartDefault)]
+#[serde(default)]
+pub struct WebhookEventConfig {
+    /// Whether to log this event type.
+    #[default(true)]
+    pub enabled: bool,
+
+    /// Optional override list of webhook URLs for this specific event type.
+    /// If not specified, falls back to the global `webhooks` list.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub webhooks: Option<Vec<String>>,
+}
+
+/// Configuration for block-related events with a configurable block filter.
+#[derive(Clone, Deserialize, Serialize, SmartDefault)]
+#[serde(default)]
+pub struct WebhookBlockEventConfig {
+    /// Whether to log this event type.
+    #[default(true)]
+    pub enabled: bool,
+
+    /// Optional override list of webhook URLs for this specific event type.
+    /// If not specified, falls back to the global `webhooks` list.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub webhooks: Option<Vec<String>>,
+
+    /// Block IDs or names to log (e.g., `"minecraft:shulker_box"`, `"netherite_block"`).
+    /// If empty, uses the default high-value block list.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blocks: Option<Vec<String>>,
+}
+
+/// Default list of high-value blocks to log when no custom list is provided.
+pub const DEFAULT_BLOCK_FILTER: &[&str] = &[
+    "shulker_box",
+    "black_shulker_box",
+    "blue_shulker_box",
+    "brown_shulker_box",
+    "cyan_shulker_box",
+    "gray_shulker_box",
+    "green_shulker_box",
+    "light_blue_shulker_box",
+    "light_gray_shulker_box",
+    "lime_shulker_box",
+    "magenta_shulker_box",
+    "orange_shulker_box",
+    "pink_shulker_box",
+    "purple_shulker_box",
+    "red_shulker_box",
+    "white_shulker_box",
+    "yellow_shulker_box",
+    "netherite_block",
+    "gold_block",
+    "diamond_block",
+    "emerald_block",
+    "lapis_block",
+    "redstone_block",
+];
+
+/// Check if a block ID matches the configured filter.
+pub fn is_logged_block(block_id: &str, custom_blocks: Option<&[String]>) -> bool {
+    match custom_blocks {
+        Some(list) => list.iter().any(|filter| block_id.contains(filter.as_str())),
+        None => DEFAULT_BLOCK_FILTER.iter().any(|filter| block_id.contains(*filter)),
+    }
 }
 
 #[derive(Clone, Default, Eq, PartialEq, Deserialize, Serialize)]

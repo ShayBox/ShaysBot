@@ -1,6 +1,6 @@
 [package]
 name = "shaysbot"
-version = "0.16.2"
+version = "0.17.0"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 edition = "2024"
 description = "My personal Minecraft bot using Azalea"

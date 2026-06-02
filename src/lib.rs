@@ -125,8 +125,12 @@ pub async fn start() -> Result<()> {
         client = client.add_plugins((
             DiscordBotPlugin::new(configuration),
             DiscordParserPlugin,
-            DiscordLoggerPlugin,
         ));
+    }
+
+   /* Logger for distributed rate limits via webhooks */
+    if !global_settings.logger.webhooks.is_empty() {
+        client = client.add_plugins(LoggerPlugin);
     }
 
     /* ViaProxy for multi-version compatibility */
