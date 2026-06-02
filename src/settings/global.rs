@@ -152,6 +152,30 @@ pub struct EventTypes {
 
     /// Block place events in visual range.
     pub player_place: WebhookBlockEventConfig,
+
+    /// Ender pearl inventory depleted at stasis chamber.
+    pub pearl_missing: WebhookEventConfig,
+
+    /// Pearl goto pathfinding failed (pathfinder busy).
+    pub pearl_path_failed: WebhookEventConfig,
+
+    /// Pearl return to idle goal after pulling.
+    pub pearl_return: WebhookEventConfig,
+
+    /// Auto-whitelist adds a player to the whitelist.
+    pub auto_whitelist_add: WebhookEventConfig,
+
+    /// Chat messages received from other players.
+    pub player_chat: WebhookEventConfig,
+
+    /// Server-side disconnect (reason from server).
+    pub server_disconnect: WebhookEventConfig,
+
+    /// Successful reconnection after disconnect.
+    pub server_reconnect: WebhookEventConfig,
+
+    /// Connection errors (timeout, auth failure, etc.).
+    pub server_error: WebhookEventConfig,
 }
 
 /// Configuration for a single event type's webhook logging.

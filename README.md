@@ -181,6 +181,34 @@ enabled = true  # Log blocks broken in visual range (see block filter below)
 
 [logger.event.player_place]
 enabled = true  # Log blocks placed in visual range (see block filter below)
+
+# Pearl events
+[logger.event.pearl_missing]
+enabled = true  # Log when pearl inventory is depleted at a stasis chamber
+
+[logger.event.pearl_path_failed]
+enabled = true  # Log when pearl goto pathfinding fails (pathfinder busy)
+
+[logger.event.pearl_return]
+enabled = true  # Log when bot returns to idle goal after pearl pull
+
+# Auto-whitelist events
+[logger.event.auto_whitelist_add]
+enabled = true  # Log when a player is auto-added to the whitelist
+
+# Chat events
+[logger.event.player_chat]
+enabled = true  # Log chat messages received from other players
+
+# Server connection events
+[logger.event.server_disconnect]
+enabled = true  # Log server-side disconnects (reason from server)
+
+[logger.event.server_reconnect]
+enabled = true  # Log successful reconnections after disconnect
+
+[logger.event.server_error]
+enabled = true  # Log disconnect/error packets from server (e.g. kick reasons)
 ```
 
 #### Per-Event Webhook Overrides
@@ -243,6 +271,14 @@ blocks = [""]  # Empty string matches everything
 | `player_pearl` | Ender pearl stasis chamber pulls (with remaining count / over-limit warnings) |
 | `player_break` | Block break events in visual range (configurable block filter) |
 | `player_place` | Block place events in visual range (configurable block filter) |
+| `pearl_missing` | Ender pearl inventory depleted at a stasis chamber |
+| `pearl_path_failed` | Pearl goto pathfinding failed (pathfinder already busy) |
+| `pearl_return` | Bot returned to idle goal after pearl pull |
+| `auto_whitelist_add` | Player auto-added to whitelist via `whitelist_in_range` |
+| `player_chat` | Chat messages received from other players |
+| `server_disconnect` | Server-side disconnect with reason |
+| `server_reconnect` | Successful reconnection after disconnect |
+| `server_error` | Disconnect/error packets from server (e.g. kick reasons) |
 
 #### Round-Robin Webhooks
 

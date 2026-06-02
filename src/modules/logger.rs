@@ -6,14 +6,18 @@ use std::{
 use azalea::{
     app::{App, Plugin, Update},
     block::BlockTrait,
+    client_chat::ChatReceivedEvent,
     disconnect::DisconnectEvent,
     ecs::prelude::*,
+    entity::{inventory::Inventory, LocalEntity},
     local_player::TabList,
     packet::{game::ReceiveGamePacketEvent, login::ReceiveLoginPacketEvent},
+    pathfinder::Pathfinder,
     player::GameProfileComponent,
     prelude::Resource,
     protocol::packets::game::ClientboundGamePacket,
     registry::builtin::EntityKind,
+    Vec3,
 };
 use serenity::json::json;
 
@@ -30,6 +34,14 @@ enum EventType {
     PlayerPearl,
     PlayerBreak,
     PlayerPlace,
+    PearlMissing,
+    PearlPathFailed,
+    PearlReturn,
+    AutoWhitelistAdd,
+    PlayerChat,
+    ServerDisconnect,
+    ServerReconnect,
+    ServerError,
 }
 
 /// A client that sends webhook messages with round-robin URL selection.
@@ -147,124 +159,57 @@ impl Plugin for LoggerPlugin {
 
         let mut event_configs: HashMap<EventType, EventConfig> = HashMap::new();
 
-        // Player join events
-        event_configs.insert(
-            EventType::PlayerJoin,
-            EventConfig {
-                enabled: event_types.player_join.enabled,
-                urls:    event_types.player_join.webhooks.clone().unwrap_or_default(),
-                blocks:  None,
-            },
-        );
+        macro_rules! add_event {
+            ($etype:ident, $cfg:expr, $blocks:expr) => {{
+                event_configs.insert(
+                    EventType::$etype,
+                    EventConfig {
+                        enabled: $cfg.enabled,
+                        urls:    $cfg.webhooks.clone().unwrap_or_default(),
+                        blocks:  $blocks,
+                    },
+                );
+            }};
+        }
 
-        // Player leave events
-        event_configs.insert(
-            EventType::PlayerLeave,
-            EventConfig {
-                enabled: event_types.player_leave.enabled,
-                urls:    event_types
-                    .player_leave
-                    .webhooks
-                    .clone()
-                    .unwrap_or_default(),
-                blocks:  None,
-            },
-        );
-
-        // Player visual range enter events (add_entity + player_info_update)
-        event_configs.insert(
-            EventType::PlayerEnter,
-            EventConfig {
-                enabled: event_types.player_enter.enabled,
-                urls:    event_types
-                    .player_enter
-                    .webhooks
-                    .clone()
-                    .unwrap_or_default(),
-                blocks:  None,
-            },
-        );
-
-        // Player visual range exit events (remove_entities + player_info_remove)
-        event_configs.insert(
-            EventType::PlayerExit,
-            EventConfig {
-                enabled: event_types.player_exit.enabled,
-                urls:    event_types.player_exit.webhooks.clone().unwrap_or_default(),
-                blocks:  None,
-            },
-        );
-
-        // Command events
-        event_configs.insert(
-            EventType::PlayerCommand,
-            EventConfig {
-                enabled: event_types.player_command.enabled,
-                urls:    event_types
-                    .player_command
-                    .webhooks
-                    .clone()
-                    .unwrap_or_default(),
-                blocks:  None,
-            },
-        );
-
-        // Pearl events
-        event_configs.insert(
-            EventType::PlayerPearl,
-            EventConfig {
-                enabled: event_types.player_pearl.enabled,
-                urls:    event_types
-                    .player_pearl
-                    .webhooks
-                    .clone()
-                    .unwrap_or_default(),
-                blocks:  None,
-            },
-        );
-
-        // Block break events
-        event_configs.insert(
-            EventType::PlayerBreak,
-            EventConfig {
-                enabled: event_types.player_break.enabled,
-                urls:    event_types
-                    .player_break
-                    .webhooks
-                    .clone()
-                    .unwrap_or_default(),
-                blocks:  event_types.player_break.blocks.clone(),
-            },
-        );
-
-        // Block place events
-        event_configs.insert(
-            EventType::PlayerPlace,
-            EventConfig {
-                enabled: event_types.player_place.enabled,
-                urls:    event_types
-                    .player_place
-                    .webhooks
-                    .clone()
-                    .unwrap_or_default(),
-                blocks:  event_types.player_place.blocks.clone(),
-            },
-        );
+        add_event!(PlayerJoin, event_types.player_join, None);
+        add_event!(PlayerLeave, event_types.player_leave, None);
+        add_event!(PlayerEnter, event_types.player_enter, None);
+        add_event!(PlayerExit, event_types.player_exit, None);
+        add_event!(PlayerCommand, event_types.player_command, None);
+        add_event!(PlayerPearl, event_types.player_pearl, None);
+        add_event!(PlayerBreak, event_types.player_break, event_types.player_break.blocks.clone());
+        add_event!(PlayerPlace, event_types.player_place, event_types.player_place.blocks.clone());
+        add_event!(PearlMissing, event_types.pearl_missing, None);
+        add_event!(PearlPathFailed, event_types.pearl_path_failed, None);
+        add_event!(PearlReturn, event_types.pearl_return, None);
+        add_event!(AutoWhitelistAdd, event_types.auto_whitelist_add, None);
+        add_event!(PlayerChat, event_types.player_chat, None);
+        add_event!(ServerDisconnect, event_types.server_disconnect, None);
+        add_event!(ServerReconnect, event_types.server_reconnect, None);
+        add_event!(ServerError, event_types.server_error, None);
 
         app.insert_resource(WebhookClient::new(event_configs, config.webhooks.clone()))
             .add_systems(
                 Update,
                 (
                     Self::handle_add_entity_packets,
+                    Self::handle_auto_whitelist_add_events,
                     Self::handle_block_break_packets,
                     Self::handle_block_update_packets,
+                    Self::handle_chat_received_events,
                     Self::handle_cmd_events,
                     Self::handle_disconnect_events,
                     Self::handle_login_packets,
                     Self::handle_pearl_goto_events,
+                    Self::handle_pearl_missing_events,
+                    Self::handle_pearl_path_failed_events,
+                    Self::handle_pearl_return_events,
                     Self::handle_player_info_remove_packets,
                     Self::handle_player_info_update_packets,
                     Self::handle_remove_entities_packets,
+                    Self::handle_server_error_events,
+                    Self::handle_server_reconnect_events,
                 ),
             );
     }
@@ -619,6 +564,199 @@ impl LoggerPlugin {
                 let player_name = player_profile.name.clone();
                 let content = format!("[{username}] {player_name} has exited visual range.");
                 webhook.send(EventType::PlayerExit, content);
+            }
+        }
+    }
+
+    fn handle_pearl_missing_events(
+        mut pearl_pull_events: MessageReader<PearlPullEvent>,
+        query: Query<(&Inventory, &GameProfileComponent), With<LocalEntity>>,
+        webhook: Option<Res<WebhookClient>>,
+    ) {
+        let Some(webhook) = webhook else {
+            return;
+        };
+
+        for event in pearl_pull_events.read() {
+            let Ok((inventory, game_profile)) = query.get(event.entity) else {
+                continue;
+            };
+
+            let username = game_profile.name.clone();
+
+            // Check if there are any ender pearls left in the inventory
+            let pearl_count: i32 = inventory
+                .menu()
+                .slots()
+                .iter()
+                .filter(|s| s.kind() == azalea::registry::builtin::ItemKind::EnderPearl)
+                .map(|s| s.count())
+                .sum();
+
+            if pearl_count == 0 {
+                let content = format!(
+                    "[{username}] out of ender pearls at `{pos}`",
+                    username = username,
+                    pos = event.block_pos
+                );
+                webhook.send(EventType::PearlMissing, content);
+            }
+        }
+    }
+
+    fn handle_pearl_path_failed_events(
+        mut pearl_goto_events: MessageReader<PearlGotoEvent>,
+        query: Query<&Pathfinder, With<LocalEntity>>,
+        webhook: Option<Res<WebhookClient>>,
+    ) {
+        let Some(webhook) = webhook else {
+            return;
+        };
+
+        for event in pearl_goto_events.read() {
+            let Ok(pathfinder) = query.get(event.entity) else {
+                continue;
+            };
+
+            // Path failed: pathfinder already has a goal (previous goto still running)
+            if pathfinder.goal.is_some() {
+                let content = format!(
+                    "[{username}] pearl path failed (busy) at `{location}`",
+                    username = "pending",
+                    location = event.block_pos
+                );
+                webhook.send(EventType::PearlPathFailed, content);
+            }
+        }
+    }
+
+    fn handle_pearl_return_events(
+        mut pearl_goto_events: MessageReader<PearlGotoEvent>,
+        query: Query<&GameProfileComponent, With<LocalEntity>>,
+        webhook: Option<Res<WebhookClient>>,
+    ) {
+        let Some(webhook) = webhook else {
+            return;
+        };
+
+        for event in pearl_goto_events.read() {
+            let Ok(game_profile) = query.get(event.entity) else {
+                continue;
+            };
+
+            let username = game_profile.name.clone();
+
+            // Return to idle goal after pearl pull
+            if event.idle_goal.coords != Vec3::ZERO {
+                let content = format!(
+                    "[{username}] pearl return to idle at ({}, {}, {})",
+                    event.idle_goal.coords.x,
+                    event.idle_goal.coords.y,
+                    event.idle_goal.coords.z
+                );
+                webhook.send(EventType::PearlReturn, content);
+            }
+        }
+    }
+
+    fn handle_auto_whitelist_add_events(
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
+        mut global_settings: ResMut<GlobalSettings>,
+        webhook: Option<Res<WebhookClient>>,
+    ) {
+        let Some(webhook) = webhook else {
+            return;
+        };
+
+        for event in packet_events.read() {
+            let ClientboundGamePacket::AddEntity(packet) = event.packet.as_ref() else {
+                continue;
+            };
+
+            if packet.entity_type != azalea::registry::builtin::EntityKind::Player {
+                continue;
+            }
+
+            if global_settings.users.contains_key(&packet.uuid) {
+                continue;
+            }
+
+            if global_settings.whitelist_in_range {
+                global_settings.users.insert(packet.uuid, User::default());
+                if let Err(error) = global_settings.save() {
+                    error!("Failed to save global settings: {error}");
+                }
+
+                let content = format!("[auto] {uuid} added to whitelist (whitelist_in_range)", uuid = packet.uuid);
+                webhook.send(EventType::AutoWhitelistAdd, content);
+            }
+        }
+    }
+
+    fn handle_chat_received_events(
+        mut chat_events: MessageReader<ChatReceivedEvent>,
+        query: Query<(&GameProfileComponent, &TabList), With<LocalEntity>>,
+        webhook: Option<Res<WebhookClient>>,
+    ) {
+        let Some(webhook) = webhook else {
+            return;
+        };
+
+        for event in chat_events.read() {
+            let Ok((game_profile, _tab_list)) = query.get(event.entity) else {
+                continue;
+            };
+
+            let username = game_profile.name.clone();
+            let content = format!("[{username}] chat: {}", event.packet.content());
+            webhook.send(EventType::PlayerChat, content);
+        }
+    }
+
+    fn handle_server_reconnect_events(
+        mut events: MessageReader<ReceiveLoginPacketEvent>,
+        query: Query<&GameProfileComponent>,
+        webhook: Option<Res<WebhookClient>>,
+    ) {
+        let Some(webhook) = webhook else {
+            return;
+        };
+
+        for event in events.read() {
+            let Ok(game_profile) = query.get(event.entity) else {
+                continue;
+            };
+
+            let username = game_profile.name.clone();
+            let content = format!("[{username}] reconnected to server");
+            webhook.send(EventType::ServerReconnect, content);
+        }
+    }
+
+    fn handle_server_error_events(
+        mut packet_events: MessageReader<ReceiveGamePacketEvent>,
+        query: Query<&GameProfileComponent, With<LocalEntity>>,
+        webhook: Option<Res<WebhookClient>>,
+    ) {
+        let Some(webhook) = webhook else {
+            return;
+        };
+
+        for event in packet_events.read() {
+            // Detect disconnect/error packets
+            if let ClientboundGamePacket::Disconnect(packet) = event.packet.as_ref() {
+                let Ok(game_profile) = query.get(event.entity) else {
+                    continue;
+                };
+
+                let username = game_profile.name.clone();
+                let reason = packet.reason.to_string();
+                let content = if reason.is_empty() {
+                    format!("[{username}] server error: disconnected (no reason)")
+                } else {
+                    format!("[{username}] server error: {reason}")
+                };
+                webhook.send(EventType::ServerError, content);
             }
         }
     }
